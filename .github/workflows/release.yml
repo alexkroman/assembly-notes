@@ -1,0 +1,179 @@
+name: Build & Release Assembly Notes
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  # Generate release notes job
+  release-notes:
+    runs-on: ubuntu-latest
+    outputs:
+      release-notes: ${{ steps.notes.outputs.release-notes }}
+    steps:
+      - name: Check out Git repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Generate release notes
+        id: notes
+        run: |
+          # Get the previous tag
+          PREV_TAG=$(git describe --tags --abbrev=0 HEAD~1 2>/dev/null || echo "")
+          CURRENT_TAG=${GITHUB_REF#refs/tags/}
+
+          # Generate release notes from commits
+          if [ -n "$PREV_TAG" ]; then
+            COMMITS=$(git log --pretty=format:"- %s" $PREV_TAG..HEAD)
+          else
+            COMMITS=$(git log --pretty=format:"- %s")
+          fi
+
+          # Create release notes
+          RELEASE_NOTES="## What's Changed
+
+          $COMMITS
+
+          **Full Changelog**: https://github.com/${{ github.repository }}/compare/$PREV_TAG...$CURRENT_TAG"
+
+          # Save to output
+          echo "release-notes<<EOF" >> $GITHUB_OUTPUT
+          echo "$RELEASE_NOTES" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+
+  release:
+    needs: release-notes
+    strategy:
+      matrix:
+        os: [macos-latest, ubuntu-latest, windows-latest]
+
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - name: Check out Git repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run linting
+        run: npm run lint
+
+      - name: Build Electron app (macOS)
+        if: matrix.os == 'macos-latest'
+        run: npm run build-icons && npx electron-builder --mac --publish never
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          CSC_LINK: ${{ secrets.CSC_LINK }}
+          CSC_KEY_PASSWORD: ${{ secrets.CSC_KEY_PASSWORD }}
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_ID_PASS: ${{ secrets.APPLE_ID_PASS }}
+
+      - name: Build Electron app (Windows)
+        if: matrix.os == 'windows-latest'
+        run: npm run build-icons && npx electron-builder --win --publish never
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build Electron app (Linux)
+        if: matrix.os == 'ubuntu-latest'
+        run: npm run build-icons && npx electron-builder --linux --publish never
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: dist-${{ matrix.os }}
+          path: dist/
+
+  # Create GitHub release with all build artifacts
+  create-release:
+    needs: [release-notes, release]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts/
+
+      - name: Generate update metadata files
+        run: |
+          # Generate latest-mac.yml for macOS
+          if [ -f artifacts/dist-macos-latest/*.dmg ]; then
+            DMG_FILE=$(ls artifacts/dist-macos-latest/*.dmg | head -1)
+            DMG_SIZE=$(stat -c%s "$DMG_FILE" 2>/dev/null || stat -f%z "$DMG_FILE")
+            DMG_NAME=$(basename "$DMG_FILE")
+            cat > artifacts/dist-macos-latest/latest-mac.yml << EOF
+          version: ${GITHUB_REF#refs/tags/v}
+          files:
+            - url: $DMG_NAME
+              sha512: $(shasum -a 512 "$DMG_FILE" | cut -d' ' -f1)
+              size: $DMG_SIZE
+          path: $DMG_NAME
+          sha512: $(shasum -a 512 "$DMG_FILE" | cut -d' ' -f1)
+          releaseDate: $(date -u +"%Y-%m-%dT%H:%M:%S.%3NZ")
+          EOF
+          fi
+
+          # Generate latest.yml for Windows
+          if [ -f artifacts/dist-windows-latest/*.exe ]; then
+            EXE_FILE=$(ls artifacts/dist-windows-latest/*.exe | head -1)
+            EXE_SIZE=$(stat -c%s "$EXE_FILE" 2>/dev/null || stat -f%z "$EXE_FILE")
+            EXE_NAME=$(basename "$EXE_FILE")
+            cat > artifacts/dist-windows-latest/latest.yml << EOF
+          version: ${GITHUB_REF#refs/tags/v}
+          files:
+            - url: $EXE_NAME
+              sha512: $(shasum -a 512 "$EXE_FILE" | cut -d' ' -f1)
+              size: $EXE_SIZE
+          path: $EXE_NAME
+          sha512: $(shasum -a 512 "$EXE_FILE" | cut -d' ' -f1)
+          releaseDate: $(date -u +"%Y-%m-%dT%H:%M:%S.%3NZ")
+          EOF
+          fi
+
+          # Generate latest-linux.yml for Linux
+          if [ -f artifacts/dist-linux-latest/*.AppImage ]; then
+            APPIMAGE_FILE=$(ls artifacts/dist-linux-latest/*.AppImage | head -1)
+            APPIMAGE_SIZE=$(stat -c%s "$APPIMAGE_FILE" 2>/dev/null || stat -f%z "$APPIMAGE_FILE")
+            APPIMAGE_NAME=$(basename "$APPIMAGE_FILE")
+            cat > artifacts/dist-linux-latest/latest-linux.yml << EOF
+          version: ${GITHUB_REF#refs/tags/v}
+          files:
+            - url: $APPIMAGE_NAME
+              sha512: $(shasum -a 512 "$APPIMAGE_FILE" | cut -d' ' -f1)
+              size: $APPIMAGE_SIZE
+          path: $APPIMAGE_NAME
+          sha512: $(shasum -a 512 "$APPIMAGE_FILE" | cut -d' ' -f1)
+          releaseDate: $(date -u +"%Y-%m-%dT%H:%M:%S.%3NZ")
+          EOF
+          fi
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v1
+        with:
+          body: ${{ needs.release-notes.outputs.release-notes }}
+          files: |
+            artifacts/dist-macos-latest/*.dmg
+            artifacts/dist-macos-latest/latest-mac.yml
+            artifacts/dist-windows-latest/*.exe
+            artifacts/dist-windows-latest/latest.yml
+            artifacts/dist-linux-latest/*.AppImage
+            artifacts/dist-linux-latest/latest-linux.yml
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

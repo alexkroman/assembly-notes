@@ -1,0 +1,430 @@
+/* 1. Root & Variables */
+:root {
+  /* Colors */
+  --bg-primary: #212121;
+  --bg-modal-overlay: rgba(0, 0, 0, 0.7);
+
+  --text-primary: #ffffff;
+  --text-secondary: rgba(255, 255, 255, 0.8);
+  --text-muted: rgba(255, 255, 255, 0.65);
+  --text-disabled: rgba(255, 255, 255, 0.5);
+  --text-placeholder: rgba(255, 255, 255, 0.4);
+
+  --surface-1: rgba(255, 255, 255, 0.05);
+  --surface-2: rgba(255, 255, 255, 0.08);
+  --surface-3: rgba(255, 255, 255, 0.1);
+  --surface-focus: rgba(255, 255, 255, 0.12);
+
+  --border-1: rgba(255, 255, 255, 0.1);
+  --border-2: rgba(255, 255, 255, 0.15);
+  --border-3: rgba(255, 255, 255, 0.2);
+  --border-focus: rgba(255, 255, 255, 0.4);
+
+  --accent-success: #28a745;
+  --accent-success-bg: rgba(40, 167, 69, 0.2);
+  --accent-success-bg-hover: rgba(40, 167, 69, 0.3);
+  --accent-success-border: rgba(40, 167, 69, 0.5);
+
+  --accent-danger: #dc3545;
+  --accent-danger-bg: rgba(220, 53, 69, 0.2);
+  --accent-danger-bg-hover: rgba(220, 53, 69, 0.3);
+  --accent-danger-border: rgba(220, 53, 69, 0.5);
+
+  --accent-info: #17a2b8;
+  --accent-info-bg: rgba(23, 162, 184, 0.2);
+  --accent-info-border: rgba(23, 162, 184, 0.5);
+
+  /* Typography */
+  --font-sans: sans-serif;
+  --font-mono: monospace;
+
+  /* Sizing & Radius */
+  --radius-sm: 4px;
+  --radius-md: 6px;
+  --radius-lg: 8px;
+
+  /* Scrollbar */
+  --scrollbar-thumb: rgba(255, 255, 255, 0.3);
+  --scrollbar-thumb-hover: rgba(255, 255, 255, 0.5);
+}
+
+/* 2. Global & Reset Styles */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  height: 100vh;
+  overflow: hidden;
+  font-family: var(--font-sans);
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
+}
+
+/* 3. Layout */
+.container {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  height: 100vh;
+  padding: 12px 12px 4px;
+}
+
+.main-page {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+}
+
+/* 4. Components */
+/* --- Controls & Buttons --- */
+.controls {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+}
+
+button,
+select {
+  font-size: 1em;
+  padding: 6px 12px;
+  color: var(--text-primary);
+  background-color: var(--surface-3);
+  border: 1px solid var(--border-1);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition:
+    background-color 0.2s ease,
+    border-color 0.2s ease;
+}
+
+button:disabled,
+select:disabled {
+  color: var(--text-disabled);
+  background-color: var(--surface-1);
+  border-color: var(--surface-1);
+  cursor: not-allowed;
+}
+
+button.start {
+  color: var(--accent-success);
+  background-color: var(--accent-success-bg);
+  border-color: var(--accent-success-border);
+}
+
+button.start:hover {
+  background-color: var(--accent-success-bg-hover);
+}
+
+button.recording {
+  color: var(--accent-danger);
+  background-color: var(--accent-danger-bg);
+  border-color: var(--accent-danger-border);
+}
+
+button.recording:hover {
+  background-color: var(--accent-danger-bg-hover);
+}
+
+/* --- Results --- */
+.results {
+  flex: 1;
+  min-height: 0;
+  margin-top: 12px;
+  padding: 8px;
+  font-family: var(--font-mono);
+  background: var(--surface-3);
+  border: 1px solid var(--border-1);
+  border-radius: var(--radius-sm);
+  white-space: pre-wrap;
+  word-break: break-word;
+  overflow-y: auto;
+}
+
+.results::-webkit-scrollbar {
+  width: 8px;
+}
+
+.results::-webkit-scrollbar-track {
+  background: var(--surface-1);
+  border-radius: var(--radius-sm);
+}
+
+.results::-webkit-scrollbar-thumb {
+  background: var(--scrollbar-thumb);
+  border-radius: var(--radius-sm);
+}
+
+.results::-webkit-scrollbar-thumb:hover {
+  background: var(--scrollbar-thumb-hover);
+}
+
+/* --- Typography Helpers --- */
+.status {
+  margin: -6px 0 2px;
+  padding: 2px 4px 0;
+  font-size: 0.7em;
+  color: var(--text-disabled);
+  text-align: center;
+}
+
+.section,
+.settings-title {
+  margin: 18px 0 6px;
+  font-weight: bold;
+  text-transform: uppercase;
+  font-size: 0.7em;
+  letter-spacing: 0.08em;
+  color: var(--text-muted);
+}
+
+/* --- Settings Modal --- */
+.settings-modal {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background-color: var(--bg-modal-overlay);
+  z-index: 1000;
+}
+
+.settings-modal.active {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.settings-dialog {
+  display: flex;
+  flex-direction: column;
+  width: 400px;
+  max-width: 90%;
+  background-color: var(--bg-primary);
+  border: 1px solid var(--border-3);
+  border-radius: var(--radius-md);
+}
+
+.settings-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--border-1);
+}
+
+.settings-title {
+  margin: 0;
+  font-size: 0.8em;
+  color: var(--text-secondary);
+}
+
+.close-btn {
+  padding: 0;
+  font-size: 18px;
+  line-height: 1;
+  color: var(--text-muted);
+  background: none;
+  border: none;
+  cursor: pointer;
+  transition: color 0.2s ease;
+}
+
+.close-btn:hover {
+  color: var(--text-primary);
+}
+
+/* --- Modal Form Content --- */
+.settings-content {
+  flex: 1;
+  padding: 16px;
+  overflow-y: auto;
+}
+
+.form-group {
+  margin-bottom: 14px;
+}
+
+.form-group label {
+  display: block;
+  margin-bottom: 4px;
+  font-size: 0.8em;
+  font-weight: 500;
+  color: var(--text-secondary);
+}
+
+.form-group input,
+.form-group textarea {
+  width: 100%;
+  padding: 8px 10px;
+  font-family: inherit;
+  font-size: 0.9em;
+  color: var(--text-primary);
+  background-color: var(--surface-2);
+  border: 1px solid var(--border-2);
+  border-radius: var(--radius-sm);
+  transition: all 0.2s ease;
+}
+
+.form-group textarea {
+  min-height: 80px;
+  resize: vertical;
+}
+
+.form-group input:focus,
+.form-group textarea:focus {
+  outline: none;
+  border-color: var(--border-focus);
+  background-color: var(--surface-focus);
+  box-shadow: 0 0 0 1px var(--border-1);
+}
+
+.form-group input::placeholder,
+.form-group textarea::placeholder {
+  color: var(--text-placeholder);
+}
+
+.settings-actions {
+  margin-top: 16px;
+}
+
+/* Auto-updater Styles */
+.update-notification {
+  position: fixed;
+  top: 10px;
+  right: 10px;
+  max-width: 300px;
+  padding: 12px;
+  border-radius: var(--radius-md);
+  z-index: 1000;
+  animation: slideIn 0.3s ease-out;
+}
+
+.update-notification.info {
+  background-color: var(--accent-info-bg);
+  border: 1px solid var(--accent-info-border);
+  color: var(--accent-info);
+}
+
+.update-notification.success {
+  background-color: var(--accent-success-bg);
+  border: 1px solid var(--accent-success-border);
+  color: var(--accent-success);
+}
+
+.update-notification.error {
+  background-color: var(--accent-danger-bg);
+  border: 1px solid var(--accent-danger-border);
+  color: var(--accent-danger);
+}
+
+.notification-content {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+}
+
+.close-btn {
+  background: none;
+  border: none;
+  color: inherit;
+  cursor: pointer;
+  font-size: 16px;
+  padding: 0;
+  width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0.7;
+  transition: opacity 0.2s ease;
+}
+
+.close-btn:hover {
+  opacity: 1;
+}
+
+.update-dialog {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: var(--bg-modal-overlay);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2000;
+}
+
+.dialog-content {
+  background-color: var(--bg-primary);
+  border: 1px solid var(--border-2);
+  border-radius: var(--radius-lg);
+  padding: 24px;
+  max-width: 400px;
+  width: 90%;
+  text-align: center;
+}
+
+.dialog-content h3 {
+  margin: 0 0 16px 0;
+  color: var(--text-primary);
+  font-size: 1.2em;
+}
+
+.dialog-content p {
+  margin: 0 0 20px 0;
+  color: var(--text-secondary);
+  line-height: 1.4;
+}
+
+.dialog-buttons {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+}
+
+.dialog-buttons button {
+  padding: 8px 16px;
+  border: none;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 0.9em;
+  transition: all 0.2s ease;
+}
+
+.dialog-buttons button.primary {
+  background-color: var(--accent-success);
+  color: white;
+}
+
+.dialog-buttons button.primary:hover {
+  background-color: var(--accent-success-bg-hover);
+}
+
+.dialog-buttons button:not(.primary) {
+  background-color: var(--surface-2);
+  color: var(--text-secondary);
+  border: 1px solid var(--border-2);
+}
+
+.dialog-buttons button:not(.primary):hover {
+  background-color: var(--surface-3);
+}
+
+@keyframes slideIn {
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}

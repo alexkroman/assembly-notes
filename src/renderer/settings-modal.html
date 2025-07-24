@@ -1,0 +1,51 @@
+<div class="settings-modal" id="settingsModal">
+  <div class="settings-dialog">
+    <div class="settings-header">
+      <h3 class="settings-title">Settings</h3>
+      <button class="close-btn" id="closeBtn" type="button">×</button>
+    </div>
+
+    <div class="settings-content">
+      <div class="form-group">
+        <label for="assemblyaiKey">AssemblyAI API Key</label>
+        <input
+          type="password"
+          id="assemblyaiKey"
+          placeholder="Enter your AssemblyAI API key"
+        />
+      </div>
+
+      <div class="form-group">
+        <label for="slackToken">Slack Bot Token</label>
+        <input
+          type="password"
+          id="slackToken"
+          placeholder="Enter your Slack bot token"
+        />
+      </div>
+
+      <div class="form-group">
+        <label for="slackChannel">Slack Channel</label>
+        <input
+          type="text"
+          id="slackChannel"
+          placeholder="Enter Slack channel name"
+        />
+      </div>
+
+      <div class="form-group">
+        <label for="summaryPrompt">Summary Prompt</label>
+        <textarea
+          id="summaryPrompt"
+          placeholder="Enter custom summarization prompt"
+        ></textarea>
+      </div>
+
+      <div class="settings-actions">
+        <div class="controls">
+          <button id="saveBtn" type="button">Save</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

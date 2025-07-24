@@ -1,0 +1,89 @@
+{
+  "name": "assembly-notes",
+  "productName": "Assembly Notes",
+  "description": "Assembly Notes",
+  "keywords": [],
+  "main": "./src/main/main.js",
+  "version": "1.0.7",
+  "author": "Alex Kroman <alex@alexkroman.com>",
+  "scripts": {
+    "start": "electron .",
+    "build": "npm run build-icons && electron-builder --mac --win --linux",
+    "build:mac": "npm run build-icons && electron-builder --mac",
+    "build:win": "npm run build-icons && electron-builder --win",
+    "build:linux": "npm run build-icons && electron-builder --linux",
+    "build-icons": "electron-icon-builder --input=./icon.png --output=./build",
+    "postinstall": "electron-builder install-app-deps",
+    "dist": "npm run build",
+    "pack": "electron-builder --dir",
+    "lint": "eslint .",
+    "format": "prettier --write .",
+    "release:patch": "npm version patch && git push origin main --tags",
+    "release:minor": "npm version minor && git push origin main --tags",
+    "release:major": "npm version major && git push origin main --tags"
+  },
+  "dependencies": {
+    "@slack/web-api": "^7.9.3",
+    "assemblyai": "^4.14.0",
+    "electron-audio-loopback": "^1.0.5",
+    "electron-log": "^4.4.8",
+    "electron-store": "^8.2.0",
+    "electron-updater": "^6.6.2"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.15.0",
+    "electron": "35.0.0",
+    "electron-builder": "^25.1.8",
+    "electron-icon-builder": "^2.0.1",
+    "eslint": "^9.15.0",
+    "globals": "^15.12.0",
+    "prettier": "^3.4.2"
+  },
+  "build": {
+    "appId": "com.alexkroman.assembly-notes",
+    "productName": "Assembly Notes",
+    "publish": {
+      "provider": "github"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true
+    },
+    "directories": {
+      "output": "dist",
+      "buildResources": "build"
+    },
+    "files": [
+      "src/**/*",
+      "node_modules/**/*"
+    ],
+    "asarUnpack": [
+      "node_modules/electron-audio-loopback/**/*",
+      "node_modules/**/*.node"
+    ],
+    "extraMetadata": {
+      "main": "src/main/main.js"
+    },
+    "npmRebuild": false,
+    "nodeGypRebuild": false,
+    "asar": true,
+    "mac": {
+      "category": "public.app-category.productivity",
+      "target": "dmg",
+      "icon": "build/icons/mac/icon.icns",
+      "hardenedRuntime": true,
+      "gatekeeperAssess": false,
+      "entitlements": "build/entitlements.mac.plist",
+      "entitlementsInherit": "build/entitlements.mac.plist"
+    },
+    "win": {
+      "target": "nsis",
+      "icon": "build/icons/win/icon.ico"
+    },
+    "linux": {
+      "target": "AppImage",
+      "icon": "build/icons/png",
+      "category": "Office"
+    }
+  }
+}
