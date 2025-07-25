@@ -145,12 +145,12 @@ jobs:
           EOF
           fi
 
-          # Generate latest-windows.yml for Windows
+          # Generate latest.yml for Windows
           if [ -f artifacts/dist-windows-latest/*.exe ]; then
             EXE_FILE=$(ls artifacts/dist-windows-latest/*.exe | head -1)
             EXE_SIZE=$(stat -c%s "$EXE_FILE" 2>/dev/null || stat -f%z "$EXE_FILE")
             EXE_NAME=$(basename "$EXE_FILE")
-            cat > artifacts/dist-windows-latest/latest-windows.yml << EOF
+            cat > artifacts/dist-windows-latest/latest.yml << EOF
           version: ${GITHUB_REF#refs/tags/v}
           files:
             - url: $EXE_NAME
