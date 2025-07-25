@@ -7,3 +7,5 @@ export const autoUpdater = {
   downloadUpdate: jest.fn().mockResolvedValue(undefined),
   logger: null,
 };
+
+export default { autoUpdater };

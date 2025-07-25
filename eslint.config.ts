@@ -13,42 +13,27 @@ export default tseslint.config(
       'coverage/**',
       '.vite/**',
       '.electron-vite/**',
+      '__mocks__/**',
+      '__tests__/**',
     ],
   },
 
   // 2. Base JavaScript configuration for all files
   js.configs.recommended,
 
-  // 3. JavaScript mock files - basic linting only
-  {
-    files: ['__mocks__/**/*.js'],
-    languageOptions: {
-      globals: {
-        ...globals.jest,
-        ...globals.node,
-      },
-    },
-    rules: {
-      // Basic JavaScript linting only
-      'prefer-const': 'error',
-      'no-var': 'error',
-      'no-console': ['error', { allow: ['warn', 'error'] }],
-    },
-  },
-
-  // 4. TypeScript files with strict type checking
+  // 3. TypeScript files with strict type checking
   ...tseslint.configs.strictTypeChecked.map(config => ({
     ...config,
-    files: ['**/*.ts', '**/*.tsx'],
+    files: ['src/**/*.ts', 'src/**/*.tsx'],
   })),
   ...tseslint.configs.stylisticTypeChecked.map(config => ({
     ...config,
-    files: ['**/*.ts', '**/*.tsx'],
+    files: ['src/**/*.ts', 'src/**/*.tsx'],
   })),
 
-  // 5. All TypeScript files with strict type checking
+  // 4. All TypeScript files with strict type checking
   {
-    files: ['**/*.ts', '**/*.tsx'],
+    files: ['src/**/*.ts', 'src/**/*.tsx'],
     languageOptions: {
       parserOptions: {
         projectService: true,
@@ -88,26 +73,6 @@ export default tseslint.config(
         typescript: true,
         node: true,
       },
-    },
-  },
-
-  // 6. Test files - relax some rules but keep strict type checking
-  {
-    files: [
-      '__tests__/**/*.ts',
-      '__mocks__/**/*.ts',
-      '**/*.test.ts',
-      '**/*.spec.ts',
-    ],
-    languageOptions: {
-      globals: {
-        ...globals.jest,
-      },
-    },
-    rules: {
-      // Allow any in test files for mocking
-      '@typescript-eslint/no-explicit-any': 'off',
-      '@typescript-eslint/unbound-method': 'off',
     },
   },
 
