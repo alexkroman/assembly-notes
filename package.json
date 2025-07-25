@@ -87,9 +87,16 @@
       "forceCodeSigning": false
     },
     "linux": {
-      "target": "AppImage",
+      "target": [
+        {
+          "target": "AppImage",
+          "arch": ["x64"]
+        }
+      ],
       "icon": "build/icons/png",
-      "category": "Office"
+      "category": "Office",
+      "synopsis": "Real-time transcription and meeting notes",
+      "description": "Assembly Notes provides real-time transcription of microphone and system audio with AI-generated meeting summaries posted to Slack."
     }
   }
 }

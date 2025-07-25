@@ -86,9 +86,15 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Install Linux dependencies
+        if: matrix.os == 'ubuntu-latest'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libfuse2 fuse3 libfuse3-3
+
       - name: Build Electron app (Linux)
         if: matrix.os == 'ubuntu-latest'
-        run: npm run build-icons && npx electron-builder --linux --publish never
+        run: npm run build:linux
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
