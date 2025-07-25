@@ -40,7 +40,7 @@
     "electron-builder": "^25.1.8",
     "electron-icon-builder": "^2.0.1",
     "eslint": "^9.15.0",
-    "globals": "^15.12.0",
+    "globals": "^16.3.0",
     "jest": "^30.0.5",
     "jest-environment-jsdom": "^30.0.5",
     "jest-environment-node": "^30.0.5",
