@@ -1,27 +1,5 @@
 import { jest } from '@jest/globals';
 
-jest.mock('assemblyai');
-jest.mock('../src/main/logger', () => ({
-  info: jest.fn(),
-  warn: jest.fn(),
-  error: jest.fn(),
-  debug: jest.fn(),
-}));
-
-interface MockTranscriber {
-  connect: jest.MockedFunction<() => Promise<void>>;
-  close: jest.MockedFunction<() => Promise<void>>;
-  sendAudio: jest.MockedFunction<(audio: Buffer) => void>;
-  on: jest.MockedFunction<
-    (event: string, handler: (...args: any[]) => void) => void
-  >;
-}
-
-interface MockAssemblyAI {
-  realtime: {
-    transcriber: jest.MockedFunction<() => MockTranscriber>;
-  };
-}
 
 interface TranscriptionServiceInstance {
   initialize: (
@@ -54,34 +32,33 @@ interface TranscriptionServiceInstance {
 
 describe('TranscriptionService', () => {
   let transcriptionService: TranscriptionServiceInstance;
-  let mockAssemblyAI: MockAssemblyAI;
-  let mockTranscriber: MockTranscriber;
+  let mockAssemblyAI: any;
+  let mockTranscriber: any;
 
   beforeEach(async () => {
     jest.clearAllMocks();
 
-    const { AssemblyAI } = await import('assemblyai');
-    const TranscriptionService = await import(
-      '../src/main/transcriptionService'
-    );
-
-    // Mock the transcriber
+    // Create mock transcriber
     mockTranscriber = {
       connect: jest.fn().mockResolvedValue(undefined),
       close: jest.fn().mockResolvedValue(undefined),
       sendAudio: jest.fn(),
       on: jest.fn(),
-    } as any;
+    };
 
-    // Mock AssemblyAI class
+    // Create mock AssemblyAI instance
     mockAssemblyAI = {
       realtime: {
         transcriber: jest.fn().mockReturnValue(mockTranscriber),
       },
     };
 
-    (AssemblyAI as jest.MockedClass<typeof AssemblyAI>).mockImplementation(
-      () => mockAssemblyAI as any
+    // Mock the AssemblyAI constructor
+    const { AssemblyAI } = await import('assemblyai');
+    (AssemblyAI as jest.MockedClass<any>).mockImplementation(() => mockAssemblyAI);
+
+    const TranscriptionService = await import(
+      '../../src/main/transcriptionService'
     );
 
     transcriptionService = new (TranscriptionService.default as any)();
@@ -96,7 +73,7 @@ describe('TranscriptionService', () => {
   describe('initialize', () => {
     it('should initialize with API key and default keep-alive settings', async () => {
       const { AssemblyAI } = await import('assemblyai');
-
+      
       transcriptionService.initialize('test-api-key');
 
       expect(AssemblyAI).toHaveBeenCalledWith({ apiKey: 'test-api-key' });
@@ -149,7 +126,7 @@ describe('TranscriptionService', () => {
 
     it('should throw error if not initialized', async () => {
       const { default: TranscriptionService } = await import(
-        '../src/main/transcriptionService'
+        '../../src/main/transcriptionService'
       );
       const uninitializedService = new TranscriptionService();
 

@@ -3,50 +3,17 @@
  */
 
 import { jest } from '@jest/globals';
-
-interface MockTrack {
-  stop: jest.MockedFunction<() => void>;
-}
-
-interface MockStream {
-  getTracks: jest.MockedFunction<() => MockTrack[]>;
-}
-
-interface MockDelayNode {
-  delayTime: {
-    setValueAtTime: jest.MockedFunction<(value: number, time: number) => void>;
-  };
-  connect: jest.MockedFunction<(destination: any) => void>;
-}
-
-interface MockGainNode {
-  gain: {
-    setValueAtTime: jest.MockedFunction<(value: number, time: number) => void>;
-  };
-  connect: jest.MockedFunction<(destination: any) => void>;
-}
-
-interface MockMediaStreamSource {
-  connect: jest.MockedFunction<(destination: any) => void>;
-  disconnect: jest.MockedFunction<() => void>;
-}
-
-interface MockMediaStreamDestination {
-  stream: MockStream;
-}
-
-interface MockAudioContext {
-  currentTime: number;
-  createMediaStreamDestination: jest.MockedFunction<
-    () => MockMediaStreamDestination
-  >;
-  createMediaStreamSource: jest.MockedFunction<
-    (stream: MediaStream) => MockMediaStreamSource
-  >;
-  createDelay: jest.MockedFunction<(maxDelay: number) => MockDelayNode>;
-  createGain: jest.MockedFunction<() => MockGainNode>;
-  close: jest.MockedFunction<() => Promise<void>>;
-}
+import {
+  AudioContext,
+  MediaStream,
+  mockAudioContext,
+  mockStream,
+  mockTrack,
+  mockDelayNode,
+  mockGainNode,
+  mockMediaStreamSource,
+  mockMediaStreamDestination
+} from '../../__mocks__/audio-context';
 
 declare global {
   var MediaStream: jest.MockedClass<typeof globalThis.MediaStream>;
@@ -67,74 +34,22 @@ declare global {
 
 describe('EchoCancellation Module', () => {
   let EchoCancellation: Window['EchoCancellation'];
-  let mockAudioContext: MockAudioContext;
-  let mockMediaStreamDestination: MockMediaStreamDestination;
-  let mockMediaStreamSource: MockMediaStreamSource;
-  let mockDelayNode: MockDelayNode;
-  let mockGainNode: MockGainNode;
-  let mockStream: MockStream;
-  let mockTrack: MockTrack;
 
   beforeEach(async () => {
-    // Mock MediaStream constructor
-    global.MediaStream = jest.fn().mockImplementation(() => ({}));
-
-    // Mock MediaStream and MediaStreamTrack
-    mockTrack = {
-      stop: jest.fn(),
-    };
-
-    mockStream = {
-      getTracks: jest.fn().mockReturnValue([mockTrack]),
-    };
-
-    // Mock audio nodes
-    mockDelayNode = {
-      delayTime: {
-        setValueAtTime: jest.fn(),
-      },
-      connect: jest.fn(),
-    };
-
-    mockGainNode = {
-      gain: {
-        setValueAtTime: jest.fn(),
-      },
-      connect: jest.fn(),
-    };
-
-    mockMediaStreamSource = {
-      connect: jest.fn(),
-      disconnect: jest.fn(),
-    };
-
-    mockMediaStreamDestination = {
-      stream: mockStream,
-    };
-
-    // Mock AudioContext
-    mockAudioContext = {
-      currentTime: 0,
-      createMediaStreamDestination: jest
-        .fn()
-        .mockReturnValue(mockMediaStreamDestination),
-      createMediaStreamSource: jest.fn().mockReturnValue(mockMediaStreamSource),
-      createDelay: jest.fn().mockReturnValue(mockDelayNode),
-      createGain: jest.fn().mockReturnValue(mockGainNode),
-      close: jest.fn().mockResolvedValue(undefined),
-    } as any;
-
-    global.AudioContext = jest
-      .fn()
-      .mockImplementation(() => mockAudioContext) as any;
+    // Set up global mocks
+    global.MediaStream = MediaStream as any;
+    global.AudioContext = AudioContext as any;
     global.window.AudioContext = global.AudioContext;
     global.window.webkitAudioContext = undefined;
+
+    // Clear all mocks
+    jest.clearAllMocks();
 
     // Reset modules
     jest.resetModules();
 
     // Load the module
-    await import('../src/renderer/echo-cancellation');
+    await import('../../src/renderer/echo-cancellation');
     EchoCancellation = window.EchoCancellation;
   });
 
@@ -244,7 +159,7 @@ describe('EchoCancellation Module', () => {
 
       // Reset modules to reload with new mocks
       jest.resetModules();
-      await import('../src/renderer/echo-cancellation');
+      await import('../../src/renderer/echo-cancellation');
       EchoCancellation = window.EchoCancellation;
 
       const micStream = new MediaStream();
@@ -355,7 +270,7 @@ describe('EchoCancellation Module', () => {
 
       // Reset modules to reload with new mocks
       jest.resetModules();
-      await import('../src/renderer/echo-cancellation');
+      await import('../../src/renderer/echo-cancellation');
       EchoCancellation = window.EchoCancellation;
 
       const micStream = new MediaStream();

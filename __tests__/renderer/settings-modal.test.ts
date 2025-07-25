@@ -69,7 +69,7 @@ describe('SettingsModal Module', () => {
     jest.resetModules();
 
     // Load the module
-    await import('../src/renderer/settings-modal');
+    await import('../../src/renderer/settings-modal');
     SettingsModal = window.SettingsModal;
   });
 

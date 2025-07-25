@@ -3,25 +3,8 @@
  */
 
 import { jest } from '@jest/globals';
-
-interface MockElectronAPI {
-  onUpdateAvailable: jest.MockedFunction<
-    (callback: (updateInfo: any) => void) => void
-  >;
-  onDownloadProgress: jest.MockedFunction<
-    (callback: (progress: any) => void) => void
-  >;
-  onUpdateDownloaded: jest.MockedFunction<
-    (callback: (updateInfo: any) => void) => void
-  >;
-  installUpdate: jest.MockedFunction<() => void>;
-  quitAndInstall: jest.MockedFunction<() => void>;
-}
-
-interface MockLogger {
-  info: jest.MockedFunction<(message: string, ...args: any[]) => void>;
-  error: jest.MockedFunction<(message: string, ...args: any[]) => void>;
-}
+import { mockElectronAPI } from '../../__mocks__/electron-api';
+import mockLogger from '../../__mocks__/logger';
 
 declare global {
   interface Window {
@@ -40,8 +23,6 @@ declare global {
 }
 
 describe('AutoUpdaterUI Module', () => {
-  let mockElectronAPI: MockElectronAPI;
-  let mockLogger: MockLogger;
   let AutoUpdaterUI: Window['AutoUpdaterUI'];
 
   beforeEach(async () => {
@@ -51,31 +32,19 @@ describe('AutoUpdaterUI Module', () => {
     // Setup DOM globals
     global.window = window;
 
-    // Mock electronAPI
-    mockElectronAPI = {
-      onUpdateAvailable: jest.fn(),
-      onDownloadProgress: jest.fn(),
-      onUpdateDownloaded: jest.fn(),
-      installUpdate: jest.fn(),
-      quitAndInstall: jest.fn(),
-    };
-
-    // Mock logger
-    mockLogger = {
-      info: jest.fn(),
-      error: jest.fn(),
-    };
-
     // Set up window globals
     window.electronAPI = mockElectronAPI;
     window.logger = mockLogger;
     window.currentUpdateDialog = null;
 
+    // Clear all mocks
+    jest.clearAllMocks();
+
     // Reset modules to ensure fresh load for coverage
     jest.resetModules();
 
     // Load the module directly (this will execute the IIFE and assign to window.AutoUpdaterUI)
-    await import('../src/renderer/auto-updater-ui');
+    await import('../../src/renderer/auto-updater-ui');
     AutoUpdaterUI = window.AutoUpdaterUI;
   });
 

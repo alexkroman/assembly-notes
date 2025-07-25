@@ -3,6 +3,10 @@
  */
 
 import { jest } from '@jest/globals';
+import {
+  AudioWorkletProcessor,
+  registerProcessor
+} from '../../__mocks__/audio-context';
 
 interface MockPort {
   onmessage: ((event: { data: { type: string; value: any } }) => void) | null;
@@ -20,19 +24,9 @@ declare global {
   var registerProcessor: any;
 }
 
-// Mock AudioWorkletProcessor since it's not available in Node.js
-global.AudioWorkletProcessor = class {
-  port: MockPort;
-
-  constructor() {
-    this.port = {
-      onmessage: null,
-      postMessage: jest.fn(),
-    };
-  }
-} as any;
-
-global.registerProcessor = jest.fn();
+// Set up global mocks
+global.AudioWorkletProcessor = AudioWorkletProcessor;
+global.registerProcessor = registerProcessor;
 
 describe('AudioProcessor', () => {
   let AudioProcessor: new () => MockAudioWorkletProcessor;
@@ -43,7 +37,7 @@ describe('AudioProcessor', () => {
     jest.resetModules();
 
     // Require the module after setting up mocks
-    await import('../src/renderer/audio-processor');
+    await import('../../src/renderer/audio-processor');
 
     // Get the AudioProcessor class from the registerProcessor call
     const registerProcessorCall = (

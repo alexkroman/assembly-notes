@@ -27,3 +27,10 @@ export const dialog = {
   showErrorBox: jest.fn(),
   showMessageBox: jest.fn(),
 };
+
+export default {
+  app,
+  ipcMain,
+  BrowserWindow,
+  dialog,
+};

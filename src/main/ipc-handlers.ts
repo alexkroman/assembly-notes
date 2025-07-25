@@ -63,9 +63,9 @@ function setupIpcHandlers(mainWindow: BrowserWindow): void {
   );
 
   // Auto-updater IPC handlers
-  ipcMain.handle('install-update', (): void => {
+  ipcMain.handle('install-update', async (): Promise<void> => {
     // Download the update (it will trigger download-progress and update-downloaded events)
-    const { autoUpdater } = require('electron-updater');
+    const { autoUpdater } = await import('electron-updater');
     autoUpdater.downloadUpdate();
   });
 

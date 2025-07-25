@@ -3,13 +3,20 @@
  */
 
 import { jest } from '@jest/globals';
+import {
+  mockElectronAPI
+} from '../../__mocks__/electron-api';
+import {
+  AudioContext,
+  AudioWorkletNode,
+  mockAudioContext,
+  mockWorkletNode,
+  mockMediaStreamSource
+} from '../../__mocks__/audio-context';
 
 declare global {
   interface Window {
-    electronAPI: {
-      sendMicrophoneAudio: jest.MockedFunction<(data: Int16Array) => void>;
-      sendSystemAudio: jest.MockedFunction<(data: Int16Array) => void>;
-    };
+    electronAPI: typeof mockElectronAPI;
     AudioProcessing: {
       startAudioProcessing: (
         micStream: MediaStream,
@@ -24,79 +31,23 @@ declare global {
   var AudioWorkletNode: jest.MockedClass<typeof globalThis.AudioWorkletNode>;
 }
 
-interface MockAudioWorkletNode {
-  port: {
-    onmessage:
-      | ((event: { data: { type: string; data: Int16Array } }) => void)
-      | null;
-    postMessage: jest.MockedFunction<(message: any) => void>;
-  };
-  connect: jest.MockedFunction<(destination: any) => void>;
-  disconnect: jest.MockedFunction<() => void>;
-}
-
-interface MockMediaStreamSource {
-  connect: jest.MockedFunction<(destination: any) => void>;
-}
-
-interface MockAudioContext {
-  sampleRate: number;
-  destination: any;
-  audioWorklet: {
-    addModule: jest.MockedFunction<(url: string) => Promise<void>>;
-  };
-  createMediaStreamSource: jest.MockedFunction<
-    (stream: MediaStream) => MockMediaStreamSource
-  >;
-  close: jest.MockedFunction<() => Promise<void>>;
-}
 
 describe('AudioProcessing Module', () => {
   let AudioProcessing: Window['AudioProcessing'];
-  let mockAudioContext: MockAudioContext;
-  let mockWorkletNode: MockAudioWorkletNode;
-  let mockMediaStreamSource: MockMediaStreamSource;
 
   beforeEach(async () => {
-    // Mock AudioContext
-    mockWorkletNode = {
-      port: {
-        onmessage: null,
-        postMessage: jest.fn(),
-      },
-      connect: jest.fn(),
-      disconnect: jest.fn(),
-    };
-
-    mockMediaStreamSource = {
-      connect: jest.fn(),
-    };
-
-    mockAudioContext = {
-      sampleRate: 16000,
-      destination: {},
-      audioWorklet: {
-        addModule: jest.fn().mockResolvedValue(undefined),
-      },
-      createMediaStreamSource: jest.fn().mockReturnValue(mockMediaStreamSource),
-      close: jest.fn().mockResolvedValue(undefined),
-    } as any;
-
-    global.AudioContext = jest
-      .fn()
-      .mockImplementation(() => mockAudioContext) as any;
-    global.AudioWorkletNode = jest
-      .fn()
-      .mockImplementation(() => mockWorkletNode) as any;
+    // Set up global mocks
+    global.AudioContext = AudioContext as any;
+    global.AudioWorkletNode = AudioWorkletNode as any;
 
     // Mock window.electronAPI
-    global.window.electronAPI = {
-      sendMicrophoneAudio: jest.fn(),
-      sendSystemAudio: jest.fn(),
-    } as any;
+    global.window.electronAPI = mockElectronAPI;
+
+    // Clear all mocks
+    jest.clearAllMocks();
 
     // Load the module
-    await import('../src/renderer/audio-processing');
+    await import('../../src/renderer/audio-processing');
     AudioProcessing = window.AudioProcessing;
   });
 
