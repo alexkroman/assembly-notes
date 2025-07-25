@@ -55,17 +55,17 @@ contextBridge.exposeInMainWorld('electronAPI', {
 
   // Event listeners
   onTranscript: (callback: (data: any) => void) =>
-    ipcRenderer.on('transcript', (event, data) => callback(data)),
+    ipcRenderer.on('transcript', (_event, data) => callback(data)),
   onConnectionStatus: (callback: (data: any) => void) =>
-    ipcRenderer.on('connection-status', (event, data) => callback(data)),
+    ipcRenderer.on('connection-status', (_event, data) => callback(data)),
   onError: (callback: (message: string) => void) =>
-    ipcRenderer.on('error', (event, message) => callback(message)),
+    ipcRenderer.on('error', (_event, message) => callback(message)),
   onStartAudioCapture: (callback: () => void) =>
     ipcRenderer.on('start-audio-capture', () => callback()),
   onStopAudioCapture: (callback: () => void) =>
     ipcRenderer.on('stop-audio-capture', () => callback()),
   onRecordingStopped: (callback: (data: any) => void) =>
-    ipcRenderer.on('recording-stopped', (event, data) => callback(data)),
+    ipcRenderer.on('recording-stopped', (_event, data) => callback(data)),
 
   // Remove event listeners
   removeAllListeners: (channel: string) =>
@@ -81,13 +81,13 @@ contextBridge.exposeInMainWorld('electronAPI', {
   quitAndInstall: () => ipcRenderer.invoke('quit-and-install'),
   checkForUpdates: () => ipcRenderer.invoke('check-for-updates'),
   onUpdateAvailable: (callback: (info: any) => void) =>
-    ipcRenderer.on('update-available', (event, info) => callback(info)),
+    ipcRenderer.on('update-available', (_event, info) => callback(info)),
   onDownloadProgress: (callback: (progress: any) => void) =>
-    ipcRenderer.on('download-progress', (event, progress) =>
+    ipcRenderer.on('download-progress', (_event, progress) =>
       callback(progress)
     ),
   onUpdateDownloaded: (callback: (info: any) => void) =>
-    ipcRenderer.on('update-downloaded', (event, info) => callback(info)),
+    ipcRenderer.on('update-downloaded', (_event, info) => callback(info)),
 });
 
 // Expose logger to renderer (sends to main process)

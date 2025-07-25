@@ -159,6 +159,10 @@ class TranscriptionService extends EventEmitter {
         `Creating ${streamType} transcriber (attempt ${state.retryCount + 1})...`
       );
 
+      if (!this.aai) {
+        throw new Error('AssemblyAI instance not initialized');
+      }
+      
       const transcriber = this.aai.realtime.transcriber({
         sampleRate: 16000,
       });
@@ -235,7 +239,7 @@ class TranscriptionService extends EventEmitter {
       });
     });
 
-    transcriber.on('error', async (error) => {
+    transcriber.on('error', async (error: any) => {
       log.error(`${streamType} transcription error:`, error);
 
       if (state.retryCount < this.retryConfig.maxRetries && this.isActive) {
@@ -271,7 +275,7 @@ class TranscriptionService extends EventEmitter {
       }
     });
 
-    transcriber.on('transcript', (transcript) => {
+    transcriber.on('transcript', (transcript: any) => {
       if (!transcript.text) return;
 
       this.emit('transcript', {
@@ -292,7 +296,7 @@ class TranscriptionService extends EventEmitter {
     this.isActive = true;
 
     // Reset connection state
-    Object.keys(this.connectionState).forEach((stream) => {
+    (Object.keys(this.connectionState) as Array<keyof typeof this.connectionState>).forEach((stream) => {
       this.connectionState[stream].isConnecting = false;
       this.connectionState[stream].isConnected = false;
       this.connectionState[stream].retryCount = 0;
@@ -316,7 +320,7 @@ class TranscriptionService extends EventEmitter {
     this.stopKeepAlive();
 
     // Clear any pending retry timeouts
-    Object.keys(this.connectionState).forEach((stream) => {
+    (Object.keys(this.connectionState) as Array<keyof typeof this.connectionState>).forEach((stream) => {
       if (this.connectionState[stream].retryTimeout) {
         clearTimeout(this.connectionState[stream].retryTimeout);
         this.connectionState[stream].retryTimeout = null;

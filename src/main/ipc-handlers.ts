@@ -17,7 +17,7 @@ import log from './logger.js';
 
 function setupIpcHandlers(mainWindow: BrowserWindow): void {
   // Handle log messages from renderer
-  ipcMain.on('log', (event: IpcMainEvent, level: string, ...args: any[]) => {
+  ipcMain.on('log', (_event: IpcMainEvent, level: string, ...args: any[]) => {
     const message = args
       .map((arg) =>
         typeof arg === 'object' ? JSON.stringify(arg) : String(arg)
@@ -29,14 +29,14 @@ function setupIpcHandlers(mainWindow: BrowserWindow): void {
 
   ipcMain.on(
     'microphone-audio-data',
-    (event: IpcMainEvent, audioData: ArrayBuffer) => {
+    (_event: IpcMainEvent, audioData: ArrayBuffer) => {
       sendMicrophoneAudio(audioData);
     }
   );
 
   ipcMain.on(
     'system-audio-data',
-    (event: IpcMainEvent, audioData: ArrayBuffer) => {
+    (_event: IpcMainEvent, audioData: ArrayBuffer) => {
       sendSystemAudio(audioData);
     }
   );
@@ -55,7 +55,7 @@ function setupIpcHandlers(mainWindow: BrowserWindow): void {
 
   ipcMain.handle(
     'save-settings',
-    (event: IpcMainInvokeEvent, newSettings: any): boolean => {
+    (_event: IpcMainInvokeEvent, newSettings: any): boolean => {
       saveSettingsToFile(newSettings);
       resetAai();
       return true;
