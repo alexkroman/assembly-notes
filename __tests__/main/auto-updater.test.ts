@@ -13,8 +13,6 @@ describe('Auto-updater', () => {
   let initAutoUpdater: any;
   let checkForUpdatesAndNotify: any;
   let quitAndInstall: any;
-  let startUpdateCheck: any;
-  let mockLog: any;
 
   beforeEach(async () => {
     jest.clearAllMocks();
@@ -30,24 +28,22 @@ describe('Auto-updater', () => {
 
     // Import modules
     const autoUpdaterModule = await import('../../src/main/auto-updater.ts');
-    mockLog = (await import('../../src/main/logger.js')).default;
     
     initAutoUpdater = autoUpdaterModule.initAutoUpdater;
     checkForUpdatesAndNotify = autoUpdaterModule.checkForUpdatesAndNotify;
     quitAndInstall = autoUpdaterModule.quitAndInstall;
-    startUpdateCheck = autoUpdaterModule.startUpdateCheck;
   });
 
   describe('initAutoUpdater', () => {
     it('should initialize auto-updater with window reference', () => {
-      initAutoUpdater(mockMainWindow as any);
+      initAutoUpdater(mockMainWindow);
 
       expect(autoUpdater.logger).toBeTruthy();
       expect(autoUpdater.on).toHaveBeenCalledTimes(6);
     });
 
     it('should set up all event handlers', () => {
-      initAutoUpdater(mockMainWindow as any);
+      initAutoUpdater(mockMainWindow);
 
       expect(autoUpdater.on).toHaveBeenCalledWith('checking-for-update', expect.any(Function));
       expect(autoUpdater.on).toHaveBeenCalledWith('update-available', expect.any(Function));
