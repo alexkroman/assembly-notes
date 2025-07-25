@@ -10,6 +10,14 @@ let aai = null;
 let microphoneTranscript = '';
 let systemAudioTranscript = '';
 
+// Keep-alive configuration (will be updated from settings)
+let KEEP_ALIVE_CONFIG = {
+  intervalMs: 30000, // Send keep-alive every 30 seconds
+  enabled: true,
+};
+
+let keepAliveInterval = null;
+
 // Retry configuration
 const RETRY_CONFIG = {
   maxRetries: 5,
@@ -38,7 +46,7 @@ let isRecordingActive = false;
 let mainWindowRef = null;
 
 const DEFAULT_SUMMARY_PROMPT =
-  'Please provide a concise summary of this transcription, highlighting key points, decisions made, and action items discussed.';
+  'Summarize the key decisions and action items from the following transcript:';
 
 function calculateRetryDelay(retryCount) {
   const delay = Math.min(
@@ -46,6 +54,45 @@ function calculateRetryDelay(retryCount) {
     RETRY_CONFIG.maxDelay
   );
   return delay;
+}
+
+function startKeepAlive() {
+  if (keepAliveInterval) {
+    clearInterval(keepAliveInterval);
+  }
+  
+  keepAliveInterval = setInterval(() => {
+    // Send a small buffer of silence (16000 Hz * 0.1 seconds = 1600 samples)
+    const silenceBuffer = Buffer.alloc(1600 * 2); // 2 bytes per sample for 16-bit
+    
+    if (microphoneTranscriber && connectionState.microphone.isConnected) {
+      try {
+        microphoneTranscriber.sendAudio(silenceBuffer);
+        log.debug('Sent keep-alive silence to microphone transcriber');
+      } catch (error) {
+        log.error('Error sending keep-alive audio to microphone:', error);
+      }
+    }
+    
+    if (systemAudioTranscriber && connectionState.system.isConnected) {
+      try {
+        systemAudioTranscriber.sendAudio(silenceBuffer);
+        log.debug('Sent keep-alive silence to system audio transcriber');
+      } catch (error) {
+        log.error('Error sending keep-alive audio to system:', error);
+      }
+    }
+  }, KEEP_ALIVE_CONFIG.intervalMs);
+  
+  log.info(`Keep-alive started for both transcribers (${KEEP_ALIVE_CONFIG.intervalMs}ms interval)`);
+}
+
+function stopKeepAlive() {
+  if (keepAliveInterval) {
+    clearInterval(keepAliveInterval);
+    keepAliveInterval = null;
+    log.info('Keep-alive stopped');
+  }
 }
 
 async function createTranscriberWithRetry(streamType) {
@@ -79,6 +126,13 @@ async function createTranscriberWithRetry(streamType) {
     state.isConnected = true;
     
     log.info(`${streamType} transcriber connected successfully`);
+    
+    // Start keep-alive when both transcribers are connected
+    if (KEEP_ALIVE_CONFIG.enabled && 
+        connectionState.microphone.isConnected && 
+        connectionState.system.isConnected) {
+      startKeepAlive();
+    }
   } catch (error) {
     log.error(`Failed to connect ${streamType} transcriber:`, error);
     state.isConnecting = false;
@@ -224,6 +278,10 @@ async function startTranscription(mainWindow) {
   }
 
   try {
+    // Update keep-alive config from settings
+    KEEP_ALIVE_CONFIG.enabled = settings.keepAliveEnabled ?? true;
+    KEEP_ALIVE_CONFIG.intervalMs = (settings.keepAliveIntervalSeconds ?? 30) * 1000;
+    
     aai = new AssemblyAI({ apiKey: assemblyAiApiKey });
     mainWindowRef = mainWindow;
     isRecordingActive = true;
@@ -262,6 +320,9 @@ async function startTranscription(mainWindow) {
 async function stopTranscription(mainWindow) {
   isRecordingActive = false;
   mainWindow.webContents.send('stop-audio-capture');
+
+  // Stop keep-alive
+  stopKeepAlive();
 
   // Clear any pending retry timeouts
   Object.keys(connectionState).forEach(stream => {

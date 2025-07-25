@@ -7,6 +7,8 @@ const store = new Store({
     slackToken: '',
     slackChannel: '',
     customPrompt: '',
+    keepAliveEnabled: true,
+    keepAliveIntervalSeconds: 30,
   },
   schema: {
     assemblyaiKey: {
@@ -24,6 +26,16 @@ const store = new Store({
     customPrompt: {
       type: 'string',
       default: '',
+    },
+    keepAliveEnabled: {
+      type: 'boolean',
+      default: true,
+    },
+    keepAliveIntervalSeconds: {
+      type: 'number',
+      default: 30,
+      minimum: 10,
+      maximum: 300,
     },
   },
 });

@@ -43,8 +43,8 @@ window.electronAPI.onTranscript((data) => {
 
   if (!text) return;
 
-  const timestamp = new Date().toLocaleTimeString();
-  const prefix = partial ? '>> ' : `[${timestamp}] `;
+  const timestamp = new Date().toLocaleTimeString().replace(/\s?(AM|PM)/i, (match, ampm) => ampm.toLowerCase().charAt(0));
+  const prefix = partial ? '>> ' : '';
 
   if (partial) {
     let partialElement = transcriptionResults.querySelector('.partial');
@@ -61,7 +61,16 @@ window.electronAPI.onTranscript((data) => {
     }
 
     const transcriptElement = document.createElement('div');
-    transcriptElement.textContent = prefix + text;
+    if (prefix) {
+      transcriptElement.textContent = prefix + text;
+    } else {
+      const timestampSpan = document.createElement('span');
+      timestampSpan.className = 'timestamp';
+      timestampSpan.textContent = `[${timestamp}] `;
+      
+      transcriptElement.appendChild(timestampSpan);
+      transcriptElement.appendChild(document.createTextNode(text));
+    }
     transcriptionResults.appendChild(transcriptElement);
   }
 

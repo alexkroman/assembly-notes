@@ -138,6 +138,7 @@ button.recording:hover {
   margin-top: 12px;
   padding: 8px;
   font-family: var(--font-mono);
+  font-size: 0.85em;
   background: var(--surface-3);
   border: 1px solid var(--border-1);
   border-radius: var(--radius-sm);
@@ -164,6 +165,14 @@ button.recording:hover {
   background: var(--scrollbar-thumb-hover);
 }
 
+.results .partial {
+  color: var(--text-muted);
+}
+
+.results .timestamp {
+  color: var(--text-disabled);
+}
+
 /* --- Typography Helpers --- */
 .status {
   margin: -6px 0 2px;
@@ -174,15 +183,15 @@ button.recording:hover {
 }
 
 .status.connected {
-  color: var(--accent-success);
+  color: var(--text-disabled);
 }
 
 .status.disconnected {
-  color: var(--accent-danger);
+  color: var(--text-disabled);
 }
 
 .status.reconnecting {
-  color: var(--accent-info);
+  color: var(--text-disabled);
 }
 
 .section,
