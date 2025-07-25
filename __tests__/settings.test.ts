@@ -1,5 +1,7 @@
+import { jest } from '@jest/globals';
+
 jest.mock('electron-store');
-jest.mock('../src/main/logger.js', () => ({
+jest.mock('../src/main/logger', () => ({
   error: jest.fn(),
 }));
 
@@ -17,10 +19,10 @@ describe('Settings Module', () => {
           assemblyaiKey: 'test-key',
           customPrompt: 'test-prompt',
         },
-        set: jest.fn(function (key, value) {
+        set: jest.fn(function (this: any, key: string, value: any) {
           this.store[key] = value;
         }),
-        get: jest.fn(function (key) {
+        get: jest.fn(function (this: any, key: string) {
           return this.store[key];
         }),
       }));
@@ -28,15 +30,15 @@ describe('Settings Module', () => {
   });
 
   describe('loadSettings', () => {
-    it('should be a no-op function', () => {
-      const { loadSettings } = require('../src/main/settings');
+    it('should be a no-op function', async () => {
+      const { loadSettings } = await import('../src/main/settings');
       expect(() => loadSettings()).not.toThrow();
     });
   });
 
   describe('getSettings', () => {
-    it('should return all settings from the store', () => {
-      const { getSettings } = require('../src/main/settings');
+    it('should return all settings from the store', async () => {
+      const { getSettings } = await import('../src/main/settings');
       const settings = getSettings();
       expect(settings).toEqual({
         assemblyaiKey: 'test-key',
@@ -46,10 +48,10 @@ describe('Settings Module', () => {
   });
 
   describe('saveSettingsToFile', () => {
-    it('should save each setting to the store', () => {
-      const { saveSettingsToFile } = require('../src/main/settings');
-      const Store = require('electron-store');
-      const mockStore = Store.mock.results[0].value;
+    it('should save each setting to the store', async () => {
+      const { saveSettingsToFile } = await import('../src/main/settings');
+      const Store = (await import('electron-store')).default;
+      const mockStore = (Store as any).mock.results[0].value;
       const newSettings = {
         assemblyaiKey: 'new-key',
       };
@@ -60,10 +62,10 @@ describe('Settings Module', () => {
       expect(mockStore.set).toHaveBeenCalledWith('assemblyaiKey', 'new-key');
     });
 
-    it('should handle partial settings updates', () => {
-      const { saveSettingsToFile } = require('../src/main/settings');
-      const Store = require('electron-store');
-      const mockStore = Store.mock.results[0].value;
+    it('should handle partial settings updates', async () => {
+      const { saveSettingsToFile } = await import('../src/main/settings');
+      const Store = (await import('electron-store')).default;
+      const mockStore = (Store as any).mock.results[0].value;
       const partialSettings = {
         customPrompt: 'new-prompt',
       };
@@ -74,11 +76,11 @@ describe('Settings Module', () => {
       expect(mockStore.set).toHaveBeenCalledWith('customPrompt', 'new-prompt');
     });
 
-    it('should throw error when store.set fails', () => {
-      const { saveSettingsToFile } = require('../src/main/settings');
-      const Store = require('electron-store');
-      const mockStore = Store.mock.results[0].value;
-      const log = require('../src/main/logger.js');
+    it('should throw error when store.set fails', async () => {
+      const { saveSettingsToFile } = await import('../src/main/settings');
+      const Store = (await import('electron-store')).default;
+      const mockStore = (Store as any).mock.results[0].value;
+      const log = await import('../src/main/logger');
       mockStore.set.mockImplementation(() => {
         throw new Error('Storage error');
       });
@@ -87,7 +89,7 @@ describe('Settings Module', () => {
         saveSettingsToFile({ assemblyaiKey: 'failing-key' });
       }).toThrow('Storage error');
 
-      expect(log.error).toHaveBeenCalledWith(
+      expect((log as any).error).toHaveBeenCalledWith(
         'Error saving settings:',
         expect.any(Error)
       );

@@ -1,4 +1,5 @@
-const path = require('path');
+import { jest } from '@jest/globals';
+import path from 'path';
 
 // Mock electron modules before requiring logger
 jest.mock('electron', () => ({
@@ -11,7 +12,7 @@ jest.mock('electron-log', () => {
   const mockLog = {
     transports: {
       file: {
-        resolvePathFn: null,
+        resolvePathFn: null as any,
         level: 'info',
         format: '[{y}-{m}-{d} {h}:{i}:{s}.{ms}] [{level}] {text}',
       },
@@ -32,19 +33,19 @@ jest.mock('electron-log', () => {
 });
 
 describe('Logger', () => {
-  let log;
-  let electronLog;
-  let electronApp;
+  let log: any;
+  let electronLog: any;
+  let electronApp: any;
 
-  beforeEach(() => {
+  beforeEach(async () => {
     jest.clearAllMocks();
 
     // Reset modules to get fresh instances
     jest.resetModules();
 
-    electronLog = require('electron-log');
-    electronApp = require('electron').app;
-    log = require('../src/main/logger.js');
+    electronLog = (await import('electron-log')).default;
+    electronApp = (await import('electron')).app;
+    log = (await import('../src/main/logger')).default;
   });
 
   it('should configure file logging path correctly', () => {
@@ -87,14 +88,14 @@ describe('Logger', () => {
     expect(log.debug).toBeDefined();
   });
 
-  it('should handle case where errorHandler is not available', () => {
+  it('should handle case where errorHandler is not available', async () => {
     // Reset and test without errorHandler
     jest.resetModules();
 
     jest.doMock('electron-log', () => ({
       transports: {
         file: {
-          resolvePathFn: null,
+          resolvePathFn: null as any,
           level: 'info',
           format: '[{y}-{m}-{d} {h}:{i}:{s}.{ms}] [{level}] {text}',
         },
@@ -109,8 +110,8 @@ describe('Logger', () => {
     }));
 
     // This should not throw an error
-    expect(() => {
-      require('../src/main/logger.js');
+    await expect(async () => {
+      await import('../src/main/logger');
     }).not.toThrow();
   });
 });

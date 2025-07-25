@@ -2,12 +2,43 @@
  * @jest-environment jsdom
  */
 
-describe('AutoUpdaterUI Module', () => {
-  let mockElectronAPI;
-  let mockLogger;
-  let AutoUpdaterUI;
+import { jest } from '@jest/globals';
 
-  beforeEach(() => {
+interface MockElectronAPI {
+  onUpdateAvailable: jest.MockedFunction<(callback: (updateInfo: any) => void) => void>;
+  onDownloadProgress: jest.MockedFunction<(callback: (progress: any) => void) => void>;
+  onUpdateDownloaded: jest.MockedFunction<(callback: (updateInfo: any) => void) => void>;
+  installUpdate: jest.MockedFunction<() => void>;
+  quitAndInstall: jest.MockedFunction<() => void>;
+}
+
+interface MockLogger {
+  info: jest.MockedFunction<(message: string, ...args: any[]) => void>;
+  error: jest.MockedFunction<(message: string, ...args: any[]) => void>;
+}
+
+declare global {
+  interface Window {
+    electronAPI: any;
+    logger: any;
+    currentUpdateDialog: HTMLElement | null;
+    AutoUpdaterUI: {
+      initAutoUpdaterUI: () => void;
+      createUpdateNotification: (message: string, type?: string) => void;
+      createUpdateDialog: (updateInfo: any) => void;
+      handleUpdateAvailable: (updateInfo: any) => void;
+      handleDownloadProgress: (progress: any) => void;
+      handleUpdateDownloaded: (updateInfo: any) => void;
+    };
+  }
+}
+
+describe('AutoUpdaterUI Module', () => {
+  let mockElectronAPI: MockElectronAPI;
+  let mockLogger: MockLogger;
+  let AutoUpdaterUI: Window['AutoUpdaterUI'];
+
+  beforeEach(async () => {
     // Reset DOM
     document.body.innerHTML = '';
 
@@ -34,11 +65,11 @@ describe('AutoUpdaterUI Module', () => {
     window.logger = mockLogger;
     window.currentUpdateDialog = null;
 
-    // Clear module cache to ensure fresh load for coverage
-    delete require.cache[require.resolve('../src/renderer/auto-updater-ui.js')];
+    // Reset modules to ensure fresh load for coverage
+    jest.resetModules();
 
     // Load the module directly (this will execute the IIFE and assign to window.AutoUpdaterUI)
-    require('../src/renderer/auto-updater-ui.js');
+    await import('../src/renderer/auto-updater-ui');
     AutoUpdaterUI = window.AutoUpdaterUI;
   });
 
@@ -62,8 +93,8 @@ describe('AutoUpdaterUI Module', () => {
 
       const notification = document.querySelector('.update-notification');
       expect(notification).toBeTruthy();
-      expect(notification.classList.contains('info')).toBe(true);
-      expect(notification.textContent).toContain('Test message');
+      expect(notification!.classList.contains('info')).toBe(true);
+      expect(notification!.textContent).toContain('Test message');
     });
 
     it('should create a success notification', () => {
@@ -71,8 +102,8 @@ describe('AutoUpdaterUI Module', () => {
 
       const notification = document.querySelector('.update-notification');
       expect(notification).toBeTruthy();
-      expect(notification.classList.contains('success')).toBe(true);
-      expect(notification.textContent).toContain('Success message');
+      expect(notification!.classList.contains('success')).toBe(true);
+      expect(notification!.textContent).toContain('Success message');
     });
 
     it('should create an error notification', () => {
@@ -80,8 +111,8 @@ describe('AutoUpdaterUI Module', () => {
 
       const notification = document.querySelector('.update-notification');
       expect(notification).toBeTruthy();
-      expect(notification.classList.contains('error')).toBe(true);
-      expect(notification.textContent).toContain('Error message');
+      expect(notification!.classList.contains('error')).toBe(true);
+      expect(notification!.textContent).toContain('Error message');
     });
 
     it('should remove existing notification before creating new one', () => {
@@ -117,7 +148,7 @@ describe('AutoUpdaterUI Module', () => {
     it('should handle close button click', () => {
       AutoUpdaterUI.createUpdateNotification('Test message');
 
-      const closeButton = document.querySelector('.close-btn');
+      const closeButton = document.querySelector('.close-btn') as HTMLElement;
       expect(closeButton).toBeTruthy();
 
       closeButton.click();
@@ -130,7 +161,7 @@ describe('AutoUpdaterUI Module', () => {
       AutoUpdaterUI.createUpdateNotification('Test message', 'info');
 
       // Manually remove the notification before timeout
-      const notification = document.querySelector('.update-notification');
+      const notification = document.querySelector('.update-notification')!;
       notification.remove();
 
       // Advance timer to trigger the timeout callback
@@ -152,8 +183,8 @@ describe('AutoUpdaterUI Module', () => {
 
       const dialog = document.querySelector('.update-dialog');
       expect(dialog).toBeTruthy();
-      expect(dialog.textContent).toContain('Update Available');
-      expect(dialog.textContent).toContain('1.2.3');
+      expect(dialog!.textContent).toContain('Update Available');
+      expect(dialog!.textContent).toContain('1.2.3');
 
       const installButton = document.getElementById('installUpdate');
       const skipButton = document.getElementById('skipUpdate');
@@ -164,21 +195,21 @@ describe('AutoUpdaterUI Module', () => {
     it('should handle install button click', () => {
       AutoUpdaterUI.createUpdateDialog(mockUpdateInfo);
 
-      const installButton = document.getElementById('installUpdate');
+      const installButton = document.getElementById('installUpdate') as HTMLElement;
       installButton.click();
 
       expect(mockElectronAPI.installUpdate).toHaveBeenCalledTimes(1);
 
       // Check if dialog content changed to show progress
       const dialog = document.querySelector('.update-dialog');
-      expect(dialog.textContent).toContain('Updating...');
-      expect(dialog.textContent).toContain('Downloading update...');
+      expect(dialog!.textContent).toContain('Updating...');
+      expect(dialog!.textContent).toContain('Downloading update...');
     });
 
     it('should handle skip button click', () => {
       AutoUpdaterUI.createUpdateDialog(mockUpdateInfo);
 
-      const skipButton = document.getElementById('skipUpdate');
+      const skipButton = document.getElementById('skipUpdate') as HTMLElement;
       skipButton.click();
 
       const dialog = document.querySelector('.update-dialog');
@@ -190,7 +221,7 @@ describe('AutoUpdaterUI Module', () => {
 
       expect(window.currentUpdateDialog).toBeTruthy();
       expect(
-        window.currentUpdateDialog.classList.contains('update-dialog')
+        window.currentUpdateDialog!.classList.contains('update-dialog')
       ).toBe(true);
     });
   });
@@ -204,19 +235,19 @@ describe('AutoUpdaterUI Module', () => {
     it('should update dialog progress when install button is clicked', () => {
       AutoUpdaterUI.createUpdateDialog(mockUpdateInfo);
 
-      const installButton = document.getElementById('installUpdate');
+      const installButton = document.getElementById('installUpdate') as HTMLElement;
       installButton.click();
 
       const dialog = document.querySelector('.update-dialog');
-      const content = dialog.querySelector('.dialog-content');
-      expect(content.textContent).toContain('Updating...');
-      expect(content.textContent).toContain('Downloading update...');
+      const content = dialog!.querySelector('.dialog-content');
+      expect(content!.textContent).toContain('Updating...');
+      expect(content!.textContent).toContain('Downloading update...');
     });
 
     it('should update dialog progress with percentage during download', () => {
       // Create dialog first
       AutoUpdaterUI.createUpdateDialog(mockUpdateInfo);
-      const installButton = document.getElementById('installUpdate');
+      const installButton = document.getElementById('installUpdate') as HTMLElement;
       installButton.click();
 
       // Simulate download progress
@@ -224,23 +255,23 @@ describe('AutoUpdaterUI Module', () => {
       AutoUpdaterUI.handleDownloadProgress(mockProgress);
 
       const dialog = document.querySelector('.update-dialog');
-      const content = dialog.querySelector('.dialog-content');
-      expect(content.textContent).toContain('Downloading update... (76%)');
+      const content = dialog!.querySelector('.dialog-content');
+      expect(content!.textContent).toContain('Downloading update... (76%)');
     });
 
     it('should show quit button when update is downloaded', () => {
       // Create dialog and start download
       AutoUpdaterUI.createUpdateDialog(mockUpdateInfo);
-      const installButton = document.getElementById('installUpdate');
+      const installButton = document.getElementById('installUpdate') as HTMLElement;
       installButton.click();
 
       // Simulate update downloaded
       AutoUpdaterUI.handleUpdateDownloaded(mockUpdateInfo);
 
       const dialog = document.querySelector('.update-dialog');
-      const content = dialog.querySelector('.dialog-content');
-      expect(content.textContent).toContain('Update Ready');
-      expect(content.textContent).toContain('Update ready to install!');
+      const content = dialog!.querySelector('.dialog-content');
+      expect(content!.textContent).toContain('Update Ready');
+      expect(content!.textContent).toContain('Update ready to install!');
 
       const quitButton = document.getElementById('quitAndReopen');
       expect(quitButton).toBeTruthy();
@@ -249,11 +280,11 @@ describe('AutoUpdaterUI Module', () => {
     it('should handle quit and reopen button click', () => {
       // Create dialog, start download, and complete download
       AutoUpdaterUI.createUpdateDialog(mockUpdateInfo);
-      const installButton = document.getElementById('installUpdate');
+      const installButton = document.getElementById('installUpdate') as HTMLElement;
       installButton.click();
       AutoUpdaterUI.handleUpdateDownloaded(mockUpdateInfo);
 
-      const quitButton = document.getElementById('quitAndReopen');
+      const quitButton = document.getElementById('quitAndReopen') as HTMLElement;
       quitButton.click();
 
       expect(mockElectronAPI.quitAndInstall).toHaveBeenCalledTimes(1);
@@ -276,7 +307,7 @@ describe('AutoUpdaterUI Module', () => {
 
       const dialog = document.querySelector('.update-dialog');
       expect(dialog).toBeTruthy();
-      expect(dialog.textContent).toContain('1.2.3');
+      expect(dialog!.textContent).toContain('1.2.3');
     });
   });
 
@@ -304,7 +335,7 @@ describe('AutoUpdaterUI Module', () => {
       AutoUpdaterUI.handleDownloadProgress(mockProgress);
 
       const content = dialog.querySelector('.dialog-content');
-      expect(content.textContent).toContain('Downloading update... (76%)');
+      expect(content!.textContent).toContain('Downloading update... (76%)');
     });
 
     it('should handle missing dialog gracefully', () => {
@@ -343,8 +374,8 @@ describe('AutoUpdaterUI Module', () => {
       );
 
       const content = dialog.querySelector('.dialog-content');
-      expect(content.textContent).toContain('Update Ready');
-      expect(content.textContent).toContain('Update ready to install!');
+      expect(content!.textContent).toContain('Update Ready');
+      expect(content!.textContent).toContain('Update ready to install!');
 
       const quitButton = document.getElementById('quitAndReopen');
       expect(quitButton).toBeTruthy();

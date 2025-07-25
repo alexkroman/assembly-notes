@@ -1,5 +1,7 @@
+import { jest } from '@jest/globals';
+
 // Global test setup
-global.console = {
+(global as any).console = {
   ...console,
   error: jest.fn(),
   warn: jest.fn(),

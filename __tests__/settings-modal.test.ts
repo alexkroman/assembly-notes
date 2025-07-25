@@ -2,18 +2,30 @@
  * @jest-environment jsdom
  */
 
-describe('SettingsModal Module', () => {
-  let SettingsModal;
-  let mockFetch;
-  let mockAlert;
-  let mockSettingsModalContainer;
-  let mockSettingsModal;
-  let mockAssemblyaiKeyInput;
-  let mockSummaryPromptInput;
-  let mockCloseBtn;
-  let mockSaveBtn;
+import { jest } from '@jest/globals';
 
-  beforeEach(() => {
+interface MockElectronAPI {
+  getSettings: jest.MockedFunction<() => Promise<{ assemblyaiKey?: string; summaryPrompt?: string }>>;
+  saveSettings: jest.MockedFunction<(settings: any) => Promise<void>>;
+}
+
+declare global {
+  interface Window {
+    electronAPI: MockElectronAPI;
+    SettingsModal: {
+      showSettingsModal: () => Promise<void>;
+      hideSettingsModal: () => void;
+    };
+  }
+}
+
+describe('SettingsModal Module', () => {
+  let SettingsModal: Window['SettingsModal'];
+  let mockFetch: any;
+  let mockAlert: jest.MockedFunction<(message?: any) => void>;
+  let mockSettingsModalContainer: HTMLElement;
+
+  beforeEach(async () => {
     // Mock DOM elements
     mockSettingsModalContainer = document.createElement('div');
     mockSettingsModalContainer.id = 'settingsModalContainer';
@@ -32,15 +44,15 @@ describe('SettingsModal Module', () => {
     // Mock fetch
     mockFetch = jest.fn().mockResolvedValue({
       text: jest.fn().mockResolvedValue(mockModalHtml),
-    });
-    global.fetch = mockFetch;
+    } as any);
+    (global as any).fetch = mockFetch;
 
     // Mock alert
     mockAlert = jest.fn();
-    global.alert = mockAlert;
+    (global as any).alert = mockAlert;
 
     // Mock console
-    global.console.error = jest.fn();
+    (global.console as any).error = jest.fn();
 
     // Mock window.electronAPI
     global.window.electronAPI = {
@@ -48,13 +60,14 @@ describe('SettingsModal Module', () => {
         assemblyaiKey: 'test-key',
         summaryPrompt: 'test prompt',
       }),
-      saveSettings: jest.fn().mockResolvedValue(),
-    };
+      saveSettings: jest.fn().mockResolvedValue(undefined),
+    } as any;
+
+    // Reset modules
+    jest.resetModules();
 
     // Load the module
-    jest.isolateModules(() => {
-      require('../src/renderer/settings-modal.js');
-    });
+    await import('../src/renderer/settings-modal');
     SettingsModal = window.SettingsModal;
   });
 
@@ -73,7 +86,7 @@ describe('SettingsModal Module', () => {
       // Check DOM elements are properly set
       const settingsModal = document.getElementById('settingsModal');
       expect(settingsModal).toBeTruthy();
-      expect(settingsModal.classList.contains('active')).toBe(true);
+      expect(settingsModal!.classList.contains('active')).toBe(true);
     });
 
     it('should not reinitialize modal on subsequent calls', async () => {
@@ -89,8 +102,8 @@ describe('SettingsModal Module', () => {
 
       expect(window.electronAPI.getSettings).toHaveBeenCalled();
       
-      const assemblyaiKeyInput = document.getElementById('assemblyaiKey');
-      const summaryPromptInput = document.getElementById('summaryPrompt');
+      const assemblyaiKeyInput = document.getElementById('assemblyaiKey') as HTMLInputElement;
+      const summaryPromptInput = document.getElementById('summaryPrompt') as HTMLTextAreaElement;
       
       expect(assemblyaiKeyInput.value).toBe('test-key');
       expect(summaryPromptInput.value).toBe('test prompt');
@@ -102,12 +115,12 @@ describe('SettingsModal Module', () => {
       await SettingsModal.showSettingsModal();
 
       const settingsModal = document.getElementById('settingsModal');
-      expect(settingsModal.classList.contains('active')).toBe(true);
+      expect(settingsModal!.classList.contains('active')).toBe(true);
     });
 
     it('should handle error when loading settings fails', async () => {
       const error = new Error('Failed to load settings');
-      window.electronAPI.getSettings.mockRejectedValue(error);
+      (window.electronAPI.getSettings as any).mockRejectedValue(error);
 
       await SettingsModal.showSettingsModal();
 
@@ -115,12 +128,12 @@ describe('SettingsModal Module', () => {
     });
 
     it('should use empty values when settings are not available', async () => {
-      window.electronAPI.getSettings.mockResolvedValue({});
+      (window.electronAPI.getSettings as any).mockResolvedValue({});
 
       await SettingsModal.showSettingsModal();
 
-      const assemblyaiKeyInput = document.getElementById('assemblyaiKey');
-      const summaryPromptInput = document.getElementById('summaryPrompt');
+      const assemblyaiKeyInput = document.getElementById('assemblyaiKey') as HTMLInputElement;
+      const summaryPromptInput = document.getElementById('summaryPrompt') as HTMLTextAreaElement;
       
       expect(assemblyaiKeyInput.value).toBe('');
       expect(summaryPromptInput.value).toBe('');
@@ -131,10 +144,10 @@ describe('SettingsModal Module', () => {
     it('should remove active class from modal', async () => {
       await SettingsModal.showSettingsModal();
       const settingsModal = document.getElementById('settingsModal');
-      expect(settingsModal.classList.contains('active')).toBe(true);
+      expect(settingsModal!.classList.contains('active')).toBe(true);
 
       SettingsModal.hideSettingsModal();
-      expect(settingsModal.classList.contains('active')).toBe(false);
+      expect(settingsModal!.classList.contains('active')).toBe(false);
     });
   });
 
@@ -144,9 +157,9 @@ describe('SettingsModal Module', () => {
     });
 
     it('should save settings when save button is clicked', async () => {
-      const assemblyaiKeyInput = document.getElementById('assemblyaiKey');
-      const summaryPromptInput = document.getElementById('summaryPrompt');
-      const saveBtn = document.getElementById('saveBtn');
+      const assemblyaiKeyInput = document.getElementById('assemblyaiKey') as HTMLInputElement;
+      const summaryPromptInput = document.getElementById('summaryPrompt') as HTMLTextAreaElement;
+      const saveBtn = document.getElementById('saveBtn') as HTMLButtonElement;
 
       assemblyaiKeyInput.value = 'new-key';
       summaryPromptInput.value = '  new prompt  '; // with whitespace
@@ -162,14 +175,14 @@ describe('SettingsModal Module', () => {
       expect(mockAlert).toHaveBeenCalledWith('Settings saved successfully!');
       
       const settingsModal = document.getElementById('settingsModal');
-      expect(settingsModal.classList.contains('active')).toBe(false);
+      expect(settingsModal!.classList.contains('active')).toBe(false);
     });
 
     it('should handle save errors gracefully', async () => {
       const error = new Error('Save failed');
-      window.electronAPI.saveSettings.mockRejectedValue(error);
+      (window.electronAPI.saveSettings as any).mockRejectedValue(error);
 
-      const saveBtn = document.getElementById('saveBtn');
+      const saveBtn = document.getElementById('saveBtn') as HTMLButtonElement;
       saveBtn.click();
       await new Promise(resolve => setTimeout(resolve, 0));
 
@@ -178,7 +191,7 @@ describe('SettingsModal Module', () => {
       
       // Modal should remain open on error
       const settingsModal = document.getElementById('settingsModal');
-      expect(settingsModal.classList.contains('active')).toBe(true);
+      expect(settingsModal!.classList.contains('active')).toBe(true);
     });
   });
 
@@ -188,18 +201,18 @@ describe('SettingsModal Module', () => {
     });
 
     it('should close modal when close button is clicked', () => {
-      const closeBtn = document.getElementById('closeBtn');
+      const closeBtn = document.getElementById('closeBtn') as HTMLButtonElement;
       const settingsModal = document.getElementById('settingsModal');
 
-      expect(settingsModal.classList.contains('active')).toBe(true);
+      expect(settingsModal!.classList.contains('active')).toBe(true);
       
       closeBtn.click();
       
-      expect(settingsModal.classList.contains('active')).toBe(false);
+      expect(settingsModal!.classList.contains('active')).toBe(false);
     });
 
     it('should close modal when clicking outside modal content', () => {
-      const settingsModal = document.getElementById('settingsModal');
+      const settingsModal = document.getElementById('settingsModal') as HTMLElement;
       
       expect(settingsModal.classList.contains('active')).toBe(true);
       
@@ -219,8 +232,8 @@ describe('SettingsModal Module', () => {
     });
 
     it('should not close modal when clicking inside modal content', () => {
-      const settingsModal = document.getElementById('settingsModal');
-      const assemblyaiKeyInput = document.getElementById('assemblyaiKey');
+      const settingsModal = document.getElementById('settingsModal') as HTMLElement;
+      const assemblyaiKeyInput = document.getElementById('assemblyaiKey') as HTMLInputElement;
       
       expect(settingsModal.classList.contains('active')).toBe(true);
       
@@ -242,7 +255,7 @@ describe('SettingsModal Module', () => {
     it('should close modal when Escape key is pressed', () => {
       const settingsModal = document.getElementById('settingsModal');
       
-      expect(settingsModal.classList.contains('active')).toBe(true);
+      expect(settingsModal!.classList.contains('active')).toBe(true);
       
       const escapeEvent = new KeyboardEvent('keydown', {
         key: 'Escape',
@@ -251,13 +264,13 @@ describe('SettingsModal Module', () => {
       
       document.dispatchEvent(escapeEvent);
       
-      expect(settingsModal.classList.contains('active')).toBe(false);
+      expect(settingsModal!.classList.contains('active')).toBe(false);
     });
 
     it('should not close modal when other keys are pressed', () => {
       const settingsModal = document.getElementById('settingsModal');
       
-      expect(settingsModal.classList.contains('active')).toBe(true);
+      expect(settingsModal!.classList.contains('active')).toBe(true);
       
       const enterEvent = new KeyboardEvent('keydown', {
         key: 'Enter',
@@ -266,14 +279,14 @@ describe('SettingsModal Module', () => {
       
       document.dispatchEvent(enterEvent);
       
-      expect(settingsModal.classList.contains('active')).toBe(true);
+      expect(settingsModal!.classList.contains('active')).toBe(true);
     });
 
     it('should not respond to Escape key when modal is not active', () => {
       const settingsModal = document.getElementById('settingsModal');
       SettingsModal.hideSettingsModal();
       
-      expect(settingsModal.classList.contains('active')).toBe(false);
+      expect(settingsModal!.classList.contains('active')).toBe(false);
       
       const escapeEvent = new KeyboardEvent('keydown', {
         key: 'Escape',
@@ -283,7 +296,7 @@ describe('SettingsModal Module', () => {
       // Should not throw or cause issues
       document.dispatchEvent(escapeEvent);
       
-      expect(settingsModal.classList.contains('active')).toBe(false);
+      expect(settingsModal!.classList.contains('active')).toBe(false);
     });
   });
 
@@ -306,7 +319,7 @@ describe('SettingsModal Module', () => {
       const incompleteHtml = '<div id="settingsModal"></div>';
       mockFetch.mockResolvedValue({
         text: jest.fn().mockResolvedValue(incompleteHtml),
-      });
+      } as any);
 
       await SettingsModal.showSettingsModal();
       
@@ -325,10 +338,10 @@ describe('SettingsModal Module', () => {
     });
 
     it('should not expose internal functions', () => {
-      expect(SettingsModal.initializeModal).toBeUndefined();
-      expect(SettingsModal.loadSettings).toBeUndefined();
-      expect(SettingsModal.saveSettings).toBeUndefined();
-      expect(SettingsModal.setupSettingsModalEvents).toBeUndefined();
+      expect((SettingsModal as any).initializeModal).toBeUndefined();
+      expect((SettingsModal as any).loadSettings).toBeUndefined();
+      expect((SettingsModal as any).saveSettings).toBeUndefined();
+      expect((SettingsModal as any).setupSettingsModalEvents).toBeUndefined();
     });
   });
 });

@@ -1,13 +1,38 @@
+import { jest } from '@jest/globals';
+
 jest.mock('electron-updater');
-jest.mock('../src/main/logger.js');
+jest.mock('../src/main/logger');
+
+interface MockAutoUpdater {
+  on: jest.MockedFunction<(event: string, listener: (...args: any[]) => void) => void>;
+  checkForUpdatesAndNotify: jest.MockedFunction<() => Promise<any>>;
+  quitAndInstall: jest.MockedFunction<() => void>;
+  logger: any;
+}
+
+interface MockLogger {
+  info: jest.MockedFunction<(message: string, ...args: any[]) => void>;
+  error: jest.MockedFunction<(message: string, ...args: any[]) => void>;
+}
+
+interface MockWindow {
+  webContents: {
+    send: jest.MockedFunction<(channel: string, ...args: any[]) => void>;
+  };
+}
 
 describe('Auto-Updater Module', () => {
-  let autoUpdater;
-  let mockLogger;
-  let mockWindow;
-  let autoUpdaterModule;
+  let autoUpdater: MockAutoUpdater;
+  let mockLogger: MockLogger;
+  let mockWindow: MockWindow;
+  let autoUpdaterModule: {
+    initAutoUpdater: (window: MockWindow | null) => void;
+    checkForUpdatesAndNotify: () => void;
+    quitAndInstall: () => void;
+    startUpdateCheck: (delay?: number) => void;
+  };
 
-  beforeEach(() => {
+  beforeEach(async () => {
     jest.clearAllMocks();
     jest.resetModules();
 
@@ -29,7 +54,7 @@ describe('Auto-Updater Module', () => {
       error: jest.fn(),
     };
 
-    jest.doMock('../src/main/logger.js', () => mockLogger);
+    jest.doMock('../src/main/logger', () => mockLogger);
 
     // Mock main window
     mockWindow = {
@@ -39,7 +64,7 @@ describe('Auto-Updater Module', () => {
     };
 
     // Re-require the module after mocks are set up
-    autoUpdaterModule = require('../src/main/auto-updater');
+    autoUpdaterModule = await import('../src/main/auto-updater') as any;
   });
 
   describe('initAutoUpdater', () => {
@@ -91,7 +116,7 @@ describe('Auto-Updater Module', () => {
     it('should handle checking-for-update event', () => {
       const checkingHandler = autoUpdater.on.mock.calls.find(
         (call) => call[0] === 'checking-for-update'
-      )[1];
+      )![1];
 
       checkingHandler();
 
@@ -101,7 +126,7 @@ describe('Auto-Updater Module', () => {
     it('should handle update-available event', () => {
       const updateAvailableHandler = autoUpdater.on.mock.calls.find(
         (call) => call[0] === 'update-available'
-      )[1];
+      )![1];
 
       const updateInfo = { version: '1.0.1' };
       updateAvailableHandler(updateInfo);
@@ -120,7 +145,7 @@ describe('Auto-Updater Module', () => {
       autoUpdaterModule.initAutoUpdater(null);
       const updateAvailableHandler = autoUpdater.on.mock.calls.find(
         (call) => call[0] === 'update-available'
-      )[1];
+      )![1];
 
       const updateInfo = { version: '1.0.1' };
       updateAvailableHandler(updateInfo);
@@ -135,7 +160,7 @@ describe('Auto-Updater Module', () => {
     it('should handle update-not-available event', () => {
       const updateNotAvailableHandler = autoUpdater.on.mock.calls.find(
         (call) => call[0] === 'update-not-available'
-      )[1];
+      )![1];
 
       const updateInfo = { version: '1.0.0' };
       updateNotAvailableHandler(updateInfo);
@@ -149,7 +174,7 @@ describe('Auto-Updater Module', () => {
     it('should handle error event', () => {
       const errorHandler = autoUpdater.on.mock.calls.find(
         (call) => call[0] === 'error'
-      )[1];
+      )![1];
 
       const error = new Error('Update failed');
       errorHandler(error);
@@ -163,7 +188,7 @@ describe('Auto-Updater Module', () => {
     it('should handle download-progress event', () => {
       const downloadProgressHandler = autoUpdater.on.mock.calls.find(
         (call) => call[0] === 'download-progress'
-      )[1];
+      )![1];
 
       const progressObj = {
         bytesPerSecond: 1024,
@@ -187,7 +212,7 @@ describe('Auto-Updater Module', () => {
       autoUpdaterModule.initAutoUpdater(null);
       const downloadProgressHandler = autoUpdater.on.mock.calls.find(
         (call) => call[0] === 'download-progress'
-      )[1];
+      )![1];
 
       const progressObj = {
         bytesPerSecond: 1024,
@@ -207,7 +232,7 @@ describe('Auto-Updater Module', () => {
     it('should handle update-downloaded event', () => {
       const updateDownloadedHandler = autoUpdater.on.mock.calls.find(
         (call) => call[0] === 'update-downloaded'
-      )[1];
+      )![1];
 
       const updateInfo = { version: '1.0.1' };
       updateDownloadedHandler(updateInfo);
@@ -226,7 +251,7 @@ describe('Auto-Updater Module', () => {
       autoUpdaterModule.initAutoUpdater(null);
       const updateDownloadedHandler = autoUpdater.on.mock.calls.find(
         (call) => call[0] === 'update-downloaded'
-      )[1];
+      )![1];
 
       const updateInfo = { version: '1.0.1' };
       updateDownloadedHandler(updateInfo);

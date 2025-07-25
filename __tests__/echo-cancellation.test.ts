@@ -2,17 +2,73 @@
  * @jest-environment jsdom
  */
 
-describe('EchoCancellation Module', () => {
-  let EchoCancellation;
-  let mockAudioContext;
-  let mockMediaStreamDestination;
-  let mockMediaStreamSource;
-  let mockDelayNode;
-  let mockGainNode;
-  let mockStream;
-  let mockTrack;
+import { jest } from '@jest/globals';
 
-  beforeEach(() => {
+interface MockTrack {
+  stop: jest.MockedFunction<() => void>;
+}
+
+interface MockStream {
+  getTracks: jest.MockedFunction<() => MockTrack[]>;
+}
+
+interface MockDelayNode {
+  delayTime: {
+    setValueAtTime: jest.MockedFunction<(value: number, time: number) => void>;
+  };
+  connect: jest.MockedFunction<(destination: any) => void>;
+}
+
+interface MockGainNode {
+  gain: {
+    setValueAtTime: jest.MockedFunction<(value: number, time: number) => void>;
+  };
+  connect: jest.MockedFunction<(destination: any) => void>;
+}
+
+interface MockMediaStreamSource {
+  connect: jest.MockedFunction<(destination: any) => void>;
+  disconnect: jest.MockedFunction<() => void>;
+}
+
+interface MockMediaStreamDestination {
+  stream: MockStream;
+}
+
+interface MockAudioContext {
+  currentTime: number;
+  createMediaStreamDestination: jest.MockedFunction<() => MockMediaStreamDestination>;
+  createMediaStreamSource: jest.MockedFunction<(stream: MediaStream) => MockMediaStreamSource>;
+  createDelay: jest.MockedFunction<(maxDelay: number) => MockDelayNode>;
+  createGain: jest.MockedFunction<() => MockGainNode>;
+  close: jest.MockedFunction<() => Promise<void>>;
+}
+
+declare global {
+  var MediaStream: jest.MockedClass<typeof globalThis.MediaStream>;
+  var AudioContext: jest.MockedClass<typeof globalThis.AudioContext>;
+
+  interface Window {
+    AudioContext: typeof globalThis.AudioContext;
+    webkitAudioContext?: typeof globalThis.AudioContext;
+    EchoCancellation: {
+      processEchoCancellation: (micStream: MediaStream, systemStream: MediaStream) => MediaStream;
+      cleanupEchoCancellation: () => void;
+    };
+  }
+}
+
+describe('EchoCancellation Module', () => {
+  let EchoCancellation: Window['EchoCancellation'];
+  let mockAudioContext: MockAudioContext;
+  let mockMediaStreamDestination: MockMediaStreamDestination;
+  let mockMediaStreamSource: MockMediaStreamSource;
+  let mockDelayNode: MockDelayNode;
+  let mockGainNode: MockGainNode;
+  let mockStream: MockStream;
+  let mockTrack: MockTrack;
+
+  beforeEach(async () => {
     // Mock MediaStream constructor
     global.MediaStream = jest.fn().mockImplementation(() => ({}));
 
@@ -56,17 +112,18 @@ describe('EchoCancellation Module', () => {
       createMediaStreamSource: jest.fn().mockReturnValue(mockMediaStreamSource),
       createDelay: jest.fn().mockReturnValue(mockDelayNode),
       createGain: jest.fn().mockReturnValue(mockGainNode),
-      close: jest.fn().mockResolvedValue(),
-    };
+      close: jest.fn().mockResolvedValue(undefined),
+    } as any;
 
-    global.AudioContext = jest.fn().mockImplementation(() => mockAudioContext);
+    global.AudioContext = jest.fn().mockImplementation(() => mockAudioContext) as any;
     global.window.AudioContext = global.AudioContext;
     global.window.webkitAudioContext = undefined;
 
+    // Reset modules
+    jest.resetModules();
+
     // Load the module
-    jest.isolateModules(() => {
-      require('../src/renderer/echo-cancellation.js');
-    });
+    await import('../src/renderer/echo-cancellation');
     EchoCancellation = window.EchoCancellation;
   });
 
@@ -155,14 +212,14 @@ describe('EchoCancellation Module', () => {
       expect(result).toBe(mockStream);
     });
 
-    it('should use webkitAudioContext if AudioContext is not available', () => {
-      global.AudioContext = undefined;
-      global.window.AudioContext = undefined;
-      global.window.webkitAudioContext = jest.fn().mockImplementation(() => mockAudioContext);
+    it('should use webkitAudioContext if AudioContext is not available', async () => {
+      global.AudioContext = undefined as any;
+      global.window.AudioContext = undefined as any;
+      global.window.webkitAudioContext = jest.fn().mockImplementation(() => mockAudioContext) as any;
 
-      jest.isolateModules(() => {
-        require('../src/renderer/echo-cancellation.js');
-      });
+      // Reset modules to reload with new mocks
+      jest.resetModules();
+      await import('../src/renderer/echo-cancellation');
       EchoCancellation = window.EchoCancellation;
 
       const micStream = new MediaStream();
@@ -260,16 +317,16 @@ describe('EchoCancellation Module', () => {
       expect(mockTrack3.stop).toHaveBeenCalledTimes(1);
     });
 
-    it('should handle errors in AudioContext creation gracefully', () => {
-      global.AudioContext = undefined;
-      global.window.AudioContext = undefined;
+    it('should handle errors in AudioContext creation gracefully', async () => {
+      global.AudioContext = undefined as any;
+      global.window.AudioContext = undefined as any;
       global.window.webkitAudioContext = jest.fn().mockImplementation(() => {
         throw new Error('Audio context not supported');
-      });
+      }) as any;
 
-      jest.isolateModules(() => {
-        require('../src/renderer/echo-cancellation.js');
-      });
+      // Reset modules to reload with new mocks
+      jest.resetModules();
+      await import('../src/renderer/echo-cancellation');
       EchoCancellation = window.EchoCancellation;
 
       const micStream = new MediaStream();

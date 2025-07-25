@@ -1,21 +1,54 @@
+import { jest } from '@jest/globals';
+
 jest.mock('assemblyai');
-jest.mock('../src/main/logger.js', () => ({
+jest.mock('../src/main/logger', () => ({
   info: jest.fn(),
   warn: jest.fn(),
   error: jest.fn(),
   debug: jest.fn(),
 }));
 
-const { AssemblyAI } = require('assemblyai');
-const TranscriptionService = require('../src/main/transcriptionService.js');
+interface MockTranscriber {
+  connect: jest.MockedFunction<() => Promise<void>>;
+  close: jest.MockedFunction<() => Promise<void>>;
+  sendAudio: jest.MockedFunction<(audio: Buffer) => void>;
+  on: jest.MockedFunction<(event: string, handler: (...args: any[]) => void) => void>;
+}
+
+interface MockAssemblyAI {
+  realtime: {
+    transcriber: jest.MockedFunction<() => MockTranscriber>;
+  };
+}
+
+interface TranscriptionServiceInstance {
+  initialize: (apiKey: string, keepAliveSettings?: { enabled: boolean; intervalSeconds: number }) => void;
+  start: () => Promise<void>;
+  stop: () => Promise<void>;
+  sendMicrophoneAudio: (audioData: Uint8Array) => void;
+  sendSystemAudio: (audioData: Uint8Array) => void;
+  calculateRetryDelay: (retryCount: number) => number;
+  reset: () => void;
+  getAai: () => any;
+  on: (event: string, handler: (...args: any[]) => void) => void;
+  isActive: boolean;
+  keepAliveConfig: { enabled: boolean; intervalMs: number };
+  connectionState: {
+    microphone: { retryCount: number; isConnected: boolean; retryTimeout?: NodeJS.Timeout };
+    system: { retryCount: number; isConnected: boolean; retryTimeout?: NodeJS.Timeout };
+  };
+}
 
 describe('TranscriptionService', () => {
-  let transcriptionService;
-  let mockAssemblyAI;
-  let mockTranscriber;
+  let transcriptionService: TranscriptionServiceInstance;
+  let mockAssemblyAI: MockAssemblyAI;
+  let mockTranscriber: MockTranscriber;
 
-  beforeEach(() => {
+  beforeEach(async () => {
     jest.clearAllMocks();
+
+    const { AssemblyAI } = await import('assemblyai');
+    const TranscriptionService = await import('../src/main/transcriptionService');
 
     // Mock the transcriber
     mockTranscriber = {
@@ -23,7 +56,7 @@ describe('TranscriptionService', () => {
       close: jest.fn().mockResolvedValue(undefined),
       sendAudio: jest.fn(),
       on: jest.fn(),
-    };
+    } as any;
 
     // Mock AssemblyAI class
     mockAssemblyAI = {
@@ -32,9 +65,9 @@ describe('TranscriptionService', () => {
       },
     };
 
-    AssemblyAI.mockImplementation(() => mockAssemblyAI);
+    (AssemblyAI as jest.MockedClass<typeof AssemblyAI>).mockImplementation(() => mockAssemblyAI as any);
 
-    transcriptionService = new TranscriptionService();
+    transcriptionService = new (TranscriptionService.default as any)();
   });
 
   afterEach(async () => {
@@ -44,7 +77,9 @@ describe('TranscriptionService', () => {
   });
 
   describe('initialize', () => {
-    it('should initialize with API key and default keep-alive settings', () => {
+    it('should initialize with API key and default keep-alive settings', async () => {
+      const { AssemblyAI } = await import('assemblyai');
+      
       transcriptionService.initialize('test-api-key');
 
       expect(AssemblyAI).toHaveBeenCalledWith({ apiKey: 'test-api-key' });
@@ -96,6 +131,7 @@ describe('TranscriptionService', () => {
     });
 
     it('should throw error if not initialized', async () => {
+      const { default: TranscriptionService } = await import('../src/main/transcriptionService');
       const uninitializedService = new TranscriptionService();
 
       await expect(uninitializedService.start()).rejects.toThrow(
@@ -232,7 +268,7 @@ describe('TranscriptionService', () => {
   });
 
   describe('transcriber event handlers', () => {
-    let onHandlers;
+    let onHandlers: Record<string, (...args: any[]) => void>;
 
     beforeEach(async () => {
       onHandlers = {};
@@ -334,7 +370,7 @@ describe('TranscriptionService', () => {
     });
 
     it('should start keep-alive when both transcribers are connected', async () => {
-      const openHandlers = [];
+      const openHandlers: (() => void)[] = [];
       mockTranscriber.on.mockImplementation((event, handler) => {
         if (event === 'open') {
           openHandlers.push(handler);

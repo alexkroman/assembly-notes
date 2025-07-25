@@ -2,13 +2,55 @@
  * @jest-environment jsdom
  */
 
-describe('AudioProcessing Module', () => {
-  let AudioProcessing;
-  let mockAudioContext;
-  let mockWorkletNode;
-  let mockMediaStreamSource;
+import { jest } from '@jest/globals';
 
-  beforeEach(() => {
+declare global {
+  interface Window {
+    electronAPI: {
+      sendMicrophoneAudio: jest.MockedFunction<(data: Int16Array) => void>;
+      sendSystemAudio: jest.MockedFunction<(data: Int16Array) => void>;
+    };
+    AudioProcessing: {
+      startAudioProcessing: (micStream: MediaStream, systemStream: MediaStream | null) => Promise<void>;
+      stopAudioProcessing: () => void;
+      setRecordingState: (recording: boolean) => void;
+    };
+  }
+
+  var AudioContext: jest.MockedClass<typeof globalThis.AudioContext>;
+  var AudioWorkletNode: jest.MockedClass<typeof globalThis.AudioWorkletNode>;
+}
+
+interface MockAudioWorkletNode {
+  port: {
+    onmessage: ((event: { data: { type: string; data: Int16Array } }) => void) | null;
+    postMessage: jest.MockedFunction<(message: any) => void>;
+  };
+  connect: jest.MockedFunction<(destination: any) => void>;
+  disconnect: jest.MockedFunction<() => void>;
+}
+
+interface MockMediaStreamSource {
+  connect: jest.MockedFunction<(destination: any) => void>;
+}
+
+interface MockAudioContext {
+  sampleRate: number;
+  destination: any;
+  audioWorklet: {
+    addModule: jest.MockedFunction<(url: string) => Promise<void>>;
+  };
+  createMediaStreamSource: jest.MockedFunction<(stream: MediaStream) => MockMediaStreamSource>;
+  close: jest.MockedFunction<() => Promise<void>>;
+}
+
+describe('AudioProcessing Module', () => {
+  let AudioProcessing: Window['AudioProcessing'];
+  let mockAudioContext: MockAudioContext;
+  let mockWorkletNode: MockAudioWorkletNode;
+  let mockMediaStreamSource: MockMediaStreamSource;
+
+  beforeEach(async () => {
     // Mock AudioContext
     mockWorkletNode = {
       port: {
@@ -27,25 +69,25 @@ describe('AudioProcessing Module', () => {
       sampleRate: 16000,
       destination: {},
       audioWorklet: {
-        addModule: jest.fn().mockResolvedValue(),
+        addModule: jest.fn().mockResolvedValue(undefined),
       },
       createMediaStreamSource: jest.fn().mockReturnValue(mockMediaStreamSource),
-      close: jest.fn().mockResolvedValue(),
-    };
+      close: jest.fn().mockResolvedValue(undefined),
+    } as any;
 
-    global.AudioContext = jest.fn().mockImplementation(() => mockAudioContext);
+    global.AudioContext = jest.fn().mockImplementation(() => mockAudioContext) as any;
     global.AudioWorkletNode = jest
       .fn()
-      .mockImplementation(() => mockWorkletNode);
+      .mockImplementation(() => mockWorkletNode) as any;
 
     // Mock window.electronAPI
     global.window.electronAPI = {
       sendMicrophoneAudio: jest.fn(),
       sendSystemAudio: jest.fn(),
-    };
+    } as any;
 
     // Load the module
-    require('../src/renderer/audio-processing.js');
+    await import('../src/renderer/audio-processing');
     AudioProcessing = window.AudioProcessing;
   });
 
@@ -55,7 +97,7 @@ describe('AudioProcessing Module', () => {
 
   describe('startAudioProcessing', () => {
     it('should initialize microphone audio processing', async () => {
-      const mockStream = { id: 'test-stream' };
+      const mockStream = { id: 'test-stream' } as MediaStream;
 
       await AudioProcessing.startAudioProcessing(mockStream, null);
 
@@ -75,11 +117,11 @@ describe('AudioProcessing Module', () => {
     });
 
     it('should handle microphone audio data messages', async () => {
-      const mockStream = { id: 'test-stream' };
+      const mockStream = { id: 'test-stream' } as MediaStream;
       await AudioProcessing.startAudioProcessing(mockStream, null);
 
       const audioData = new Int16Array([1, 2, 3]);
-      mockWorkletNode.port.onmessage({
+      mockWorkletNode.port.onmessage!({
         data: { type: 'audioData', data: audioData },
       });
 
@@ -89,8 +131,8 @@ describe('AudioProcessing Module', () => {
     });
 
     it('should initialize system audio processing when provided', async () => {
-      const mockMicStream = { id: 'mic-stream' };
-      const mockSystemStream = { id: 'system-stream' };
+      const mockMicStream = { id: 'mic-stream' } as MediaStream;
+      const mockSystemStream = { id: 'system-stream' } as MediaStream;
 
       await AudioProcessing.startAudioProcessing(
         mockMicStream,
@@ -103,8 +145,8 @@ describe('AudioProcessing Module', () => {
     });
 
     it('should handle system audio data messages', async () => {
-      const mockMicStream = { id: 'mic-stream' };
-      const mockSystemStream = { id: 'system-stream' };
+      const mockMicStream = { id: 'mic-stream' } as MediaStream;
+      const mockSystemStream = { id: 'system-stream' } as MediaStream;
 
       await AudioProcessing.startAudioProcessing(
         mockMicStream,
@@ -112,9 +154,9 @@ describe('AudioProcessing Module', () => {
       );
 
       // Get the second worklet node (system audio)
-      const systemWorkletNode = AudioWorkletNode.mock.results[1].value;
+      const systemWorkletNode = (AudioWorkletNode as any).mock.results[1].value as MockAudioWorkletNode;
       const audioData = new Int16Array([4, 5, 6]);
-      systemWorkletNode.port.onmessage({
+      systemWorkletNode.port.onmessage!({
         data: { type: 'audioData', data: audioData },
       });
 
@@ -126,7 +168,7 @@ describe('AudioProcessing Module', () => {
 
   describe('stopAudioProcessing', () => {
     it('should clean up all audio resources', async () => {
-      const mockStream = { id: 'test-stream' };
+      const mockStream = { id: 'test-stream' } as MediaStream;
       await AudioProcessing.startAudioProcessing(mockStream, mockStream);
 
       AudioProcessing.stopAudioProcessing();
@@ -146,7 +188,7 @@ describe('AudioProcessing Module', () => {
 
   describe('setRecordingState', () => {
     it('should send recording state to microphone worklet', async () => {
-      const mockStream = { id: 'test-stream' };
+      const mockStream = { id: 'test-stream' } as MediaStream;
       await AudioProcessing.startAudioProcessing(mockStream, null);
 
       AudioProcessing.setRecordingState(true);
@@ -158,8 +200,8 @@ describe('AudioProcessing Module', () => {
     });
 
     it('should send recording state to both worklets when system audio exists', async () => {
-      const mockMicStream = { id: 'mic-stream' };
-      const mockSystemStream = { id: 'system-stream' };
+      const mockMicStream = { id: 'mic-stream' } as MediaStream;
+      const mockSystemStream = { id: 'system-stream' } as MediaStream;
       await AudioProcessing.startAudioProcessing(
         mockMicStream,
         mockSystemStream
