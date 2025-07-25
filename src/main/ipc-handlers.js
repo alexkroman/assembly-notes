@@ -7,7 +7,7 @@ const {
   sendMicrophoneAudio,
   sendSystemAudio,
   resetAai,
-} = require('./transcription.js');
+} = require('./recordingManager.js');
 const {
   checkForUpdatesAndNotify,
   quitAndInstall,

@@ -48,12 +48,30 @@ describe('Auto-Updater Module', () => {
 
       expect(autoUpdater.logger).toBe(mockLogger);
       expect(autoUpdater.on).toHaveBeenCalledTimes(6);
-      expect(autoUpdater.on).toHaveBeenCalledWith('checking-for-update', expect.any(Function));
-      expect(autoUpdater.on).toHaveBeenCalledWith('update-available', expect.any(Function));
-      expect(autoUpdater.on).toHaveBeenCalledWith('update-not-available', expect.any(Function));
-      expect(autoUpdater.on).toHaveBeenCalledWith('error', expect.any(Function));
-      expect(autoUpdater.on).toHaveBeenCalledWith('download-progress', expect.any(Function));
-      expect(autoUpdater.on).toHaveBeenCalledWith('update-downloaded', expect.any(Function));
+      expect(autoUpdater.on).toHaveBeenCalledWith(
+        'checking-for-update',
+        expect.any(Function)
+      );
+      expect(autoUpdater.on).toHaveBeenCalledWith(
+        'update-available',
+        expect.any(Function)
+      );
+      expect(autoUpdater.on).toHaveBeenCalledWith(
+        'update-not-available',
+        expect.any(Function)
+      );
+      expect(autoUpdater.on).toHaveBeenCalledWith(
+        'error',
+        expect.any(Function)
+      );
+      expect(autoUpdater.on).toHaveBeenCalledWith(
+        'download-progress',
+        expect.any(Function)
+      );
+      expect(autoUpdater.on).toHaveBeenCalledWith(
+        'update-downloaded',
+        expect.any(Function)
+      );
     });
 
     it('should handle null window reference', () => {
@@ -72,7 +90,7 @@ describe('Auto-Updater Module', () => {
 
     it('should handle checking-for-update event', () => {
       const checkingHandler = autoUpdater.on.mock.calls.find(
-        call => call[0] === 'checking-for-update'
+        (call) => call[0] === 'checking-for-update'
       )[1];
 
       checkingHandler();
@@ -82,54 +100,69 @@ describe('Auto-Updater Module', () => {
 
     it('should handle update-available event', () => {
       const updateAvailableHandler = autoUpdater.on.mock.calls.find(
-        call => call[0] === 'update-available'
+        (call) => call[0] === 'update-available'
       )[1];
 
       const updateInfo = { version: '1.0.1' };
       updateAvailableHandler(updateInfo);
 
-      expect(mockLogger.info).toHaveBeenCalledWith('Update available.', updateInfo);
-      expect(mockWindow.webContents.send).toHaveBeenCalledWith('update-available', updateInfo);
+      expect(mockLogger.info).toHaveBeenCalledWith(
+        'Update available.',
+        updateInfo
+      );
+      expect(mockWindow.webContents.send).toHaveBeenCalledWith(
+        'update-available',
+        updateInfo
+      );
     });
 
     it('should handle update-available event without window', () => {
       autoUpdaterModule.initAutoUpdater(null);
       const updateAvailableHandler = autoUpdater.on.mock.calls.find(
-        call => call[0] === 'update-available'
+        (call) => call[0] === 'update-available'
       )[1];
 
       const updateInfo = { version: '1.0.1' };
       updateAvailableHandler(updateInfo);
 
-      expect(mockLogger.info).toHaveBeenCalledWith('Update available.', updateInfo);
+      expect(mockLogger.info).toHaveBeenCalledWith(
+        'Update available.',
+        updateInfo
+      );
       expect(mockWindow.webContents.send).not.toHaveBeenCalled();
     });
 
     it('should handle update-not-available event', () => {
       const updateNotAvailableHandler = autoUpdater.on.mock.calls.find(
-        call => call[0] === 'update-not-available'
+        (call) => call[0] === 'update-not-available'
       )[1];
 
       const updateInfo = { version: '1.0.0' };
       updateNotAvailableHandler(updateInfo);
 
-      expect(mockLogger.info).toHaveBeenCalledWith('Update not available.', updateInfo);
+      expect(mockLogger.info).toHaveBeenCalledWith(
+        'Update not available.',
+        updateInfo
+      );
     });
 
     it('should handle error event', () => {
       const errorHandler = autoUpdater.on.mock.calls.find(
-        call => call[0] === 'error'
+        (call) => call[0] === 'error'
       )[1];
 
       const error = new Error('Update failed');
       errorHandler(error);
 
-      expect(mockLogger.error).toHaveBeenCalledWith('Error in auto-updater:', error);
+      expect(mockLogger.error).toHaveBeenCalledWith(
+        'Error in auto-updater:',
+        error
+      );
     });
 
     it('should handle download-progress event', () => {
       const downloadProgressHandler = autoUpdater.on.mock.calls.find(
-        call => call[0] === 'download-progress'
+        (call) => call[0] === 'download-progress'
       )[1];
 
       const progressObj = {
@@ -144,13 +177,16 @@ describe('Auto-Updater Module', () => {
       expect(mockLogger.info).toHaveBeenCalledWith(
         'Download speed: 1024 - Downloaded 50% (500/1000)'
       );
-      expect(mockWindow.webContents.send).toHaveBeenCalledWith('download-progress', progressObj);
+      expect(mockWindow.webContents.send).toHaveBeenCalledWith(
+        'download-progress',
+        progressObj
+      );
     });
 
     it('should handle download-progress event without window', () => {
       autoUpdaterModule.initAutoUpdater(null);
       const downloadProgressHandler = autoUpdater.on.mock.calls.find(
-        call => call[0] === 'download-progress'
+        (call) => call[0] === 'download-progress'
       )[1];
 
       const progressObj = {
@@ -170,26 +206,35 @@ describe('Auto-Updater Module', () => {
 
     it('should handle update-downloaded event', () => {
       const updateDownloadedHandler = autoUpdater.on.mock.calls.find(
-        call => call[0] === 'update-downloaded'
+        (call) => call[0] === 'update-downloaded'
       )[1];
 
       const updateInfo = { version: '1.0.1' };
       updateDownloadedHandler(updateInfo);
 
-      expect(mockLogger.info).toHaveBeenCalledWith('Update downloaded', updateInfo);
-      expect(mockWindow.webContents.send).toHaveBeenCalledWith('update-downloaded', updateInfo);
+      expect(mockLogger.info).toHaveBeenCalledWith(
+        'Update downloaded',
+        updateInfo
+      );
+      expect(mockWindow.webContents.send).toHaveBeenCalledWith(
+        'update-downloaded',
+        updateInfo
+      );
     });
 
     it('should handle update-downloaded event without window', () => {
       autoUpdaterModule.initAutoUpdater(null);
       const updateDownloadedHandler = autoUpdater.on.mock.calls.find(
-        call => call[0] === 'update-downloaded'
+        (call) => call[0] === 'update-downloaded'
       )[1];
 
       const updateInfo = { version: '1.0.1' };
       updateDownloadedHandler(updateInfo);
 
-      expect(mockLogger.info).toHaveBeenCalledWith('Update downloaded', updateInfo);
+      expect(mockLogger.info).toHaveBeenCalledWith(
+        'Update downloaded',
+        updateInfo
+      );
       expect(mockWindow.webContents.send).not.toHaveBeenCalled();
     });
   });
@@ -253,7 +298,9 @@ describe('Auto-Updater Module', () => {
   describe('module exports', () => {
     it('should export all required functions', () => {
       expect(typeof autoUpdaterModule.initAutoUpdater).toBe('function');
-      expect(typeof autoUpdaterModule.checkForUpdatesAndNotify).toBe('function');
+      expect(typeof autoUpdaterModule.checkForUpdatesAndNotify).toBe(
+        'function'
+      );
       expect(typeof autoUpdaterModule.quitAndInstall).toBe('function');
       expect(typeof autoUpdaterModule.startUpdateCheck).toBe('function');
     });

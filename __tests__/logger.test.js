@@ -38,10 +38,10 @@ describe('Logger', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
-    
+
     // Reset modules to get fresh instances
     jest.resetModules();
-    
+
     electronLog = require('electron-log');
     electronApp = require('electron').app;
     log = require('../src/main/logger.js');
@@ -51,12 +51,12 @@ describe('Logger', () => {
     // Test the resolvePathFn function that was set during module load
     const resolvePathFn = electronLog.transports.file.resolvePathFn;
     expect(resolvePathFn).toBeDefined();
-    
+
     // Call the function to trigger app.getPath
     const logPath = resolvePathFn();
-    
+
     expect(electronApp.getPath).toHaveBeenCalledWith('userData');
-    
+
     const expectedPath = path.join('/fake/userData/path', 'logs', 'main.log');
     expect(logPath).toBe(expectedPath);
   });
@@ -67,8 +67,12 @@ describe('Logger', () => {
   });
 
   it('should set correct log formats', () => {
-    expect(electronLog.transports.file.format).toBe('[{y}-{m}-{d} {h}:{i}:{s}.{ms}] [{level}] {text}');
-    expect(electronLog.transports.console.format).toBe('[{h}:{i}:{s}.{ms}] [{level}] {text}');
+    expect(electronLog.transports.file.format).toBe(
+      '[{y}-{m}-{d} {h}:{i}:{s}.{ms}] [{level}] {text}'
+    );
+    expect(electronLog.transports.console.format).toBe(
+      '[{h}:{i}:{s}.{ms}] [{level}] {text}'
+    );
   });
 
   it('should start error catching if available', () => {
@@ -86,7 +90,7 @@ describe('Logger', () => {
   it('should handle case where errorHandler is not available', () => {
     // Reset and test without errorHandler
     jest.resetModules();
-    
+
     jest.doMock('electron-log', () => ({
       transports: {
         file: {

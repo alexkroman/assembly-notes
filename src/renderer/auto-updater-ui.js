@@ -76,10 +76,15 @@ window.AutoUpdaterUI = (function () {
    * @param {number} percent - Progress percentage (optional)
    * @param {boolean} showQuitButton - Whether to show quit and reopen button
    */
-  function updateDialogProgress(dialog, message, percent = null, showQuitButton = false) {
+  function updateDialogProgress(
+    dialog,
+    message,
+    percent = null,
+    showQuitButton = false
+  ) {
     const content = dialog.querySelector('.dialog-content');
     const progressText = percent !== null ? ` (${Math.round(percent)}%)` : '';
-    
+
     if (showQuitButton) {
       content.innerHTML = `
         <h3>Update Ready</h3>
@@ -88,7 +93,7 @@ window.AutoUpdaterUI = (function () {
           <button id="quitAndReopen" class="primary">Quit and Reopen</button>
         </div>
       `;
-      
+
       document.getElementById('quitAndReopen').onclick = () => {
         window.electronAPI.quitAndInstall();
       };
@@ -116,7 +121,11 @@ window.AutoUpdaterUI = (function () {
   function handleDownloadProgress(progress) {
     const percent = Math.round(progress.percent);
     if (window.currentUpdateDialog) {
-      updateDialogProgress(window.currentUpdateDialog, 'Downloading update...', percent);
+      updateDialogProgress(
+        window.currentUpdateDialog,
+        'Downloading update...',
+        percent
+      );
     }
   }
 
@@ -127,7 +136,12 @@ window.AutoUpdaterUI = (function () {
   function handleUpdateDownloaded(info) {
     window.logger.info('Update downloaded:', info);
     if (window.currentUpdateDialog) {
-      updateDialogProgress(window.currentUpdateDialog, 'Update ready to install!', null, true);
+      updateDialogProgress(
+        window.currentUpdateDialog,
+        'Update ready to install!',
+        null,
+        true
+      );
     }
   }
 
