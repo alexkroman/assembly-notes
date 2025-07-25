@@ -1,4 +1,4 @@
-module.exports = {
+export default {
   testEnvironment: 'node',
   preset: 'ts-jest',
   testMatch: ['**/__tests__/**/*.test.ts'],

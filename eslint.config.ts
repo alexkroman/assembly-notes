@@ -1,9 +1,9 @@
-const js = require('@eslint/js');
-const globals = require('globals');
-const tsPlugin = require('@typescript-eslint/eslint-plugin');
-const tsParser = require('@typescript-eslint/parser');
+import js from '@eslint/js';
+import globals from 'globals';
+import tsPlugin from '@typescript-eslint/eslint-plugin';
+import tsParser from '@typescript-eslint/parser';
 
-module.exports = [
+export default [
   js.configs.recommended,
   {
     languageOptions: {
@@ -22,19 +22,12 @@ module.exports = [
     },
   },
   {
-    files: ['main.js'],
-    languageOptions: {
-      globals: {
-        ...globals.node,
-      },
-    },
-  },
-  {
     files: ['**/*.ts'],
     languageOptions: {
       parser: tsParser,
       globals: {
         ...globals.node,
+        NodeJS: 'readonly',
       },
       parserOptions: {
         ecmaVersion: 2022,
@@ -49,37 +42,22 @@ module.exports = [
       'no-unused-vars': 'off',
       '@typescript-eslint/no-unused-vars': 'warn',
       '@typescript-eslint/no-require-imports': 'off',
-    },
-  },
-  {
-    files: ['renderer.js', 'preload.js'],
-    languageOptions: {
-      globals: {
-        ...globals.browser,
-      },
-      sourceType: 'script',
-    },
-  },
-  {
-    files: ['src/renderer/**/*.js'],
-    languageOptions: {
-      globals: {
-        ...globals.browser,
-      },
-      sourceType: 'module',
+      '@typescript-eslint/no-explicit-any': 'off',
     },
   },
   {
     files: [
-      '**/__tests__/**/*.js',
-      '**/__mocks__/**/*.js',
-      '**/*.test.js',
-      '**/*.spec.js',
+      '**/__tests__/**/*.ts',
+      '**/__mocks__/**/*.ts',
+      '**/*.test.ts',
+      '**/*.spec.ts',
     ],
     languageOptions: {
+      parser: tsParser,
       globals: {
         ...globals.node,
         ...globals.jest,
+        NodeJS: 'readonly',
         jest: 'readonly',
         describe: 'readonly',
         it: 'readonly',
@@ -89,6 +67,20 @@ module.exports = [
         beforeAll: 'readonly',
         afterAll: 'readonly',
       },
+      parserOptions: {
+        ecmaVersion: 2022,
+        sourceType: 'module',
+      },
+    },
+    plugins: {
+      '@typescript-eslint': tsPlugin,
+    },
+    rules: {
+      ...tsPlugin.configs.recommended.rules,
+      'no-unused-vars': 'off',
+      '@typescript-eslint/no-unused-vars': 'warn',
+      '@typescript-eslint/no-require-imports': 'off',
+      '@typescript-eslint/no-explicit-any': 'off',
     },
   },
   {
