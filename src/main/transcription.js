@@ -10,8 +10,177 @@ let aai = null;
 let microphoneTranscript = '';
 let systemAudioTranscript = '';
 
+// Retry configuration
+const RETRY_CONFIG = {
+  maxRetries: 5,
+  initialDelay: 1000, // 1 second
+  maxDelay: 30000, // 30 seconds
+  backoffMultiplier: 2,
+};
+
+// Connection state tracking
+const connectionState = {
+  microphone: {
+    isConnecting: false,
+    isConnected: false,
+    retryCount: 0,
+    retryTimeout: null,
+  },
+  system: {
+    isConnecting: false,
+    isConnected: false,
+    retryCount: 0,
+    retryTimeout: null,
+  },
+};
+
+let isRecordingActive = false;
+let mainWindowRef = null;
+
 const DEFAULT_SUMMARY_PROMPT =
   'Please provide a concise summary of this transcription, highlighting key points, decisions made, and action items discussed.';
+
+function calculateRetryDelay(retryCount) {
+  const delay = Math.min(
+    RETRY_CONFIG.initialDelay * Math.pow(RETRY_CONFIG.backoffMultiplier, retryCount),
+    RETRY_CONFIG.maxDelay
+  );
+  return delay;
+}
+
+async function createTranscriberWithRetry(streamType) {
+  const state = connectionState[streamType];
+  
+  if (!isRecordingActive || state.isConnecting || state.isConnected) {
+    return;
+  }
+
+  state.isConnecting = true;
+
+  try {
+    log.info(`Creating ${streamType} transcriber (attempt ${state.retryCount + 1})...`);
+    
+    const transcriber = aai.realtime.transcriber({
+      sampleRate: 16000,
+    });
+
+    setupTranscriberHandlers(transcriber, streamType);
+    
+    await transcriber.connect();
+    
+    if (streamType === 'microphone') {
+      microphoneTranscriber = transcriber;
+    } else {
+      systemAudioTranscriber = transcriber;
+    }
+    
+    state.retryCount = 0;
+    state.isConnecting = false;
+    state.isConnected = true;
+    
+    log.info(`${streamType} transcriber connected successfully`);
+  } catch (error) {
+    log.error(`Failed to connect ${streamType} transcriber:`, error);
+    state.isConnecting = false;
+    state.isConnected = false;
+    
+    if (state.retryCount < RETRY_CONFIG.maxRetries && isRecordingActive) {
+      state.retryCount++;
+      const delay = calculateRetryDelay(state.retryCount - 1);
+      
+      log.info(`Retrying ${streamType} connection in ${delay}ms...`);
+      mainWindowRef.webContents.send('connection-status', {
+        stream: streamType,
+        connected: false,
+        retrying: true,
+        nextRetryIn: delay,
+      });
+      
+      state.retryTimeout = setTimeout(() => {
+        createTranscriberWithRetry(streamType);
+      }, delay);
+    } else {
+      log.error(`Max retries reached for ${streamType} transcriber`);
+      mainWindowRef.webContents.send('error', 
+        `Failed to connect ${streamType} after ${RETRY_CONFIG.maxRetries} attempts`
+      );
+    }
+  }
+}
+
+function setupTranscriberHandlers(transcriber, streamType) {
+  const state = connectionState[streamType];
+  
+  transcriber.on('open', () => {
+    state.isConnected = true;
+    mainWindowRef.webContents.send('connection-status', {
+      stream: streamType,
+      connected: true,
+    });
+  });
+
+  transcriber.on('error', async (error) => {
+    log.error(`${streamType} transcription error:`, error);
+    
+    // Don't send error to UI if we're going to retry
+    if (state.retryCount < RETRY_CONFIG.maxRetries && isRecordingActive) {
+      log.info(`Will attempt to reconnect ${streamType}...`);
+    } else {
+      mainWindowRef.webContents.send('error', 
+        `${streamType} error: ${error.message}`
+      );
+    }
+  });
+
+  transcriber.on('close', async () => {
+    log.warn(`${streamType} transcriber connection closed`);
+    state.isConnected = false;
+    state.isConnecting = false;
+    
+    if (streamType === 'microphone') {
+      microphoneTranscriber = null;
+    } else {
+      systemAudioTranscriber = null;
+    }
+    
+    mainWindowRef.webContents.send('connection-status', {
+      stream: streamType,
+      connected: false,
+    });
+
+    // Attempt to reconnect if recording is still active
+    if (isRecordingActive && state.retryCount < RETRY_CONFIG.maxRetries) {
+      const delay = calculateRetryDelay(state.retryCount);
+      log.info(`Scheduling ${streamType} reconnection in ${delay}ms...`);
+      
+      state.retryTimeout = setTimeout(() => {
+        createTranscriberWithRetry(streamType);
+      }, delay);
+    }
+  });
+
+  transcriber.on('transcript', (transcript) => {
+    if (!transcript.text) return;
+
+    if (transcript.message_type === 'FinalTranscript') {
+      const line = `${transcript.text}\n`;
+      if (streamType === 'microphone') {
+        microphoneTranscript += line;
+      } else {
+        systemAudioTranscript += line;
+      }
+      mainWindowRef.webContents.send('transcript', {
+        text: transcript.text,
+        partial: false,
+      });
+    } else {
+      mainWindowRef.webContents.send('transcript', {
+        text: transcript.text,
+        partial: true,
+      });
+    }
+  });
+}
 
 async function processRecordingComplete() {
   const fullTranscript = microphoneTranscript + systemAudioTranscript;
@@ -56,145 +225,27 @@ async function startTranscription(mainWindow) {
 
   try {
     aai = new AssemblyAI({ apiKey: assemblyAiApiKey });
+    mainWindowRef = mainWindow;
+    isRecordingActive = true;
+
+    // Reset connection state
+    Object.keys(connectionState).forEach(stream => {
+      connectionState[stream].isConnecting = false;
+      connectionState[stream].isConnected = false;
+      connectionState[stream].retryCount = 0;
+      if (connectionState[stream].retryTimeout) {
+        clearTimeout(connectionState[stream].retryTimeout);
+        connectionState[stream].retryTimeout = null;
+      }
+    });
 
     microphoneTranscript = '';
     systemAudioTranscript = '';
 
-    microphoneTranscriber = aai.realtime.transcriber({
-      sampleRate: 16000,
-    });
-
-    microphoneTranscriber.on('open', () => {
-      mainWindow.webContents.send('connection-status', {
-        stream: 'microphone',
-        connected: true,
-      });
-    });
-
-    microphoneTranscriber.on('error', async (error) => {
-      log.error('Microphone transcription error:', error);
-      mainWindow.webContents.send(
-        'error',
-        `Microphone error: ${error.message}`
-      );
-
-      // Check for various connection/session errors that should stop recording
-      const shouldStop =
-        error.message &&
-        (error.message.includes('Session idle for too long') ||
-          error.message.includes('Connection lost') ||
-          error.message.includes('WebSocket') ||
-          error.message.includes('ECONNRESET') ||
-          error.message.includes('ENOTFOUND') ||
-          error.message.includes('timeout'));
-
-      if (shouldStop) {
-        log.info('Connection error detected, stopping recording...');
-        await stopTranscription(mainWindow);
-      }
-    });
-
-    microphoneTranscriber.on('close', async () => {
-      log.warn('Microphone transcriber connection closed');
-      mainWindow.webContents.send('connection-status', {
-        stream: 'microphone',
-        connected: false,
-      });
-
-      // If recording is still active and this wasn't an intentional stop, auto-stop
-      if (microphoneTranscriber || systemAudioTranscriber) {
-        log.info('Microphone connection lost during recording, stopping...');
-        await stopTranscription(mainWindow);
-      }
-    });
-
-    microphoneTranscriber.on('transcript', (transcript) => {
-      if (!transcript.text) return;
-
-      if (transcript.message_type === 'FinalTranscript') {
-        const line = `${transcript.text}\n`;
-        microphoneTranscript += line;
-        mainWindow.webContents.send('transcript', {
-          text: transcript.text,
-          partial: false,
-        });
-      } else {
-        mainWindow.webContents.send('transcript', {
-          text: transcript.text,
-          partial: true,
-        });
-      }
-    });
-
-    systemAudioTranscriber = aai.realtime.transcriber({
-      sampleRate: 16000,
-    });
-
-    systemAudioTranscriber.on('open', () => {
-      mainWindow.webContents.send('connection-status', {
-        stream: 'system',
-        connected: true,
-      });
-    });
-
-    systemAudioTranscriber.on('error', async (error) => {
-      log.error('System audio transcription error:', error);
-      mainWindow.webContents.send(
-        'error',
-        `System audio error: ${error.message}`
-      );
-
-      // Check for various connection/session errors that should stop recording
-      const shouldStop =
-        error.message &&
-        (error.message.includes('Session idle for too long') ||
-          error.message.includes('Connection lost') ||
-          error.message.includes('WebSocket') ||
-          error.message.includes('ECONNRESET') ||
-          error.message.includes('ENOTFOUND') ||
-          error.message.includes('timeout'));
-
-      if (shouldStop) {
-        log.info('Connection error detected, stopping recording...');
-        await stopTranscription(mainWindow);
-      }
-    });
-
-    systemAudioTranscriber.on('close', async () => {
-      log.warn('System audio transcriber connection closed');
-      mainWindow.webContents.send('connection-status', {
-        stream: 'system',
-        connected: false,
-      });
-
-      // If recording is still active and this wasn't an intentional stop, auto-stop
-      if (microphoneTranscriber || systemAudioTranscriber) {
-        log.info('System audio connection lost during recording, stopping...');
-        await stopTranscription(mainWindow);
-      }
-    });
-
-    systemAudioTranscriber.on('transcript', (transcript) => {
-      if (!transcript.text) return;
-
-      if (transcript.message_type === 'FinalTranscript') {
-        const line = `${transcript.text}\n`;
-        systemAudioTranscript += line;
-        mainWindow.webContents.send('transcript', {
-          text: transcript.text,
-          partial: false,
-        });
-      } else {
-        mainWindow.webContents.send('transcript', {
-          text: transcript.text,
-          partial: true,
-        });
-      }
-    });
-
+    // Start connections with retry logic
     await Promise.all([
-      microphoneTranscriber.connect(),
-      systemAudioTranscriber.connect(),
+      createTranscriberWithRetry('microphone'),
+      createTranscriberWithRetry('system'),
     ]);
 
     mainWindow.webContents.send('start-audio-capture');
@@ -203,20 +254,39 @@ async function startTranscription(mainWindow) {
   } catch (error) {
     log.error('Failed to start transcription:', error);
     mainWindow.webContents.send('error', `Failed to start: ${error.message}`);
+    isRecordingActive = false;
     return false;
   }
 }
 
 async function stopTranscription(mainWindow) {
+  isRecordingActive = false;
   mainWindow.webContents.send('stop-audio-capture');
 
+  // Clear any pending retry timeouts
+  Object.keys(connectionState).forEach(stream => {
+    if (connectionState[stream].retryTimeout) {
+      clearTimeout(connectionState[stream].retryTimeout);
+      connectionState[stream].retryTimeout = null;
+    }
+    connectionState[stream].retryCount = 0;
+  });
+
   if (microphoneTranscriber) {
-    await microphoneTranscriber.close();
+    try {
+      await microphoneTranscriber.close();
+    } catch (error) {
+      log.error('Error closing microphone transcriber:', error);
+    }
     microphoneTranscriber = null;
   }
 
   if (systemAudioTranscriber) {
-    await systemAudioTranscriber.close();
+    try {
+      await systemAudioTranscriber.close();
+    } catch (error) {
+      log.error('Error closing system audio transcriber:', error);
+    }
     systemAudioTranscriber = null;
   }
 

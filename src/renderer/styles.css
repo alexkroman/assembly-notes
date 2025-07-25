@@ -173,6 +173,18 @@ button.recording:hover {
   text-align: center;
 }
 
+.status.connected {
+  color: var(--accent-success);
+}
+
+.status.disconnected {
+  color: var(--accent-danger);
+}
+
+.status.reconnecting {
+  color: var(--accent-info);
+}
+
 .section,
 .settings-title {
   margin: 18px 0 6px;

@@ -10,11 +10,23 @@ let systemAudioStream = null;
 let isRecording = false;
 let micConnected = false;
 let systemConnected = false;
+let autoScrollEnabled = true;
 
 const transcriptionResults = document.getElementById('transcriptionResults');
 const audioStatus = document.getElementById('audioStatus');
 const toggleBtn = document.getElementById('toggleBtn');
 const settingsBtn = document.getElementById('settingsBtn');
+
+// Check if user is at bottom of transcript area (with small threshold)
+function isAtBottom() {
+  const threshold = 50; // pixels from bottom
+  return transcriptionResults.scrollHeight - transcriptionResults.scrollTop - transcriptionResults.clientHeight < threshold;
+}
+
+// Listen for manual scrolling
+transcriptionResults.addEventListener('scroll', () => {
+  autoScrollEnabled = isAtBottom();
+});
 
 function updateAudioStatus() {
   if (micConnected && systemConnected) {
@@ -52,24 +64,26 @@ window.electronAPI.onTranscript((data) => {
     transcriptElement.textContent = prefix + text;
     transcriptionResults.appendChild(transcriptElement);
   }
+
+  // Auto-scroll to bottom only if enabled
+  if (autoScrollEnabled) {
+    transcriptionResults.scrollTop = transcriptionResults.scrollHeight;
+  }
 });
 
 window.electronAPI.onConnectionStatus((data) => {
-  const { stream, connected } = data;
+  const { stream, connected, retrying, nextRetryIn } = data;
   if (stream === 'microphone') {
     micConnected = connected;
   } else if (stream === 'system') {
     systemConnected = connected;
   }
-  updateAudioStatus();
-
-  // If any stream becomes disconnected during recording, stop automatically
-  if (!connected && isRecording) {
-    window.logger.warn(`${stream} connection lost during recording`);
-    alert(
-      `${stream.charAt(0).toUpperCase() + stream.slice(1)} connection lost. Stopping recording.`
-    );
-    stopRecording();
+  
+  if (retrying) {
+    audioStatus.textContent = `Audio: Reconnecting ${stream}... (${Math.round(nextRetryIn / 1000)}s)`;
+    audioStatus.className = 'status reconnecting';
+  } else {
+    updateAudioStatus();
   }
 });
 
