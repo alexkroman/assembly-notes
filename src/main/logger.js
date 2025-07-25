@@ -3,7 +3,7 @@ const { app } = require('electron');
 const path = require('path');
 
 // Configure file logging
-log.transports.file.resolvePath = () => {
+log.transports.file.resolvePathFn = () => {
   const logsPath = path.join(app.getPath('userData'), 'logs', 'main.log');
   return logsPath;
 };
