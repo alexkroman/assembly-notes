@@ -3,7 +3,7 @@
  */
 
 import { jest } from '@jest/globals';
-import { mockElectronAPI } from '../../__mocks__/electron-api';
+
 import {
   AudioContext,
   AudioWorkletNode,
@@ -11,6 +11,7 @@ import {
   mockWorkletNode,
   mockMediaStreamSource,
 } from '../../__mocks__/audio-context';
+import { mockElectronAPI } from '../../__mocks__/electron-api';
 
 declare global {
   interface Window {
@@ -140,7 +141,7 @@ describe('AudioProcessing Module', () => {
     });
 
     it('should handle stopping when not started', () => {
-      expect(() => AudioProcessing.stopAudioProcessing()).not.toThrow();
+      expect(() => { AudioProcessing.stopAudioProcessing(); }).not.toThrow();
     });
   });
 
@@ -175,7 +176,7 @@ describe('AudioProcessing Module', () => {
     });
 
     it('should handle setting state when not initialized', () => {
-      expect(() => AudioProcessing.setRecordingState(true)).not.toThrow();
+      expect(() => { AudioProcessing.setRecordingState(true); }).not.toThrow();
     });
   });
 });

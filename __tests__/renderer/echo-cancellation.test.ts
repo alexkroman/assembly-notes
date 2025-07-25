@@ -3,6 +3,7 @@
  */
 
 import { jest } from '@jest/globals';
+
 import {
   AudioContext,
   MediaStream,

@@ -1,15 +1,16 @@
-import { app, BrowserWindow } from 'electron';
-import { initMain as initAudioLoopback } from 'electron-audio-loopback';
 import * as path from 'path';
 import { fileURLToPath } from 'url';
+
+import { app, BrowserWindow } from 'electron';
+import { initMain as initAudioLoopback } from 'electron-audio-loopback';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-import { loadSettings } from './settings.js';
-import { setupIpcHandlers } from './ipc-handlers.js';
 import { initAutoUpdater, startUpdateCheck } from './auto-updater.js';
+import { setupIpcHandlers } from './ipc-handlers.js';
 import log from './logger.js';
+import { loadSettings } from './settings.js';
 
 initAudioLoopback();
 

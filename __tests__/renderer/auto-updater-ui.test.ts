@@ -3,6 +3,7 @@
  */
 
 import { jest } from '@jest/globals';
+
 import { mockElectronAPI } from '../../__mocks__/electron-api';
 import mockLogger from '../../__mocks__/logger';
 
@@ -123,7 +124,7 @@ describe('AutoUpdaterUI Module', () => {
     it('should handle close button click', () => {
       AutoUpdaterUI.createUpdateNotification('Test message');
 
-      const closeButton = document.querySelector('.close-btn') as HTMLElement;
+      const closeButton = document.querySelector('.close-btn')!;
       expect(closeButton).toBeTruthy();
 
       closeButton.click();
@@ -172,7 +173,7 @@ describe('AutoUpdaterUI Module', () => {
 
       const installButton = document.getElementById(
         'installUpdate'
-      ) as HTMLElement;
+      )!;
       installButton.click();
 
       expect(mockElectronAPI.installUpdate).toHaveBeenCalledTimes(1);
@@ -186,7 +187,7 @@ describe('AutoUpdaterUI Module', () => {
     it('should handle skip button click', () => {
       AutoUpdaterUI.createUpdateDialog(mockUpdateInfo);
 
-      const skipButton = document.getElementById('skipUpdate') as HTMLElement;
+      const skipButton = document.getElementById('skipUpdate')!;
       skipButton.click();
 
       const dialog = document.querySelector('.update-dialog');
@@ -214,7 +215,7 @@ describe('AutoUpdaterUI Module', () => {
 
       const installButton = document.getElementById(
         'installUpdate'
-      ) as HTMLElement;
+      )!;
       installButton.click();
 
       const dialog = document.querySelector('.update-dialog');
@@ -228,7 +229,7 @@ describe('AutoUpdaterUI Module', () => {
       AutoUpdaterUI.createUpdateDialog(mockUpdateInfo);
       const installButton = document.getElementById(
         'installUpdate'
-      ) as HTMLElement;
+      )!;
       installButton.click();
 
       // Simulate download progress
@@ -245,7 +246,7 @@ describe('AutoUpdaterUI Module', () => {
       AutoUpdaterUI.createUpdateDialog(mockUpdateInfo);
       const installButton = document.getElementById(
         'installUpdate'
-      ) as HTMLElement;
+      )!;
       installButton.click();
 
       // Simulate update downloaded
@@ -265,13 +266,13 @@ describe('AutoUpdaterUI Module', () => {
       AutoUpdaterUI.createUpdateDialog(mockUpdateInfo);
       const installButton = document.getElementById(
         'installUpdate'
-      ) as HTMLElement;
+      )!;
       installButton.click();
       AutoUpdaterUI.handleUpdateDownloaded(mockUpdateInfo);
 
       const quitButton = document.getElementById(
         'quitAndReopen'
-      ) as HTMLElement;
+      )!;
       quitButton.click();
 
       expect(mockElectronAPI.quitAndInstall).toHaveBeenCalledTimes(1);

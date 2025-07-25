@@ -1,6 +1,7 @@
-import log from 'electron-log';
-import { app } from 'electron';
 import path from 'path';
+
+import { app } from 'electron';
+import log from 'electron-log';
 
 // Configure file logging
 log.transports.file.resolvePathFn = () => {

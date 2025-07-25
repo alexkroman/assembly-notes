@@ -3,7 +3,7 @@ let assemblyaiKeyInput: HTMLInputElement;
 let summaryPromptInput: HTMLTextAreaElement;
 let closeBtn: HTMLButtonElement;
 let saveBtn: HTMLButtonElement;
-let isInitialized: boolean = false;
+let isInitialized = false;
 
 async function initializeModal(): Promise<void> {
   if (isInitialized) return;

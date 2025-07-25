@@ -1,5 +1,6 @@
-import { autoUpdater } from 'electron-updater';
 import { BrowserWindow } from 'electron';
+import { autoUpdater } from 'electron-updater';
+
 import log from './logger.js';
 
 let mainWindow: BrowserWindow | null = null;
@@ -76,7 +77,7 @@ function quitAndInstall(): void {
 /**
  * Start checking for updates after app is ready
  */
-function startUpdateCheck(delay: number = 3000): void {
+function startUpdateCheck(delay = 3000): void {
   setTimeout(() => {
     checkForUpdatesAndNotify();
   }, delay);

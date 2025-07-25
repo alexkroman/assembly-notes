@@ -55,12 +55,12 @@ export async function acquireStreams(): Promise<{
 
 export function releaseStreams(): void {
   if (microphoneStream) {
-    microphoneStream.getTracks().forEach((track) => track.stop());
+    microphoneStream.getTracks().forEach((track) => { track.stop(); });
     microphoneStream = null;
   }
 
   if (systemAudioStream) {
-    systemAudioStream.getTracks().forEach((track) => track.stop());
+    systemAudioStream.getTracks().forEach((track) => { track.stop(); });
     systemAudioStream = null;
   }
 

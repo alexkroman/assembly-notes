@@ -1,7 +1,8 @@
 import { BrowserWindow } from 'electron';
+
+import log from './logger.js';
 import { getSettings } from './settings.js';
 import TranscriptionService from './transcriptionService.js';
-import log from './logger.js';
 
 let transcriptionService: TranscriptionService | null = null;
 let mainWindowRef: BrowserWindow | null = null;

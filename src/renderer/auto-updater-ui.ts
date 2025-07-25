@@ -2,7 +2,7 @@ let updateNotification: HTMLElement | null = null;
 
 function createUpdateNotification(
   message: string,
-  type: string = 'info'
+  type = 'info'
 ): void {
   if (updateNotification) {
     updateNotification.remove();
@@ -60,7 +60,7 @@ function updateDialogProgress(
   dialog: HTMLElement,
   message: string,
   percent: number | null = null,
-  showQuitButton: boolean = false
+  showQuitButton = false
 ): void {
   const content = dialog.querySelector('.dialog-content')!;
   const progressText = percent !== null ? ` (${Math.round(percent)}%)` : '';

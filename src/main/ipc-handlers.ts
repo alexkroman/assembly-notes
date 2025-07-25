@@ -4,7 +4,9 @@ import {
   IpcMainEvent,
   IpcMainInvokeEvent,
 } from 'electron';
-import { getSettings, saveSettingsToFile } from './settings.js';
+
+import { checkForUpdatesAndNotify, quitAndInstall } from './auto-updater.js';
+import log from './logger.js';
 import {
   startTranscription,
   stopTranscription,
@@ -12,8 +14,7 @@ import {
   sendSystemAudio,
   resetAai,
 } from './recordingManager.js';
-import { checkForUpdatesAndNotify, quitAndInstall } from './auto-updater.js';
-import log from './logger.js';
+import { getSettings, saveSettingsToFile } from './settings.js';
 
 function setupIpcHandlers(mainWindow: BrowserWindow): void {
   // Handle log messages from renderer

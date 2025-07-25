@@ -1,5 +1,7 @@
-import { AssemblyAI } from 'assemblyai';
 import { EventEmitter } from 'events';
+
+import { AssemblyAI } from 'assemblyai';
+
 import log from './logger.js';
 
 interface KeepAliveSettings {
@@ -296,9 +298,7 @@ class TranscriptionService extends EventEmitter {
 
     // Reset connection state
     (
-      Object.keys(this.connectionState) as Array<
-        keyof typeof this.connectionState
-      >
+      Object.keys(this.connectionState) as (keyof typeof this.connectionState)[]
     ).forEach((stream) => {
       this.connectionState[stream].isConnecting = false;
       this.connectionState[stream].isConnected = false;
@@ -324,9 +324,7 @@ class TranscriptionService extends EventEmitter {
 
     // Clear any pending retry timeouts
     (
-      Object.keys(this.connectionState) as Array<
-        keyof typeof this.connectionState
-      >
+      Object.keys(this.connectionState) as (keyof typeof this.connectionState)[]
     ).forEach((stream) => {
       if (this.connectionState[stream].retryTimeout) {
         clearTimeout(this.connectionState[stream].retryTimeout);

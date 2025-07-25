@@ -3,6 +3,7 @@
  */
 
 import { jest } from '@jest/globals';
+
 import {
   AudioWorkletProcessor,
   registerProcessor,

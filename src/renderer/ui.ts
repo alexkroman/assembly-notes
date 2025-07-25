@@ -1,13 +1,13 @@
 const transcriptionResults = document.getElementById(
   'transcriptionResults'
-) as HTMLElement;
-const audioStatus = document.getElementById('audioStatus') as HTMLElement;
+)!;
+const audioStatus = document.getElementById('audioStatus')!;
 const toggleBtn = document.getElementById('toggleBtn') as HTMLButtonElement;
 const settingsBtn = document.getElementById('settingsBtn') as HTMLButtonElement;
 
-let autoScrollEnabled: boolean = true;
-let micConnected: boolean = false;
-let systemConnected: boolean = false;
+let autoScrollEnabled = true;
+let micConnected = false;
+let systemConnected = false;
 
 function isAtBottom(): boolean {
   const threshold = 50; // pixels from bottom

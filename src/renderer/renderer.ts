@@ -1,4 +1,11 @@
+import {
+  startAudioProcessing,
+  stopAudioProcessing,
+  setRecordingState,
+} from './audio-processing.js';
+import { initAutoUpdaterUI } from './auto-updater-ui.js';
 import { acquireStreams, releaseStreams, monitorStream } from './media.js';
+import { showSettingsModal } from './settings-modal.js';
 import {
   renderTranscript,
   updateAudioStatus,
@@ -7,15 +14,8 @@ import {
   clearTranscripts,
   getElements,
 } from './ui.js';
-import {
-  startAudioProcessing,
-  stopAudioProcessing,
-  setRecordingState,
-} from './audio-processing.js';
-import { showSettingsModal } from './settings-modal.js';
-import { initAutoUpdaterUI } from './auto-updater-ui.js';
 
-let isRecording: boolean = false;
+let isRecording = false;
 let streams: any = null;
 
 window.electronAPI.onTranscript((data: any) => {
