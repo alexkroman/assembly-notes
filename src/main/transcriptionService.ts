@@ -40,7 +40,10 @@ class TranscriptionService extends EventEmitter {
   private isActive: boolean;
   private keepAliveConfig: KeepAliveConfig;
   private retryConfig: RetryConfig;
-  private connectionState: { microphone: ConnectionState; system: ConnectionState };
+  private connectionState: {
+    microphone: ConnectionState;
+    system: ConnectionState;
+  };
 
   constructor() {
     super();
@@ -145,7 +148,9 @@ class TranscriptionService extends EventEmitter {
     }
   }
 
-  async createTranscriberWithRetry(streamType: 'microphone' | 'system'): Promise<void> {
+  async createTranscriberWithRetry(
+    streamType: 'microphone' | 'system'
+  ): Promise<void> {
     const state = this.connectionState[streamType];
 
     if (!this.isActive || state.isConnecting || state.isConnected) {
@@ -221,7 +226,10 @@ class TranscriptionService extends EventEmitter {
     }
   }
 
-  setupTranscriberHandlers(transcriber: any, streamType: 'microphone' | 'system'): void {
+  setupTranscriberHandlers(
+    transcriber: any,
+    streamType: 'microphone' | 'system'
+  ): void {
     const state = this.connectionState[streamType];
 
     transcriber.on('open', () => {

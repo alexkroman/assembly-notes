@@ -12,7 +12,9 @@ interface MockTranscriber {
   connect: jest.MockedFunction<() => Promise<void>>;
   close: jest.MockedFunction<() => Promise<void>>;
   sendAudio: jest.MockedFunction<(audio: Buffer) => void>;
-  on: jest.MockedFunction<(event: string, handler: (...args: any[]) => void) => void>;
+  on: jest.MockedFunction<
+    (event: string, handler: (...args: any[]) => void) => void
+  >;
 }
 
 interface MockAssemblyAI {
@@ -22,7 +24,10 @@ interface MockAssemblyAI {
 }
 
 interface TranscriptionServiceInstance {
-  initialize: (apiKey: string, keepAliveSettings?: { enabled: boolean; intervalSeconds: number }) => void;
+  initialize: (
+    apiKey: string,
+    keepAliveSettings?: { enabled: boolean; intervalSeconds: number }
+  ) => void;
   start: () => Promise<void>;
   stop: () => Promise<void>;
   sendMicrophoneAudio: (audioData: Uint8Array) => void;
@@ -34,8 +39,16 @@ interface TranscriptionServiceInstance {
   isActive: boolean;
   keepAliveConfig: { enabled: boolean; intervalMs: number };
   connectionState: {
-    microphone: { retryCount: number; isConnected: boolean; retryTimeout?: NodeJS.Timeout };
-    system: { retryCount: number; isConnected: boolean; retryTimeout?: NodeJS.Timeout };
+    microphone: {
+      retryCount: number;
+      isConnected: boolean;
+      retryTimeout?: NodeJS.Timeout;
+    };
+    system: {
+      retryCount: number;
+      isConnected: boolean;
+      retryTimeout?: NodeJS.Timeout;
+    };
   };
 }
 
@@ -48,7 +61,9 @@ describe('TranscriptionService', () => {
     jest.clearAllMocks();
 
     const { AssemblyAI } = await import('assemblyai');
-    const TranscriptionService = await import('../src/main/transcriptionService');
+    const TranscriptionService = await import(
+      '../src/main/transcriptionService'
+    );
 
     // Mock the transcriber
     mockTranscriber = {
@@ -65,7 +80,9 @@ describe('TranscriptionService', () => {
       },
     };
 
-    (AssemblyAI as jest.MockedClass<typeof AssemblyAI>).mockImplementation(() => mockAssemblyAI as any);
+    (AssemblyAI as jest.MockedClass<typeof AssemblyAI>).mockImplementation(
+      () => mockAssemblyAI as any
+    );
 
     transcriptionService = new (TranscriptionService.default as any)();
   });
@@ -79,7 +96,7 @@ describe('TranscriptionService', () => {
   describe('initialize', () => {
     it('should initialize with API key and default keep-alive settings', async () => {
       const { AssemblyAI } = await import('assemblyai');
-      
+
       transcriptionService.initialize('test-api-key');
 
       expect(AssemblyAI).toHaveBeenCalledWith({ apiKey: 'test-api-key' });
@@ -131,7 +148,9 @@ describe('TranscriptionService', () => {
     });
 
     it('should throw error if not initialized', async () => {
-      const { default: TranscriptionService } = await import('../src/main/transcriptionService');
+      const { default: TranscriptionService } = await import(
+        '../src/main/transcriptionService'
+      );
       const uninitializedService = new TranscriptionService();
 
       await expect(uninitializedService.start()).rejects.toThrow(

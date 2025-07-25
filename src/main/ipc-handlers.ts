@@ -1,4 +1,9 @@
-import { ipcMain, BrowserWindow, IpcMainEvent, IpcMainInvokeEvent } from 'electron';
+import {
+  ipcMain,
+  BrowserWindow,
+  IpcMainEvent,
+  IpcMainInvokeEvent,
+} from 'electron';
 import { getSettings, saveSettingsToFile } from './settings.js';
 import {
   startTranscription,
@@ -7,10 +12,7 @@ import {
   sendSystemAudio,
   resetAai,
 } from './recordingManager.js';
-import {
-  checkForUpdatesAndNotify,
-  quitAndInstall,
-} from './auto-updater.js';
+import { checkForUpdatesAndNotify, quitAndInstall } from './auto-updater.js';
 import log from './logger.js';
 
 function setupIpcHandlers(mainWindow: BrowserWindow): void {
@@ -25,13 +27,19 @@ function setupIpcHandlers(mainWindow: BrowserWindow): void {
     (log as any)[level](`[Renderer] ${message}`);
   });
 
-  ipcMain.on('microphone-audio-data', (event: IpcMainEvent, audioData: ArrayBuffer) => {
-    sendMicrophoneAudio(audioData);
-  });
+  ipcMain.on(
+    'microphone-audio-data',
+    (event: IpcMainEvent, audioData: ArrayBuffer) => {
+      sendMicrophoneAudio(audioData);
+    }
+  );
 
-  ipcMain.on('system-audio-data', (event: IpcMainEvent, audioData: ArrayBuffer) => {
-    sendSystemAudio(audioData);
-  });
+  ipcMain.on(
+    'system-audio-data',
+    (event: IpcMainEvent, audioData: ArrayBuffer) => {
+      sendSystemAudio(audioData);
+    }
+  );
 
   ipcMain.handle('start-recording', async (): Promise<boolean> => {
     return await startTranscription(mainWindow);
@@ -45,11 +53,14 @@ function setupIpcHandlers(mainWindow: BrowserWindow): void {
     return getSettings();
   });
 
-  ipcMain.handle('save-settings', (event: IpcMainInvokeEvent, newSettings: any): boolean => {
-    saveSettingsToFile(newSettings);
-    resetAai();
-    return true;
-  });
+  ipcMain.handle(
+    'save-settings',
+    (event: IpcMainInvokeEvent, newSettings: any): boolean => {
+      saveSettingsToFile(newSettings);
+      resetAai();
+      return true;
+    }
+  );
 
   // Auto-updater IPC handlers
   ipcMain.handle('install-update', (): void => {

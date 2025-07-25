@@ -40,8 +40,12 @@ jest.mock('electron-updater', () => ({
 }));
 
 interface MockIpcMain {
-  on: jest.MockedFunction<(channel: string, listener: (...args: any[]) => void) => void>;
-  handle: jest.MockedFunction<(channel: string, listener: (...args: any[]) => any) => void>;
+  on: jest.MockedFunction<
+    (channel: string, listener: (...args: any[]) => void) => void
+  >;
+  handle: jest.MockedFunction<
+    (channel: string, listener: (...args: any[]) => any) => void
+  >;
 }
 
 interface MockMainWindow {
@@ -142,7 +146,9 @@ describe('IPC Handlers', () => {
       const mockAudioData = new Uint8Array([1, 2, 3, 4]);
       micHandler(mockEvent, mockAudioData);
 
-      expect(recordingManager.sendMicrophoneAudio).toHaveBeenCalledWith(mockAudioData);
+      expect(recordingManager.sendMicrophoneAudio).toHaveBeenCalledWith(
+        mockAudioData
+      );
     });
 
     it('should handle system audio data', async () => {
@@ -161,7 +167,9 @@ describe('IPC Handlers', () => {
       const mockAudioData = new Uint8Array([1, 2, 3, 4]);
       sysHandler(mockEvent, mockAudioData);
 
-      expect(recordingManager.sendSystemAudio).toHaveBeenCalledWith(mockAudioData);
+      expect(recordingManager.sendSystemAudio).toHaveBeenCalledWith(
+        mockAudioData
+      );
     });
 
     it('should handle start-recording request', async () => {
@@ -178,7 +186,9 @@ describe('IPC Handlers', () => {
 
       const result = await startHandler();
 
-      expect(recordingManager.startTranscription).toHaveBeenCalledWith(mockMainWindow);
+      expect(recordingManager.startTranscription).toHaveBeenCalledWith(
+        mockMainWindow
+      );
       expect(result).toBe('started');
     });
 
@@ -196,7 +206,9 @@ describe('IPC Handlers', () => {
 
       const result = await stopHandler();
 
-      expect(recordingManager.stopTranscription).toHaveBeenCalledWith(mockMainWindow);
+      expect(recordingManager.stopTranscription).toHaveBeenCalledWith(
+        mockMainWindow
+      );
       expect(result).toBe('stopped');
     });
 

@@ -1,9 +1,16 @@
-import { processEchoCancellation, cleanupEchoCancellation } from './echo-cancellation.js';
+import {
+  processEchoCancellation,
+  cleanupEchoCancellation,
+} from './echo-cancellation.js';
 
 let microphoneStream: MediaStream | null = null;
 let systemAudioStream: MediaStream | null = null;
 
-export async function acquireStreams(): Promise<{microphoneStream: MediaStream, systemAudioStream: MediaStream, processedStream: MediaStream}> {
+export async function acquireStreams(): Promise<{
+  microphoneStream: MediaStream;
+  systemAudioStream: MediaStream;
+  processedStream: MediaStream;
+}> {
   const constraints = {
     audio: {
       echoCancellation: true,
@@ -60,7 +67,11 @@ export function releaseStreams(): void {
   cleanupEchoCancellation();
 }
 
-export function monitorStream(stream: MediaStream, type: string, onDisconnect: () => void): void {
+export function monitorStream(
+  stream: MediaStream,
+  type: string,
+  onDisconnect: () => void
+): void {
   stream.getTracks().forEach((track) => {
     track.onended = () => {
       window.logger.warn(`${type} track ended unexpectedly`);

@@ -72,7 +72,6 @@ async function processRecordingComplete(): Promise<boolean> {
     return false;
   }
 
-
   try {
     const settings = getSettings();
     const summaryPrompt = settings.summaryPrompt || DEFAULT_SUMMARY_PROMPT;

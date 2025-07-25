@@ -4,7 +4,9 @@ jest.mock('electron-updater');
 jest.mock('../src/main/logger');
 
 interface MockAutoUpdater {
-  on: jest.MockedFunction<(event: string, listener: (...args: any[]) => void) => void>;
+  on: jest.MockedFunction<
+    (event: string, listener: (...args: any[]) => void) => void
+  >;
   checkForUpdatesAndNotify: jest.MockedFunction<() => Promise<any>>;
   quitAndInstall: jest.MockedFunction<() => void>;
   logger: any;
@@ -64,7 +66,7 @@ describe('Auto-Updater Module', () => {
     };
 
     // Re-require the module after mocks are set up
-    autoUpdaterModule = await import('../src/main/auto-updater') as any;
+    autoUpdaterModule = (await import('../src/main/auto-updater')) as any;
   });
 
   describe('initAutoUpdater', () => {

@@ -50,7 +50,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
   // Send audio data to main process
   sendMicrophoneAudio: (data: ArrayBuffer) =>
     ipcRenderer.send('microphone-audio-data', data),
-  sendSystemAudio: (data: ArrayBuffer) => ipcRenderer.send('system-audio-data', data),
+  sendSystemAudio: (data: ArrayBuffer) =>
+    ipcRenderer.send('system-audio-data', data),
 
   // Event listeners
   onTranscript: (callback: (data: any) => void) =>
@@ -67,11 +68,13 @@ contextBridge.exposeInMainWorld('electronAPI', {
     ipcRenderer.on('recording-stopped', (event, data) => callback(data)),
 
   // Remove event listeners
-  removeAllListeners: (channel: string) => ipcRenderer.removeAllListeners(channel),
+  removeAllListeners: (channel: string) =>
+    ipcRenderer.removeAllListeners(channel),
 
   // Settings management
   getSettings: () => ipcRenderer.invoke('get-settings'),
-  saveSettings: (settings: any) => ipcRenderer.invoke('save-settings', settings),
+  saveSettings: (settings: any) =>
+    ipcRenderer.invoke('save-settings', settings),
 
   // Auto-updater
   installUpdate: () => ipcRenderer.invoke('install-update'),

@@ -1,4 +1,6 @@
-const transcriptionResults = document.getElementById('transcriptionResults') as HTMLElement;
+const transcriptionResults = document.getElementById(
+  'transcriptionResults'
+) as HTMLElement;
 const audioStatus = document.getElementById('audioStatus') as HTMLElement;
 const toggleBtn = document.getElementById('toggleBtn') as HTMLButtonElement;
 const settingsBtn = document.getElementById('settingsBtn') as HTMLButtonElement;
@@ -21,7 +23,10 @@ transcriptionResults.addEventListener('scroll', () => {
   autoScrollEnabled = isAtBottom();
 });
 
-export function renderTranscript(data: {text: string, partial: boolean}): void {
+export function renderTranscript(data: {
+  text: string;
+  partial: boolean;
+}): void {
   const { text, partial } = data;
 
   if (!text) return;
@@ -64,7 +69,10 @@ export function renderTranscript(data: {text: string, partial: boolean}): void {
   }
 }
 
-export function updateAudioStatus(status?: {text: string, className: string}): void {
+export function updateAudioStatus(status?: {
+  text: string;
+  className: string;
+}): void {
   if (status) {
     audioStatus.textContent = status.text;
     audioStatus.className = `status ${status.className}`;
@@ -79,7 +87,10 @@ export function updateAudioStatus(status?: {text: string, className: string}): v
   }
 }
 
-export function updateConnectionStatus(stream: string, connected: boolean): void {
+export function updateConnectionStatus(
+  stream: string,
+  connected: boolean
+): void {
   if (stream === 'microphone') {
     micConnected = connected;
   } else if (stream === 'system') {
@@ -88,7 +99,9 @@ export function updateConnectionStatus(stream: string, connected: boolean): void
   updateAudioStatus();
 }
 
-export function setButtonState(state: 'starting' | 'recording' | 'stopping' | 'idle'): void {
+export function setButtonState(
+  state: 'starting' | 'recording' | 'stopping' | 'idle'
+): void {
   switch (state) {
     case 'starting':
       toggleBtn.disabled = true;
@@ -117,7 +130,12 @@ export function clearTranscripts(): void {
   transcriptionResults.innerHTML = '';
 }
 
-export function getElements(): {toggleBtn: HTMLButtonElement, settingsBtn: HTMLButtonElement, transcriptionResults: HTMLElement, audioStatus: HTMLElement} {
+export function getElements(): {
+  toggleBtn: HTMLButtonElement;
+  settingsBtn: HTMLButtonElement;
+  transcriptionResults: HTMLElement;
+  audioStatus: HTMLElement;
+} {
   return {
     toggleBtn,
     settingsBtn,

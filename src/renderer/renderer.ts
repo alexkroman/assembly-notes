@@ -2,12 +2,16 @@ import { acquireStreams, releaseStreams, monitorStream } from './media.js';
 import {
   renderTranscript,
   updateAudioStatus,
-  updateConnectionStatus,  
+  updateConnectionStatus,
   setButtonState,
   clearTranscripts,
   getElements,
 } from './ui.js';
-import { startAudioProcessing, stopAudioProcessing, setRecordingState } from './audio-processing.js';
+import {
+  startAudioProcessing,
+  stopAudioProcessing,
+  setRecordingState,
+} from './audio-processing.js';
 import { showSettingsModal } from './settings-modal.js';
 import { initAutoUpdaterUI } from './auto-updater-ui.js';
 

@@ -1,6 +1,9 @@
 let updateNotification: HTMLElement | null = null;
 
-function createUpdateNotification(message: string, type: string = 'info'): void {
+function createUpdateNotification(
+  message: string,
+  type: string = 'info'
+): void {
   if (updateNotification) {
     updateNotification.remove();
   }
@@ -115,6 +118,29 @@ export function initAutoUpdaterUI(): void {
   window.electronAPI.onDownloadProgress(handleDownloadProgress);
   window.electronAPI.onUpdateDownloaded(handleUpdateDownloaded);
 }
+
+// Attach to window for tests
+declare global {
+  interface Window {
+    AutoUpdaterUI: {
+      initAutoUpdaterUI: () => void;
+      createUpdateNotification: (message: string, type?: string) => void;
+      createUpdateDialog: (updateInfo: any) => void;
+      handleUpdateAvailable: (updateInfo: any) => void;
+      handleDownloadProgress: (progress: any) => void;
+      handleUpdateDownloaded: (updateInfo: any) => void;
+    };
+  }
+}
+
+(window as any).AutoUpdaterUI = {
+  initAutoUpdaterUI,
+  createUpdateNotification,
+  createUpdateDialog,
+  handleUpdateAvailable,
+  handleDownloadProgress,
+  handleUpdateDownloaded,
+};
 
 export {
   createUpdateNotification,

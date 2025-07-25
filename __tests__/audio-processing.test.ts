@@ -11,7 +11,10 @@ declare global {
       sendSystemAudio: jest.MockedFunction<(data: Int16Array) => void>;
     };
     AudioProcessing: {
-      startAudioProcessing: (micStream: MediaStream, systemStream: MediaStream | null) => Promise<void>;
+      startAudioProcessing: (
+        micStream: MediaStream,
+        systemStream: MediaStream | null
+      ) => Promise<void>;
       stopAudioProcessing: () => void;
       setRecordingState: (recording: boolean) => void;
     };
@@ -23,7 +26,9 @@ declare global {
 
 interface MockAudioWorkletNode {
   port: {
-    onmessage: ((event: { data: { type: string; data: Int16Array } }) => void) | null;
+    onmessage:
+      | ((event: { data: { type: string; data: Int16Array } }) => void)
+      | null;
     postMessage: jest.MockedFunction<(message: any) => void>;
   };
   connect: jest.MockedFunction<(destination: any) => void>;
@@ -40,7 +45,9 @@ interface MockAudioContext {
   audioWorklet: {
     addModule: jest.MockedFunction<(url: string) => Promise<void>>;
   };
-  createMediaStreamSource: jest.MockedFunction<(stream: MediaStream) => MockMediaStreamSource>;
+  createMediaStreamSource: jest.MockedFunction<
+    (stream: MediaStream) => MockMediaStreamSource
+  >;
   close: jest.MockedFunction<() => Promise<void>>;
 }
 
@@ -75,7 +82,9 @@ describe('AudioProcessing Module', () => {
       close: jest.fn().mockResolvedValue(undefined),
     } as any;
 
-    global.AudioContext = jest.fn().mockImplementation(() => mockAudioContext) as any;
+    global.AudioContext = jest
+      .fn()
+      .mockImplementation(() => mockAudioContext) as any;
     global.AudioWorkletNode = jest
       .fn()
       .mockImplementation(() => mockWorkletNode) as any;
@@ -154,7 +163,8 @@ describe('AudioProcessing Module', () => {
       );
 
       // Get the second worklet node (system audio)
-      const systemWorkletNode = (AudioWorkletNode as any).mock.results[1].value as MockAudioWorkletNode;
+      const systemWorkletNode = (AudioWorkletNode as any).mock.results[1]
+        .value as MockAudioWorkletNode;
       const audioData = new Int16Array([4, 5, 6]);
       systemWorkletNode.port.onmessage!({
         data: { type: 'audioData', data: audioData },

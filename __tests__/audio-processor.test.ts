@@ -46,9 +46,9 @@ describe('AudioProcessor', () => {
     await import('../src/renderer/audio-processor');
 
     // Get the AudioProcessor class from the registerProcessor call
-    const registerProcessorCall = (global.registerProcessor as any).mock.calls.find(
-      (call: any) => call[0] === 'audio-processor'
-    );
+    const registerProcessorCall = (
+      global.registerProcessor as any
+    ).mock.calls.find((call: any) => call[0] === 'audio-processor');
     AudioProcessor = registerProcessorCall![1];
   });
 
@@ -149,7 +149,9 @@ describe('AudioProcessor', () => {
       });
 
       // Verify the data conversion
-      const sentMessage = (processor.port.postMessage as jest.MockedFunction<any>).mock.calls[0][0];
+      const sentMessage = (
+        processor.port.postMessage as jest.MockedFunction<any>
+      ).mock.calls[0][0];
       expect(sentMessage.data).toBeInstanceOf(Array);
       expect(sentMessage.data.length).toBeGreaterThan(0);
     });
@@ -167,7 +169,9 @@ describe('AudioProcessor', () => {
       expect(processor.port.postMessage).toHaveBeenCalled();
 
       // The processing should succeed without errors
-      const sentMessage = (processor.port.postMessage as jest.MockedFunction<any>).mock.calls[0][0];
+      const sentMessage = (
+        processor.port.postMessage as jest.MockedFunction<any>
+      ).mock.calls[0][0];
       expect(sentMessage.type).toBe('audioData');
       expect(sentMessage.data).toBeInstanceOf(Array);
     });
@@ -213,7 +217,9 @@ describe('AudioProcessor', () => {
 
       expect(processor.port.postMessage).toHaveBeenCalled();
 
-      const sentMessage = (processor.port.postMessage as jest.MockedFunction<any>).mock.calls[0][0];
+      const sentMessage = (
+        processor.port.postMessage as jest.MockedFunction<any>
+      ).mock.calls[0][0];
       expect(sentMessage.data).toHaveLength(testValues.length * 2); // Int16 is 2 bytes
     });
   });

@@ -14,8 +14,12 @@ async function initializeModal(): Promise<void> {
   container.innerHTML = html;
 
   settingsModal = document.getElementById('settingsModal')!;
-  assemblyaiKeyInput = document.getElementById('assemblyaiKey') as HTMLInputElement;
-  summaryPromptInput = document.getElementById('summaryPrompt') as HTMLTextAreaElement;
+  assemblyaiKeyInput = document.getElementById(
+    'assemblyaiKey'
+  ) as HTMLInputElement;
+  summaryPromptInput = document.getElementById(
+    'summaryPrompt'
+  ) as HTMLTextAreaElement;
   closeBtn = document.getElementById('closeBtn') as HTMLButtonElement;
   saveBtn = document.getElementById('saveBtn') as HTMLButtonElement;
 
@@ -29,7 +33,7 @@ export async function showSettingsModal(): Promise<void> {
   loadSettings();
 }
 
-function hideSettingsModal(): void {
+export function hideSettingsModal(): void {
   settingsModal.classList.remove('active');
 }
 
@@ -76,3 +80,18 @@ function setupSettingsModalEvents(): void {
     }
   });
 }
+
+// Attach to window for tests
+declare global {
+  interface Window {
+    SettingsModal: {
+      showSettingsModal: () => Promise<void>;
+      hideSettingsModal: () => void;
+    };
+  }
+}
+
+(window as any).SettingsModal = {
+  showSettingsModal,
+  hideSettingsModal,
+};

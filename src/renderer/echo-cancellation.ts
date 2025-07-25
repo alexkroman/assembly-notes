@@ -5,7 +5,15 @@ let echoCancelledDestination: MediaStreamAudioDestinationNode | null = null;
 let echoCancelledStream: MediaStream | null = null;
 
 function createEchoCancellationProcessor(): AudioContext {
-  echoCancellationContext = new AudioContext();
+  // Try AudioContext first, then webkitAudioContext as fallback
+  const AudioCtx =
+    (window as any).AudioContext || (window as any).webkitAudioContext;
+
+  if (!AudioCtx) {
+    throw new Error('Audio context not supported');
+  }
+
+  echoCancellationContext = new AudioCtx();
 
   echoCancelledDestination =
     echoCancellationContext.createMediaStreamDestination();
@@ -13,7 +21,10 @@ function createEchoCancellationProcessor(): AudioContext {
   return echoCancellationContext;
 }
 
-export function processEchoCancellation(micStream: MediaStream, systemStream: MediaStream): MediaStream {
+export function processEchoCancellation(
+  micStream: MediaStream,
+  systemStream: MediaStream
+): MediaStream {
   if (!echoCancellationContext) {
     createEchoCancellationProcessor();
   }
@@ -24,10 +35,7 @@ export function processEchoCancellation(micStream: MediaStream, systemStream: Me
     echoCancellationContext!.createMediaStreamSource(systemStream);
 
   const delayNode = echoCancellationContext!.createDelay(1.0);
-  delayNode.delayTime.setValueAtTime(
-    0.1,
-    echoCancellationContext!.currentTime
-  );
+  delayNode.delayTime.setValueAtTime(0.1, echoCancellationContext!.currentTime);
 
   const micGain = echoCancellationContext!.createGain();
   const systemGain = echoCancellationContext!.createGain();
@@ -72,3 +80,21 @@ export function cleanupEchoCancellation(): void {
   }
   echoCancelledDestination = null;
 }
+
+// Attach to window for tests
+declare global {
+  interface Window {
+    EchoCancellation: {
+      processEchoCancellation: (
+        micStream: MediaStream,
+        systemStream: MediaStream
+      ) => MediaStream;
+      cleanupEchoCancellation: () => void;
+    };
+  }
+}
+
+(window as any).EchoCancellation = {
+  processEchoCancellation,
+  cleanupEchoCancellation,
+};

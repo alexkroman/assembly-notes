@@ -3,7 +3,10 @@ let systemAudioWorkletNode: AudioWorkletNode | null = null;
 let microphoneAudioContext: AudioContext | null = null;
 let systemAudioContext: AudioContext | null = null;
 
-export async function startAudioProcessing(processedStream: MediaStream, systemStream: MediaStream | null): Promise<void> {
+export async function startAudioProcessing(
+  processedStream: MediaStream,
+  systemStream: MediaStream | null
+): Promise<void> {
   microphoneAudioContext = new AudioContext({ sampleRate: 16000 });
 
   await microphoneAudioContext.audioWorklet.addModule('./audio-processor.js');
@@ -91,3 +94,23 @@ export function setRecordingState(isRecording: boolean): void {
     });
   }
 }
+
+// Attach to window for tests
+declare global {
+  interface Window {
+    AudioProcessing: {
+      startAudioProcessing: (
+        micStream: MediaStream,
+        systemStream: MediaStream | null
+      ) => Promise<void>;
+      stopAudioProcessing: () => void;
+      setRecordingState: (recording: boolean) => void;
+    };
+  }
+}
+
+(window as any).AudioProcessing = {
+  startAudioProcessing,
+  stopAudioProcessing,
+  setRecordingState,
+};

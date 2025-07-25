@@ -37,8 +37,12 @@ interface MockMediaStreamDestination {
 
 interface MockAudioContext {
   currentTime: number;
-  createMediaStreamDestination: jest.MockedFunction<() => MockMediaStreamDestination>;
-  createMediaStreamSource: jest.MockedFunction<(stream: MediaStream) => MockMediaStreamSource>;
+  createMediaStreamDestination: jest.MockedFunction<
+    () => MockMediaStreamDestination
+  >;
+  createMediaStreamSource: jest.MockedFunction<
+    (stream: MediaStream) => MockMediaStreamSource
+  >;
   createDelay: jest.MockedFunction<(maxDelay: number) => MockDelayNode>;
   createGain: jest.MockedFunction<() => MockGainNode>;
   close: jest.MockedFunction<() => Promise<void>>;
@@ -52,7 +56,10 @@ declare global {
     AudioContext: typeof globalThis.AudioContext;
     webkitAudioContext?: typeof globalThis.AudioContext;
     EchoCancellation: {
-      processEchoCancellation: (micStream: MediaStream, systemStream: MediaStream) => MediaStream;
+      processEchoCancellation: (
+        micStream: MediaStream,
+        systemStream: MediaStream
+      ) => MediaStream;
       cleanupEchoCancellation: () => void;
     };
   }
@@ -108,14 +115,18 @@ describe('EchoCancellation Module', () => {
     // Mock AudioContext
     mockAudioContext = {
       currentTime: 0,
-      createMediaStreamDestination: jest.fn().mockReturnValue(mockMediaStreamDestination),
+      createMediaStreamDestination: jest
+        .fn()
+        .mockReturnValue(mockMediaStreamDestination),
       createMediaStreamSource: jest.fn().mockReturnValue(mockMediaStreamSource),
       createDelay: jest.fn().mockReturnValue(mockDelayNode),
       createGain: jest.fn().mockReturnValue(mockGainNode),
       close: jest.fn().mockResolvedValue(undefined),
     } as any;
 
-    global.AudioContext = jest.fn().mockImplementation(() => mockAudioContext) as any;
+    global.AudioContext = jest
+      .fn()
+      .mockImplementation(() => mockAudioContext) as any;
     global.window.AudioContext = global.AudioContext;
     global.window.webkitAudioContext = undefined;
 
@@ -139,7 +150,9 @@ describe('EchoCancellation Module', () => {
       EchoCancellation.processEchoCancellation(micStream, systemStream);
 
       expect(global.AudioContext).toHaveBeenCalledTimes(1);
-      expect(mockAudioContext.createMediaStreamDestination).toHaveBeenCalledTimes(1);
+      expect(
+        mockAudioContext.createMediaStreamDestination
+      ).toHaveBeenCalledTimes(1);
     });
 
     it('should reuse existing AudioContext on subsequent calls', () => {
@@ -162,8 +175,12 @@ describe('EchoCancellation Module', () => {
       EchoCancellation.processEchoCancellation(micStream, systemStream);
 
       expect(mockAudioContext.createMediaStreamSource).toHaveBeenCalledTimes(2);
-      expect(mockAudioContext.createMediaStreamSource).toHaveBeenCalledWith(micStream);
-      expect(mockAudioContext.createMediaStreamSource).toHaveBeenCalledWith(systemStream);
+      expect(mockAudioContext.createMediaStreamSource).toHaveBeenCalledWith(
+        micStream
+      );
+      expect(mockAudioContext.createMediaStreamSource).toHaveBeenCalledWith(
+        systemStream
+      );
     });
 
     it('should create and configure delay node', () => {
@@ -173,7 +190,10 @@ describe('EchoCancellation Module', () => {
       EchoCancellation.processEchoCancellation(micStream, systemStream);
 
       expect(mockAudioContext.createDelay).toHaveBeenCalledWith(1.0);
-      expect(mockDelayNode.delayTime.setValueAtTime).toHaveBeenCalledWith(0.1, 0);
+      expect(mockDelayNode.delayTime.setValueAtTime).toHaveBeenCalledWith(
+        0.1,
+        0
+      );
     });
 
     it('should create three gain nodes with correct values', () => {
@@ -183,7 +203,7 @@ describe('EchoCancellation Module', () => {
       EchoCancellation.processEchoCancellation(micStream, systemStream);
 
       expect(mockAudioContext.createGain).toHaveBeenCalledTimes(3);
-      
+
       // Verify gain values
       const gainCalls = mockGainNode.gain.setValueAtTime.mock.calls;
       expect(gainCalls).toContainEqual([1.0, 0]); // micGain
@@ -207,7 +227,10 @@ describe('EchoCancellation Module', () => {
       const micStream = new MediaStream();
       const systemStream = new MediaStream();
 
-      const result = EchoCancellation.processEchoCancellation(micStream, systemStream);
+      const result = EchoCancellation.processEchoCancellation(
+        micStream,
+        systemStream
+      );
 
       expect(result).toBe(mockStream);
     });
@@ -215,7 +238,9 @@ describe('EchoCancellation Module', () => {
     it('should use webkitAudioContext if AudioContext is not available', async () => {
       global.AudioContext = undefined as any;
       global.window.AudioContext = undefined as any;
-      global.window.webkitAudioContext = jest.fn().mockImplementation(() => mockAudioContext) as any;
+      global.window.webkitAudioContext = jest
+        .fn()
+        .mockImplementation(() => mockAudioContext) as any;
 
       // Reset modules to reload with new mocks
       jest.resetModules();
@@ -244,10 +269,10 @@ describe('EchoCancellation Module', () => {
 
       // Verify disconnections
       expect(mockMediaStreamSource.disconnect).toHaveBeenCalledTimes(2);
-      
+
       // Verify audio context closed
       expect(mockAudioContext.close).toHaveBeenCalledTimes(1);
-      
+
       // Verify stream tracks stopped
       expect(mockTrack.stop).toHaveBeenCalledTimes(1);
     });
@@ -304,7 +329,11 @@ describe('EchoCancellation Module', () => {
       const mockTrack2 = { stop: jest.fn() };
       const mockTrack3 = { stop: jest.fn() };
 
-      mockStream.getTracks.mockReturnValue([mockTrack1, mockTrack2, mockTrack3]);
+      mockStream.getTracks.mockReturnValue([
+        mockTrack1,
+        mockTrack2,
+        mockTrack3,
+      ]);
 
       const micStream = new MediaStream();
       const systemStream = new MediaStream();
@@ -343,7 +372,10 @@ describe('EchoCancellation Module', () => {
       expect(EchoCancellation).toBeDefined();
       expect(typeof EchoCancellation.processEchoCancellation).toBe('function');
       expect(typeof EchoCancellation.cleanupEchoCancellation).toBe('function');
-      expect(Object.keys(EchoCancellation)).toEqual(['processEchoCancellation', 'cleanupEchoCancellation']);
+      expect(Object.keys(EchoCancellation)).toEqual([
+        'processEchoCancellation',
+        'cleanupEchoCancellation',
+      ]);
     });
   });
 });

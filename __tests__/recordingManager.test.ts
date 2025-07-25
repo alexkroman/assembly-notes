@@ -54,7 +54,9 @@ describe('Recording Manager', () => {
     jest.clearAllMocks();
 
     const { getSettings } = await import('../src/main/settings');
-    const TranscriptionService = await import('../src/main/transcriptionService');
+    const TranscriptionService = await import(
+      '../src/main/transcriptionService'
+    );
 
     // Mock settings
     (getSettings as jest.MockedFunction<typeof getSettings>).mockReturnValue({
@@ -95,9 +97,13 @@ describe('Recording Manager', () => {
 
   describe('startTranscription', () => {
     it('should start transcription successfully with valid API key', async () => {
-      const TranscriptionService = await import('../src/main/transcriptionService');
-      
-      const result = await recordingManager.startTranscription(mockMainWindow as any);
+      const TranscriptionService = await import(
+        '../src/main/transcriptionService'
+      );
+
+      const result = await recordingManager.startTranscription(
+        mockMainWindow as any
+      );
 
       expect(result).toBe(true);
       expect(TranscriptionService.default).toHaveBeenCalled();
@@ -113,9 +119,14 @@ describe('Recording Manager', () => {
 
     it('should fail when AssemblyAI API key is not set', async () => {
       const { getSettings } = await import('../src/main/settings');
-      (getSettings as jest.MockedFunction<typeof getSettings>).mockReturnValue({ assemblyaiKey: null, customPrompt: 'test' } as any);
+      (getSettings as jest.MockedFunction<typeof getSettings>).mockReturnValue({
+        assemblyaiKey: null,
+        customPrompt: 'test',
+      } as any);
 
-      const result = await recordingManager.startTranscription(mockMainWindow as any);
+      const result = await recordingManager.startTranscription(
+        mockMainWindow as any
+      );
 
       expect(result).toBe(false);
       expect(mockMainWindow.webContents.send).toHaveBeenCalledWith(
@@ -129,7 +140,9 @@ describe('Recording Manager', () => {
         new Error('Start failed')
       );
 
-      const result = await recordingManager.startTranscription(mockMainWindow as any);
+      const result = await recordingManager.startTranscription(
+        mockMainWindow as any
+      );
 
       expect(result).toBe(false);
       expect(mockMainWindow.webContents.send).toHaveBeenCalledWith(
@@ -165,7 +178,9 @@ describe('Recording Manager', () => {
     });
 
     it('should stop transcription successfully', async () => {
-      const result = await recordingManager.stopTranscription(mockMainWindow as any);
+      const result = await recordingManager.stopTranscription(
+        mockMainWindow as any
+      );
 
       expect(result).toBe(true);
       expect(mockMainWindow.webContents.send).toHaveBeenCalledWith(
@@ -178,7 +193,9 @@ describe('Recording Manager', () => {
       // Clear the service reference
       recordingManager.resetAai();
 
-      const result = await recordingManager.stopTranscription(mockMainWindow as any);
+      const result = await recordingManager.stopTranscription(
+        mockMainWindow as any
+      );
 
       expect(result).toBe(true);
       expect(mockMainWindow.webContents.send).toHaveBeenCalledWith(
@@ -261,7 +278,9 @@ describe('Recording Manager', () => {
       mockTranscriptionService.getAai.mockReturnValue(null);
       await recordingManager.startTranscription(mockMainWindow as any);
 
-      const result = await recordingManager.stopTranscription(mockMainWindow as any);
+      const result = await recordingManager.stopTranscription(
+        mockMainWindow as any
+      );
       expect(result).toBe(true);
     });
   });

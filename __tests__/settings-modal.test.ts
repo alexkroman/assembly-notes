@@ -5,7 +5,9 @@
 import { jest } from '@jest/globals';
 
 interface MockElectronAPI {
-  getSettings: jest.MockedFunction<() => Promise<{ assemblyaiKey?: string; summaryPrompt?: string }>>;
+  getSettings: jest.MockedFunction<
+    () => Promise<{ assemblyaiKey?: string; summaryPrompt?: string }>
+  >;
   saveSettings: jest.MockedFunction<(settings: any) => Promise<void>>;
 }
 
@@ -101,10 +103,14 @@ describe('SettingsModal Module', () => {
       await SettingsModal.showSettingsModal();
 
       expect(window.electronAPI.getSettings).toHaveBeenCalled();
-      
-      const assemblyaiKeyInput = document.getElementById('assemblyaiKey') as HTMLInputElement;
-      const summaryPromptInput = document.getElementById('summaryPrompt') as HTMLTextAreaElement;
-      
+
+      const assemblyaiKeyInput = document.getElementById(
+        'assemblyaiKey'
+      ) as HTMLInputElement;
+      const summaryPromptInput = document.getElementById(
+        'summaryPrompt'
+      ) as HTMLTextAreaElement;
+
       expect(assemblyaiKeyInput.value).toBe('test-key');
       expect(summaryPromptInput.value).toBe('test prompt');
     });
@@ -124,7 +130,10 @@ describe('SettingsModal Module', () => {
 
       await SettingsModal.showSettingsModal();
 
-      expect(console.error).toHaveBeenCalledWith('Error loading settings:', error);
+      expect(console.error).toHaveBeenCalledWith(
+        'Error loading settings:',
+        error
+      );
     });
 
     it('should use empty values when settings are not available', async () => {
@@ -132,9 +141,13 @@ describe('SettingsModal Module', () => {
 
       await SettingsModal.showSettingsModal();
 
-      const assemblyaiKeyInput = document.getElementById('assemblyaiKey') as HTMLInputElement;
-      const summaryPromptInput = document.getElementById('summaryPrompt') as HTMLTextAreaElement;
-      
+      const assemblyaiKeyInput = document.getElementById(
+        'assemblyaiKey'
+      ) as HTMLInputElement;
+      const summaryPromptInput = document.getElementById(
+        'summaryPrompt'
+      ) as HTMLTextAreaElement;
+
       expect(assemblyaiKeyInput.value).toBe('');
       expect(summaryPromptInput.value).toBe('');
     });
@@ -157,15 +170,19 @@ describe('SettingsModal Module', () => {
     });
 
     it('should save settings when save button is clicked', async () => {
-      const assemblyaiKeyInput = document.getElementById('assemblyaiKey') as HTMLInputElement;
-      const summaryPromptInput = document.getElementById('summaryPrompt') as HTMLTextAreaElement;
+      const assemblyaiKeyInput = document.getElementById(
+        'assemblyaiKey'
+      ) as HTMLInputElement;
+      const summaryPromptInput = document.getElementById(
+        'summaryPrompt'
+      ) as HTMLTextAreaElement;
       const saveBtn = document.getElementById('saveBtn') as HTMLButtonElement;
 
       assemblyaiKeyInput.value = 'new-key';
       summaryPromptInput.value = '  new prompt  '; // with whitespace
 
       saveBtn.click();
-      await new Promise(resolve => setTimeout(resolve, 0)); // Wait for async operations
+      await new Promise((resolve) => setTimeout(resolve, 0)); // Wait for async operations
 
       expect(window.electronAPI.saveSettings).toHaveBeenCalledWith({
         assemblyaiKey: 'new-key',
@@ -173,7 +190,7 @@ describe('SettingsModal Module', () => {
       });
 
       expect(mockAlert).toHaveBeenCalledWith('Settings saved successfully!');
-      
+
       const settingsModal = document.getElementById('settingsModal');
       expect(settingsModal!.classList.contains('active')).toBe(false);
     });
@@ -184,11 +201,16 @@ describe('SettingsModal Module', () => {
 
       const saveBtn = document.getElementById('saveBtn') as HTMLButtonElement;
       saveBtn.click();
-      await new Promise(resolve => setTimeout(resolve, 0));
+      await new Promise((resolve) => setTimeout(resolve, 0));
 
-      expect(console.error).toHaveBeenCalledWith('Error saving settings:', error);
-      expect(mockAlert).toHaveBeenCalledWith('Error saving settings: Save failed');
-      
+      expect(console.error).toHaveBeenCalledWith(
+        'Error saving settings:',
+        error
+      );
+      expect(mockAlert).toHaveBeenCalledWith(
+        'Error saving settings: Save failed'
+      );
+
       // Modal should remain open on error
       const settingsModal = document.getElementById('settingsModal');
       expect(settingsModal!.classList.contains('active')).toBe(true);
@@ -205,17 +227,19 @@ describe('SettingsModal Module', () => {
       const settingsModal = document.getElementById('settingsModal');
 
       expect(settingsModal!.classList.contains('active')).toBe(true);
-      
+
       closeBtn.click();
-      
+
       expect(settingsModal!.classList.contains('active')).toBe(false);
     });
 
     it('should close modal when clicking outside modal content', () => {
-      const settingsModal = document.getElementById('settingsModal') as HTMLElement;
-      
+      const settingsModal = document.getElementById(
+        'settingsModal'
+      ) as HTMLElement;
+
       expect(settingsModal.classList.contains('active')).toBe(true);
-      
+
       // Simulate click on modal backdrop
       const clickEvent = new MouseEvent('click', {
         bubbles: true,
@@ -225,18 +249,22 @@ describe('SettingsModal Module', () => {
         value: settingsModal,
         enumerable: true,
       });
-      
+
       settingsModal.dispatchEvent(clickEvent);
-      
+
       expect(settingsModal.classList.contains('active')).toBe(false);
     });
 
     it('should not close modal when clicking inside modal content', () => {
-      const settingsModal = document.getElementById('settingsModal') as HTMLElement;
-      const assemblyaiKeyInput = document.getElementById('assemblyaiKey') as HTMLInputElement;
-      
+      const settingsModal = document.getElementById(
+        'settingsModal'
+      ) as HTMLElement;
+      const assemblyaiKeyInput = document.getElementById(
+        'assemblyaiKey'
+      ) as HTMLInputElement;
+
       expect(settingsModal.classList.contains('active')).toBe(true);
-      
+
       // Simulate click on input field
       const clickEvent = new MouseEvent('click', {
         bubbles: true,
@@ -246,56 +274,56 @@ describe('SettingsModal Module', () => {
         value: assemblyaiKeyInput,
         enumerable: true,
       });
-      
+
       settingsModal.dispatchEvent(clickEvent);
-      
+
       expect(settingsModal.classList.contains('active')).toBe(true);
     });
 
     it('should close modal when Escape key is pressed', () => {
       const settingsModal = document.getElementById('settingsModal');
-      
+
       expect(settingsModal!.classList.contains('active')).toBe(true);
-      
+
       const escapeEvent = new KeyboardEvent('keydown', {
         key: 'Escape',
         bubbles: true,
       });
-      
+
       document.dispatchEvent(escapeEvent);
-      
+
       expect(settingsModal!.classList.contains('active')).toBe(false);
     });
 
     it('should not close modal when other keys are pressed', () => {
       const settingsModal = document.getElementById('settingsModal');
-      
+
       expect(settingsModal!.classList.contains('active')).toBe(true);
-      
+
       const enterEvent = new KeyboardEvent('keydown', {
         key: 'Enter',
         bubbles: true,
       });
-      
+
       document.dispatchEvent(enterEvent);
-      
+
       expect(settingsModal!.classList.contains('active')).toBe(true);
     });
 
     it('should not respond to Escape key when modal is not active', () => {
       const settingsModal = document.getElementById('settingsModal');
       SettingsModal.hideSettingsModal();
-      
+
       expect(settingsModal!.classList.contains('active')).toBe(false);
-      
+
       const escapeEvent = new KeyboardEvent('keydown', {
         key: 'Escape',
         bubbles: true,
       });
-      
+
       // Should not throw or cause issues
       document.dispatchEvent(escapeEvent);
-      
+
       expect(settingsModal!.classList.contains('active')).toBe(false);
     });
   });
@@ -304,15 +332,17 @@ describe('SettingsModal Module', () => {
     it('should handle missing DOM elements gracefully', async () => {
       // Remove container before initialization
       document.body.innerHTML = '';
-      
+
       // Should not throw
       await expect(SettingsModal.showSettingsModal()).rejects.toThrow();
     });
 
     it('should handle fetch failure gracefully', async () => {
       mockFetch.mockRejectedValue(new Error('Network error'));
-      
-      await expect(SettingsModal.showSettingsModal()).rejects.toThrow('Network error');
+
+      await expect(SettingsModal.showSettingsModal()).rejects.toThrow(
+        'Network error'
+      );
     });
 
     it('should not setup events if DOM elements are missing', async () => {
@@ -322,7 +352,7 @@ describe('SettingsModal Module', () => {
       } as any);
 
       await SettingsModal.showSettingsModal();
-      
+
       // Should not throw when trying to add event listeners
       const settingsModal = document.getElementById('settingsModal');
       expect(settingsModal).toBeTruthy();
@@ -334,7 +364,10 @@ describe('SettingsModal Module', () => {
       expect(SettingsModal).toBeDefined();
       expect(typeof SettingsModal.showSettingsModal).toBe('function');
       expect(typeof SettingsModal.hideSettingsModal).toBe('function');
-      expect(Object.keys(SettingsModal).sort()).toEqual(['hideSettingsModal', 'showSettingsModal']);
+      expect(Object.keys(SettingsModal).sort()).toEqual([
+        'hideSettingsModal',
+        'showSettingsModal',
+      ]);
     });
 
     it('should not expose internal functions', () => {
