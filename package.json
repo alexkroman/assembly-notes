@@ -3,16 +3,18 @@
   "productName": "Assembly-Notes",
   "description": "Assembly Notes",
   "keywords": [],
-  "main": "./src/main/main.js",
+  "main": "./dist/main/main.js",
   "version": "1.0.25",
   "author": "Alex Kroman <alex@alexkroman.com>",
   "scripts": {
-    "start": "electron .",
-    "build": "npm run build-icons && electron-builder --mac --win --linux",
-    "build:mac": "npm run build-icons && electron-builder --mac",
-    "build:mac:notarized": "npm run build-icons && APPLE_ID=$APPLE_ID APPLE_APP_SPECIFIC_PASSWORD=$APPLE_APP_SPECIFIC_PASSWORD APPLE_TEAM_ID=$APPLE_TEAM_ID CSC_LINK=$CSC_LINK CSC_KEY_PASSWORD=$CSC_KEY_PASSWORD electron-builder --mac --publish=never",
-    "build:win": "npm run build-icons && electron-builder --win",
-    "build:linux": "npm run build-icons && electron-builder --linux",
+    "start": "npm run build:ts && electron .",
+    "build:ts": "tsc",
+    "dev": "tsc --watch & electron .",
+    "build": "npm run build:ts && npm run build-icons && electron-builder --mac --win --linux",
+    "build:mac": "npm run build:ts && npm run build-icons && electron-builder --mac",
+    "build:mac:notarized": "npm run build:ts && npm run build-icons && APPLE_ID=$APPLE_ID APPLE_APP_SPECIFIC_PASSWORD=$APPLE_APP_SPECIFIC_PASSWORD APPLE_TEAM_ID=$APPLE_TEAM_ID CSC_LINK=$CSC_LINK CSC_KEY_PASSWORD=$CSC_KEY_PASSWORD electron-builder --mac --publish=never",
+    "build:win": "npm run build:ts && npm run build-icons && electron-builder --win",
+    "build:linux": "npm run build:ts && npm run build-icons && electron-builder --linux",
     "build-icons": "icon-gen -i ./icon.png -o ./build --ico --icns",
     "postinstall": "electron-builder install-app-deps",
     "dist": "npm run build",
@@ -38,16 +40,21 @@
   },
   "devDependencies": {
     "@eslint/js": "^9.32.0",
+    "@types/electron": "^1.4.38",
     "@types/jest": "^30.0.0",
+    "@types/node": "^24.1.0",
+    "@typescript-eslint/eslint-plugin": "^8.38.0",
+    "@typescript-eslint/parser": "^8.38.0",
     "electron": "37.2.4",
     "electron-builder": "^26.0.12",
-    "icon-gen": "^5.0.0",
     "eslint": "^9.32.0",
     "globals": "^16.3.0",
+    "icon-gen": "^5.0.0",
     "jest": "^30.0.5",
     "jest-environment-jsdom": "^30.0.5",
     "jest-environment-node": "^30.0.5",
-    "prettier": "^3.6.2"
+    "prettier": "^3.6.2",
+    "typescript": "^5.8.3"
   },
   "build": {
     "appId": "com.alexkroman.assembly-notes",
@@ -67,6 +74,7 @@
     },
     "files": [
       "src/**/*",
+      "dist/**/*",
       "node_modules/**/*"
     ],
     "asarUnpack": [
@@ -74,7 +82,7 @@
       "node_modules/**/*.node"
     ],
     "extraMetadata": {
-      "main": "src/main/main.js"
+      "main": "dist/main/main.js"
     },
     "npmRebuild": false,
     "nodeGypRebuild": false,

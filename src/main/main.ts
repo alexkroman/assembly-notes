@@ -1,18 +1,17 @@
-const { app, BrowserWindow } = require('electron');
-const { initMain: initAudioLoopback } = require('electron-audio-loopback');
-const path = require('path');
-const { loadSettings } = require('./settings.js');
-const { setupIpcHandlers } = require('./ipc-handlers.js');
-const { initAutoUpdater, startUpdateCheck } = require('./auto-updater.js');
-const log = require('./logger.js');
+import { app, BrowserWindow } from 'electron';
+import { initMain as initAudioLoopback } from 'electron-audio-loopback';
+import * as path from 'path';
 
-// __dirname is available in CommonJS
+const { loadSettings } = require('../../src/main/settings.js');
+const { setupIpcHandlers } = require('../../src/main/ipc-handlers.js');
+const { initAutoUpdater, startUpdateCheck } = require('../../src/main/auto-updater.js');
+const log = require('../../src/main/logger.js');
 
 initAudioLoopback();
 
-let mainWindow;
+let mainWindow: BrowserWindow | null = null;
 
-function createWindow() {
+function createWindow(): void {
   mainWindow = new BrowserWindow({
     width: 500,
     height: 500,
@@ -20,14 +19,14 @@ function createWindow() {
     minHeight: 600,
     title: 'Assembly Notes',
     webPreferences: {
-      preload: path.join(__dirname, '../preload/preload.js'),
+      preload: path.join(__dirname, '../../src/preload/preload.js'),
       contextIsolation: true,
       nodeIntegration: false,
       webSecurity: true,
     },
   });
 
-  mainWindow.loadFile(path.join(__dirname, '../renderer/index.html'));
+  mainWindow.loadFile(path.join(__dirname, '../../src/renderer/index.html'));
 
   setupIpcHandlers(mainWindow);
   initAutoUpdater(mainWindow);
