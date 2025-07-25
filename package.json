@@ -10,6 +10,7 @@
     "start": "electron .",
     "build": "npm run build-icons && electron-builder --mac --win --linux",
     "build:mac": "npm run build-icons && electron-builder --mac",
+    "build:mac:notarized": "npm run build-icons && APPLE_ID=$APPLE_ID APPLE_ID_PASSWORD=$APPLE_ID_PASSWORD APPLE_TEAM_ID=$APPLE_TEAM_ID CSC_LINK=$CSC_LINK CSC_KEY_PASSWORD=$CSC_KEY_PASSWORD electron-builder --mac --publish=never",
     "build:win": "npm run build-icons && electron-builder --win",
     "build:linux": "npm run build-icons && electron-builder --linux",
     "build-icons": "electron-icon-builder --input=./icon.png --output=./build",
@@ -79,7 +80,12 @@
     "mac": {
       "category": "public.app-category.productivity",
       "target": "dmg",
-      "icon": "build/icons/mac/icon.icns"
+      "icon": "build/icons/mac/icon.icns",
+      "hardenedRuntime": true,
+      "gatekeeperAssess": false,
+      "entitlements": "build/entitlements.mac.plist",
+      "entitlementsInherit": "build/entitlements.mac.plist",
+      "notarize": true
     },
     "win": {
       "target": "nsis",
