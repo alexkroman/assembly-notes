@@ -96,9 +96,6 @@ window.AutoUpdaterUI = (function () {
       content.innerHTML = `
         <h3>Updating...</h3>
         <p>${message}${progressText}</p>
-        <div class="dialog-buttons">
-          <button disabled>Installing...</button>
-        </div>
       `;
     }
   }
