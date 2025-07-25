@@ -1,4 +1,3 @@
-
 const { processEchoCancellation, cleanupEchoCancellation } =
   window.EchoCancellation;
 const { startAudioProcessing, stopAudioProcessing, setRecordingState } =

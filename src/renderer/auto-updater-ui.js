@@ -58,7 +58,10 @@ window.AutoUpdaterUI = (function () {
     document.getElementById('installUpdate').onclick = () => {
       window.electronAPI.installUpdate();
       dialog.remove();
-      createUpdateNotification('Update will be installed on restart', 'success');
+      createUpdateNotification(
+        'Update will be installed on restart',
+        'success'
+      );
     };
 
     // Handle skip button click
@@ -91,7 +94,10 @@ window.AutoUpdaterUI = (function () {
    */
   function handleUpdateDownloaded(info) {
     window.logger.info('Update downloaded:', info);
-    createUpdateNotification('Update downloaded! Restart to install.', 'success');
+    createUpdateNotification(
+      'Update downloaded! Restart to install.',
+      'success'
+    );
   }
 
   /**
