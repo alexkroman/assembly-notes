@@ -141,7 +141,9 @@ describe('AudioProcessing Module', () => {
     });
 
     it('should handle stopping when not started', () => {
-      expect(() => { AudioProcessing.stopAudioProcessing(); }).not.toThrow();
+      expect(() => {
+        AudioProcessing.stopAudioProcessing();
+      }).not.toThrow();
     });
   });
 
@@ -176,7 +178,9 @@ describe('AudioProcessing Module', () => {
     });
 
     it('should handle setting state when not initialized', () => {
-      expect(() => { AudioProcessing.setRecordingState(true); }).not.toThrow();
+      expect(() => {
+        AudioProcessing.setRecordingState(true);
+      }).not.toThrow();
     });
   });
 });

@@ -1,6 +1,4 @@
-const transcriptionResults = document.getElementById(
-  'transcriptionResults'
-)!;
+const transcriptionResults = document.getElementById('transcriptionResults')!;
 const audioStatus = document.getElementById('audioStatus')!;
 const toggleBtn = document.getElementById('toggleBtn') as HTMLButtonElement;
 const settingsBtn = document.getElementById('settingsBtn') as HTMLButtonElement;

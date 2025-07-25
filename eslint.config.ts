@@ -22,11 +22,11 @@ export default tseslint.config(
   js.configs.recommended,
 
   // 3. TypeScript files with strict type checking
-  ...tseslint.configs.strictTypeChecked.map(config => ({
+  ...tseslint.configs.strictTypeChecked.map((config) => ({
     ...config,
     files: ['src/**/*.ts', 'src/**/*.tsx'],
   })),
-  ...tseslint.configs.stylisticTypeChecked.map(config => ({
+  ...tseslint.configs.stylisticTypeChecked.map((config) => ({
     ...config,
     files: ['src/**/*.ts', 'src/**/*.tsx'],
   })),

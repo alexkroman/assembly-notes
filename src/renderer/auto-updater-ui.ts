@@ -1,9 +1,6 @@
 let updateNotification: HTMLElement | null = null;
 
-function createUpdateNotification(
-  message: string,
-  type = 'info'
-): void {
+function createUpdateNotification(message: string, type = 'info'): void {
   if (updateNotification) {
     updateNotification.remove();
   }

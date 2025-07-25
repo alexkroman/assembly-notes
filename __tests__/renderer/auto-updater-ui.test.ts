@@ -171,9 +171,7 @@ describe('AutoUpdaterUI Module', () => {
     it('should handle install button click', () => {
       AutoUpdaterUI.createUpdateDialog(mockUpdateInfo);
 
-      const installButton = document.getElementById(
-        'installUpdate'
-      )!;
+      const installButton = document.getElementById('installUpdate')!;
       installButton.click();
 
       expect(mockElectronAPI.installUpdate).toHaveBeenCalledTimes(1);
@@ -213,9 +211,7 @@ describe('AutoUpdaterUI Module', () => {
     it('should update dialog progress when install button is clicked', () => {
       AutoUpdaterUI.createUpdateDialog(mockUpdateInfo);
 
-      const installButton = document.getElementById(
-        'installUpdate'
-      )!;
+      const installButton = document.getElementById('installUpdate')!;
       installButton.click();
 
       const dialog = document.querySelector('.update-dialog');
@@ -227,9 +223,7 @@ describe('AutoUpdaterUI Module', () => {
     it('should update dialog progress with percentage during download', () => {
       // Create dialog first
       AutoUpdaterUI.createUpdateDialog(mockUpdateInfo);
-      const installButton = document.getElementById(
-        'installUpdate'
-      )!;
+      const installButton = document.getElementById('installUpdate')!;
       installButton.click();
 
       // Simulate download progress
@@ -244,9 +238,7 @@ describe('AutoUpdaterUI Module', () => {
     it('should show quit button when update is downloaded', () => {
       // Create dialog and start download
       AutoUpdaterUI.createUpdateDialog(mockUpdateInfo);
-      const installButton = document.getElementById(
-        'installUpdate'
-      )!;
+      const installButton = document.getElementById('installUpdate')!;
       installButton.click();
 
       // Simulate update downloaded
@@ -264,15 +256,11 @@ describe('AutoUpdaterUI Module', () => {
     it('should handle quit and reopen button click', () => {
       // Create dialog, start download, and complete download
       AutoUpdaterUI.createUpdateDialog(mockUpdateInfo);
-      const installButton = document.getElementById(
-        'installUpdate'
-      )!;
+      const installButton = document.getElementById('installUpdate')!;
       installButton.click();
       AutoUpdaterUI.handleUpdateDownloaded(mockUpdateInfo);
 
-      const quitButton = document.getElementById(
-        'quitAndReopen'
-      )!;
+      const quitButton = document.getElementById('quitAndReopen')!;
       quitButton.click();
 
       expect(mockElectronAPI.quitAndInstall).toHaveBeenCalledTimes(1);

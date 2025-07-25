@@ -377,7 +377,9 @@ describe('TranscriptionService', () => {
       await transcriptionService.start();
 
       // Simulate both transcribers connecting
-      openHandlers.forEach((handler) => { handler(); });
+      openHandlers.forEach((handler) => {
+        handler();
+      });
 
       // Fast-forward time to trigger keep-alive
       jest.advanceTimersByTime(30000);

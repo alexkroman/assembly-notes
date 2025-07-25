@@ -79,7 +79,9 @@ export function cleanupEchoCancellation(): void {
     echoCancellationContext = null;
   }
   if (echoCancelledStream) {
-    echoCancelledStream.getTracks().forEach((track) => { track.stop(); });
+    echoCancelledStream.getTracks().forEach((track) => {
+      track.stop();
+    });
     echoCancelledStream = null;
   }
   echoCancelledDestination = null;

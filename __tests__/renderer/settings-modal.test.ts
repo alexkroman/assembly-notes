@@ -234,9 +234,7 @@ describe('SettingsModal Module', () => {
     });
 
     it('should close modal when clicking outside modal content', () => {
-      const settingsModal = document.getElementById(
-        'settingsModal'
-      )!;
+      const settingsModal = document.getElementById('settingsModal')!;
 
       expect(settingsModal.classList.contains('active')).toBe(true);
 
@@ -256,9 +254,7 @@ describe('SettingsModal Module', () => {
     });
 
     it('should not close modal when clicking inside modal content', () => {
-      const settingsModal = document.getElementById(
-        'settingsModal'
-      )!;
+      const settingsModal = document.getElementById('settingsModal')!;
       const assemblyaiKeyInput = document.getElementById(
         'assemblyaiKey'
       ) as HTMLInputElement;
