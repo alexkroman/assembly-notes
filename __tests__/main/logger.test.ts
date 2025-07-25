@@ -6,7 +6,7 @@ describe('Logger', () => {
   beforeEach(async () => {
     jest.clearAllMocks();
     jest.resetModules();
-    
+
     // Import the logger module (uses mocked dependencies)
     log = (await import('../../src/main/logger')).default;
   });

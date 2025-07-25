@@ -3,15 +3,13 @@
  */
 
 import { jest } from '@jest/globals';
-import {
-  mockElectronAPI
-} from '../../__mocks__/electron-api';
+import { mockElectronAPI } from '../../__mocks__/electron-api';
 import {
   AudioContext,
   AudioWorkletNode,
   mockAudioContext,
   mockWorkletNode,
-  mockMediaStreamSource
+  mockMediaStreamSource,
 } from '../../__mocks__/audio-context';
 
 declare global {
@@ -30,7 +28,6 @@ declare global {
   var AudioContext: jest.MockedClass<typeof globalThis.AudioContext>;
   var AudioWorkletNode: jest.MockedClass<typeof globalThis.AudioWorkletNode>;
 }
-
 
 describe('AudioProcessing Module', () => {
   let AudioProcessing: Window['AudioProcessing'];

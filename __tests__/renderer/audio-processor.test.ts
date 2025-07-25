@@ -5,7 +5,7 @@
 import { jest } from '@jest/globals';
 import {
   AudioWorkletProcessor,
-  registerProcessor
+  registerProcessor,
 } from '../../__mocks__/audio-context';
 
 interface MockPort {

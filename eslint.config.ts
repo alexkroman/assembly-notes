@@ -68,7 +68,12 @@ export default tseslint.config(
 
   // 3b. Test files - relax some rules but keep strict type checking
   {
-    files: ['__tests__/**/*.ts', '__mocks__/**/*.ts', '**/*.test.ts', '**/*.spec.ts'],
+    files: [
+      '__tests__/**/*.ts',
+      '__mocks__/**/*.ts',
+      '**/*.test.ts',
+      '**/*.spec.ts',
+    ],
     languageOptions: {
       globals: {
         ...globals.jest,
@@ -110,6 +115,5 @@ export default tseslint.config(
         ...globals.browser,
       },
     },
-  },
-
+  }
 );

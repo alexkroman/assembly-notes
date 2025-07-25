@@ -16,19 +16,19 @@ describe('Auto-updater', () => {
 
   beforeEach(async () => {
     jest.clearAllMocks();
-    
+
     // Clear mock calls
     (autoUpdater.on as jest.Mock).mockClear();
     (autoUpdater.checkForUpdatesAndNotify as jest.Mock).mockClear();
     (autoUpdater.quitAndInstall as jest.Mock).mockClear();
     (mockMainWindow.webContents.send as jest.Mock).mockClear();
-    
+
     // Reset logger reference
     autoUpdater.logger = null;
 
     // Import modules
     const autoUpdaterModule = await import('../../src/main/auto-updater.ts');
-    
+
     initAutoUpdater = autoUpdaterModule.initAutoUpdater;
     checkForUpdatesAndNotify = autoUpdaterModule.checkForUpdatesAndNotify;
     quitAndInstall = autoUpdaterModule.quitAndInstall;
@@ -45,15 +45,32 @@ describe('Auto-updater', () => {
     it('should set up all event handlers', () => {
       initAutoUpdater(mockMainWindow);
 
-      expect(autoUpdater.on).toHaveBeenCalledWith('checking-for-update', expect.any(Function));
-      expect(autoUpdater.on).toHaveBeenCalledWith('update-available', expect.any(Function));
-      expect(autoUpdater.on).toHaveBeenCalledWith('update-not-available', expect.any(Function));
-      expect(autoUpdater.on).toHaveBeenCalledWith('error', expect.any(Function));
-      expect(autoUpdater.on).toHaveBeenCalledWith('download-progress', expect.any(Function));
-      expect(autoUpdater.on).toHaveBeenCalledWith('update-downloaded', expect.any(Function));
+      expect(autoUpdater.on).toHaveBeenCalledWith(
+        'checking-for-update',
+        expect.any(Function)
+      );
+      expect(autoUpdater.on).toHaveBeenCalledWith(
+        'update-available',
+        expect.any(Function)
+      );
+      expect(autoUpdater.on).toHaveBeenCalledWith(
+        'update-not-available',
+        expect.any(Function)
+      );
+      expect(autoUpdater.on).toHaveBeenCalledWith(
+        'error',
+        expect.any(Function)
+      );
+      expect(autoUpdater.on).toHaveBeenCalledWith(
+        'download-progress',
+        expect.any(Function)
+      );
+      expect(autoUpdater.on).toHaveBeenCalledWith(
+        'update-downloaded',
+        expect.any(Function)
+      );
     });
   });
-
 
   describe('checkForUpdatesAndNotify', () => {
     it('should call autoUpdater.checkForUpdatesAndNotify', () => {
@@ -70,5 +87,4 @@ describe('Auto-updater', () => {
       expect(autoUpdater.quitAndInstall).toHaveBeenCalledTimes(1);
     });
   });
-
 });

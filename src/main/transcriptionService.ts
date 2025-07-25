@@ -26,7 +26,6 @@ interface ConnectionState {
   retryTimeout: NodeJS.Timeout | null;
 }
 
-
 class TranscriptionService extends EventEmitter {
   private microphoneTranscriber: any | null;
   private systemAudioTranscriber: any | null;
@@ -162,7 +161,7 @@ class TranscriptionService extends EventEmitter {
       if (!this.aai) {
         throw new Error('AssemblyAI instance not initialized');
       }
-      
+
       const transcriber = this.aai.realtime.transcriber({
         sampleRate: 16000,
       });
@@ -296,7 +295,11 @@ class TranscriptionService extends EventEmitter {
     this.isActive = true;
 
     // Reset connection state
-    (Object.keys(this.connectionState) as Array<keyof typeof this.connectionState>).forEach((stream) => {
+    (
+      Object.keys(this.connectionState) as Array<
+        keyof typeof this.connectionState
+      >
+    ).forEach((stream) => {
       this.connectionState[stream].isConnecting = false;
       this.connectionState[stream].isConnected = false;
       this.connectionState[stream].retryCount = 0;
@@ -320,7 +323,11 @@ class TranscriptionService extends EventEmitter {
     this.stopKeepAlive();
 
     // Clear any pending retry timeouts
-    (Object.keys(this.connectionState) as Array<keyof typeof this.connectionState>).forEach((stream) => {
+    (
+      Object.keys(this.connectionState) as Array<
+        keyof typeof this.connectionState
+      >
+    ).forEach((stream) => {
       if (this.connectionState[stream].retryTimeout) {
         clearTimeout(this.connectionState[stream].retryTimeout);
         this.connectionState[stream].retryTimeout = null;

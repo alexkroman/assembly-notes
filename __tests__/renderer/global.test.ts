@@ -38,7 +38,7 @@ describe('Global Type Definitions', () => {
     // Verify the structure exists and has the expected properties
     expect(mockWindow.electronAPI).toBeDefined();
     expect(mockWindow.logger).toBeDefined();
-    
+
     // Test that all electronAPI methods exist
     expect(typeof mockWindow.electronAPI.enableLoopbackAudio).toBe('function');
     expect(typeof mockWindow.electronAPI.disableLoopbackAudio).toBe('function');
@@ -48,7 +48,7 @@ describe('Global Type Definitions', () => {
     expect(typeof mockWindow.electronAPI.sendSystemAudio).toBe('function');
     expect(typeof mockWindow.electronAPI.getSettings).toBe('function');
     expect(typeof mockWindow.electronAPI.saveSettings).toBe('function');
-    
+
     // Test that all logger methods exist
     expect(typeof mockWindow.logger.info).toBe('function');
     expect(typeof mockWindow.logger.warn).toBe('function');

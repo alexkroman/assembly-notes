@@ -33,7 +33,9 @@ interface MockMediaStreamDestination {
 
 interface MockAudioWorkletNode {
   port: {
-    onmessage: ((event: { data: { type: string; data: Int16Array } }) => void) | null;
+    onmessage:
+      | ((event: { data: { type: string; data: Int16Array } }) => void)
+      | null;
     postMessage: jest.MockedFunction<(message: any) => void>;
   };
   connect: jest.MockedFunction<(destination: any) => void>;
@@ -47,8 +49,12 @@ interface MockAudioContext {
   audioWorklet: {
     addModule: jest.MockedFunction<(url: string) => Promise<void>>;
   };
-  createMediaStreamSource: jest.MockedFunction<(stream: MediaStream) => MockMediaStreamSource>;
-  createMediaStreamDestination: jest.MockedFunction<() => MockMediaStreamDestination>;
+  createMediaStreamSource: jest.MockedFunction<
+    (stream: MediaStream) => MockMediaStreamSource
+  >;
+  createMediaStreamDestination: jest.MockedFunction<
+    () => MockMediaStreamDestination
+  >;
   createDelay: jest.MockedFunction<(maxDelay: number) => MockDelayNode>;
   createGain: jest.MockedFunction<() => MockGainNode>;
   close: jest.MockedFunction<() => Promise<void>>;
@@ -104,15 +110,21 @@ export const mockAudioContext: MockAudioContext = {
     addModule: jest.fn().mockResolvedValue(undefined),
   },
   createMediaStreamSource: jest.fn().mockReturnValue(mockMediaStreamSource),
-  createMediaStreamDestination: jest.fn().mockReturnValue(mockMediaStreamDestination),
+  createMediaStreamDestination: jest
+    .fn()
+    .mockReturnValue(mockMediaStreamDestination),
   createDelay: jest.fn().mockReturnValue(mockDelayNode),
   createGain: jest.fn().mockReturnValue(mockGainNode),
   close: jest.fn().mockResolvedValue(undefined),
 };
 
 // Mock constructors
-export const AudioContext = jest.fn().mockImplementation(() => mockAudioContext);
-export const AudioWorkletNode = jest.fn().mockImplementation(() => mockWorkletNode);
+export const AudioContext = jest
+  .fn()
+  .mockImplementation(() => mockAudioContext);
+export const AudioWorkletNode = jest
+  .fn()
+  .mockImplementation(() => mockWorkletNode);
 export const MediaStream = jest.fn().mockImplementation(() => ({}));
 
 // Mock AudioWorkletProcessor for Node.js environment

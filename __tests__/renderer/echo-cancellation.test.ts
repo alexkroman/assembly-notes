@@ -12,7 +12,7 @@ import {
   mockDelayNode,
   mockGainNode,
   mockMediaStreamSource,
-  mockMediaStreamDestination
+  mockMediaStreamDestination,
 } from '../../__mocks__/audio-context';
 
 declare global {

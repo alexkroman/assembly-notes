@@ -61,25 +61,30 @@ describe('Main Process', () => {
   it('should load and execute main initialization', async () => {
     // Import the main module which should execute initialization code
     await import('../../src/main/main.js');
-    
+
     // Verify basic initialization calls
     expect(mockInitAudioLoopback).toHaveBeenCalledTimes(1);
     expect(mockApp.whenReady).toHaveBeenCalledTimes(1);
-    expect(mockApp.on).toHaveBeenCalledWith('window-all-closed', expect.any(Function));
+    expect(mockApp.on).toHaveBeenCalledWith(
+      'window-all-closed',
+      expect.any(Function)
+    );
   });
 
   it('should execute app ready callback when triggered', async () => {
     await import('../../src/main/main.js');
-    
+
     // Verify the callback was registered and execute it if available
     expect(mockApp.whenReady).toHaveBeenCalled();
-    
+
     const readyCallback = mockApp.whenReady.mock.calls?.[0]?.[0];
     if (typeof readyCallback === 'function') {
       await readyCallback();
-      
+
       // Verify the ready callback executed expected functions
-      expect(mockLog.info).toHaveBeenCalledWith('App is ready, initializing...');
+      expect(mockLog.info).toHaveBeenCalledWith(
+        'App is ready, initializing...'
+      );
       expect(mockLoadSettings).toHaveBeenCalledTimes(1);
       expect(mockStartUpdateCheck).toHaveBeenCalledTimes(1);
       expect(mockBrowserWindow).toHaveBeenCalledTimes(1);
@@ -90,12 +95,12 @@ describe('Main Process', () => {
 
   it('should handle window creation with correct parameters', async () => {
     await import('../../src/main/main.js');
-    
+
     // Execute app ready callback
     const readyCallback = mockApp.whenReady.mock.calls[0]?.[0];
     if (readyCallback) {
       await readyCallback();
-      
+
       // Verify BrowserWindow was created with expected config
       expect(mockBrowserWindow).toHaveBeenCalledWith({
         width: 500,

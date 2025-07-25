@@ -1,6 +1,5 @@
 import { jest } from '@jest/globals';
 
-
 interface TranscriptionServiceInstance {
   initialize: (
     apiKey: string,
@@ -55,7 +54,9 @@ describe('TranscriptionService', () => {
 
     // Mock the AssemblyAI constructor
     const { AssemblyAI } = await import('assemblyai');
-    (AssemblyAI as jest.MockedClass<any>).mockImplementation(() => mockAssemblyAI);
+    (AssemblyAI as jest.MockedClass<any>).mockImplementation(
+      () => mockAssemblyAI
+    );
 
     const TranscriptionService = await import(
       '../../src/main/transcriptionService'
@@ -73,7 +74,7 @@ describe('TranscriptionService', () => {
   describe('initialize', () => {
     it('should initialize with API key and default keep-alive settings', async () => {
       const { AssemblyAI } = await import('assemblyai');
-      
+
       transcriptionService.initialize('test-api-key');
 
       expect(AssemblyAI).toHaveBeenCalledWith({ apiKey: 'test-api-key' });

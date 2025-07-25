@@ -7,9 +7,7 @@
       "request": "launch",
       "program": "${workspaceFolder}/dist/main/main.js",
       "preLaunchTask": "npm: build:ts",
-      "outFiles": [
-        "${workspaceFolder}/dist/**/*.js"
-      ],
+      "outFiles": ["${workspaceFolder}/dist/**/*.js"],
       "sourceMaps": true,
       "resolveSourceMapLocations": [
         "${workspaceFolder}/**",

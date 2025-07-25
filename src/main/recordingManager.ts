@@ -129,7 +129,8 @@ async function startTranscription(mainWindow: BrowserWindow): Promise<boolean> {
     return true;
   } catch (error) {
     log.error('Failed to start transcription:', error);
-    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    const errorMessage =
+      error instanceof Error ? error.message : 'Unknown error';
     mainWindow.webContents.send('error', `Failed to start: ${errorMessage}`);
     return false;
   }

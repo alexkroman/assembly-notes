@@ -49,7 +49,9 @@ describe('recordingManager', () => {
   describe('startTranscription', () => {
     it('should return false when API key is missing', async () => {
       // The mock settings return an empty assemblyaiKey by default
-      const result = await recordingManager.startTranscription(mockWindow as BrowserWindow);
+      const result = await recordingManager.startTranscription(
+        mockWindow as BrowserWindow
+      );
 
       expect(result).toBe(false);
       expect(mockWindow.webContents!.send).toHaveBeenCalledWith(
@@ -61,10 +63,14 @@ describe('recordingManager', () => {
 
   describe('stopTranscription', () => {
     it('should return true and send stop-audio-capture message', async () => {
-      const result = await recordingManager.stopTranscription(mockWindow as BrowserWindow);
+      const result = await recordingManager.stopTranscription(
+        mockWindow as BrowserWindow
+      );
 
       expect(result).toBe(true);
-      expect(mockWindow.webContents!.send).toHaveBeenCalledWith('stop-audio-capture');
+      expect(mockWindow.webContents!.send).toHaveBeenCalledWith(
+        'stop-audio-capture'
+      );
     });
   });
 
