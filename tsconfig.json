@@ -161,6 +161,6 @@
      */
     "isolatedModules": true
   },
-  "include": ["src/**/*", "__tests__/**/*"],
-  "exclude": ["node_modules", "dist", "build"]
+  "include": ["src/**/*"],
+  "exclude": ["node_modules", "dist", "build", "__tests__"]
 }
