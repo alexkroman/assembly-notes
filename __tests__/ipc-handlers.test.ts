@@ -39,14 +39,6 @@ jest.mock('electron-updater', () => ({
   },
 }));
 
-interface MockIpcMain {
-  on: jest.MockedFunction<
-    (channel: string, listener: (...args: any[]) => void) => void
-  >;
-  handle: jest.MockedFunction<
-    (channel: string, listener: (...args: any[]) => any) => void
-  >;
-}
 
 interface MockMainWindow {
   webContents: {

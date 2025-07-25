@@ -54,9 +54,6 @@ describe('Recording Manager', () => {
     jest.clearAllMocks();
 
     const { getSettings } = await import('../src/main/settings');
-    const TranscriptionService = await import(
-      '../src/main/transcriptionService'
-    );
 
     // Mock settings
     (getSettings as jest.MockedFunction<typeof getSettings>).mockReturnValue({

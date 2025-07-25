@@ -26,11 +26,6 @@ interface ConnectionState {
   retryTimeout: NodeJS.Timeout | null;
 }
 
-interface TranscriptData {
-  streamType: string;
-  text: string;
-  partial: boolean;
-}
 
 class TranscriptionService extends EventEmitter {
   private microphoneTranscriber: any | null;
