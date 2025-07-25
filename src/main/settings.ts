@@ -45,7 +45,7 @@ function loadSettings(): void {
 function saveSettingsToFile(newSettings: Partial<SettingsSchema>): void {
   try {
     Object.keys(newSettings).forEach((key) => {
-      store.set(key as keyof SettingsSchema, (newSettings as any)[key]);
+      (store as any).set(key as keyof SettingsSchema, (newSettings as any)[key]);
     });
   } catch (error) {
     log.error('Error saving settings:', error);
@@ -54,7 +54,7 @@ function saveSettingsToFile(newSettings: Partial<SettingsSchema>): void {
 }
 
 function getSettings(): SettingsSchema {
-  return store.store;
+  return (store as any).store;
 }
 
 export { loadSettings, saveSettingsToFile, getSettings };

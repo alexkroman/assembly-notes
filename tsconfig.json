@@ -12,16 +12,15 @@
 
     /**
      * Specify what module code is generated.
-     * 'NodeNext' is the best option for Node.js environments like Electron's main process,
-     * as it supports modern Node.js features like package.json "exports" and "imports".
+     * 'ESNext' for ES modules to work consistently across the application.
      */
-    "module": "NodeNext",
+    "module": "ESNext",
 
     /**
      * Specify how TypeScript looks up a file from a given module specifier.
-     * 'NodeNext' aligns with the 'module' setting for modern Node.js module resolution.
+     * 'Node' for standard Node.js module resolution with ES modules.
      */
-    "moduleResolution": "NodeNext",
+    "moduleResolution": "Node",
 
     /**
      * Specify a set of bundled library declaration files that describe the target runtime environment.

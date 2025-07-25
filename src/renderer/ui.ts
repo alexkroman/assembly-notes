@@ -33,7 +33,7 @@ export function renderTranscript(data: {
 
   const timestamp = new Date()
     .toLocaleTimeString()
-    .replace(/\s?(AM|PM)/i, (match, ampm) => ampm.toLowerCase().charAt(0));
+    .replace(/\s?(AM|PM)/i, (_, ampm) => ampm.toLowerCase().charAt(0));
   const prefix = partial ? '>> ' : '';
 
   if (partial) {

@@ -15,6 +15,10 @@ function createEchoCancellationProcessor(): AudioContext {
 
   echoCancellationContext = new AudioCtx();
 
+  if (!echoCancellationContext) {
+    throw new Error('Failed to create audio context');
+  }
+
   echoCancelledDestination =
     echoCancellationContext.createMediaStreamDestination();
 

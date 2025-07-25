@@ -4,7 +4,7 @@ export default {
   testMatch: ['**/__tests__/**/*.test.ts', '!**/__tests__/disabled/**'],
   collectCoverageFrom: [
     'src/**/*.ts',
-    '!src/main/main.ts',
+    '!src/**/*.d.ts',
     '!src/preload/preload.ts',
     '!src/renderer/renderer.ts',
     '!src/renderer/media.ts',
@@ -15,6 +15,7 @@ export default {
   moduleNameMapper: {
     '^electron$': '<rootDir>/__mocks__/electron',
     '^electron-log$': '<rootDir>/__mocks__/electron-log',
+    '^electron-audio-loopback$': '<rootDir>/__mocks__/electron-audio-loopback',
     '^assemblyai$': '<rootDir>/__mocks__/assemblyai',
     '^electron-updater$': '<rootDir>/__mocks__/electron-updater',
     '^electron-store$': '<rootDir>/__mocks__/electron-store',
@@ -22,6 +23,8 @@ export default {
     '^../src/main/settings$': '<rootDir>/__mocks__/settings',
     '^\\./settings\\.js$': '<rootDir>/__mocks__/settings',
     '^\\./logger\\.js$': '<rootDir>/__mocks__/logger',
+    '^\\./ipc-handlers\\.js$': '<rootDir>/__mocks__/ipc-handlers',
+    '^\\./auto-updater\\.js$': '<rootDir>/__mocks__/auto-updater',
     '^(.*)\\.js$': '$1',
   },
   extensionsToTreatAsEsm: ['.ts'],

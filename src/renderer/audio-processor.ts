@@ -20,7 +20,7 @@ class AudioProcessor extends AudioWorkletProcessor {
     };
   }
 
-  process(inputs) {
+  override process(inputs: Float32Array[][]) {
     if (!this.isRecording) return true;
 
     const input = inputs[0];
@@ -32,7 +32,7 @@ class AudioProcessor extends AudioWorkletProcessor {
         const int16Buffer = new Int16Array(inputData.length);
 
         for (let i = 0; i < inputData.length; i++) {
-          const sample = Math.max(-1, Math.min(1, inputData[i]));
+          const sample = Math.max(-1, Math.min(1, inputData[i] || 0));
           int16Buffer[i] = sample < 0 ? sample * 0x8000 : sample * 0x7fff;
         }
 
