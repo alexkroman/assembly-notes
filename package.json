@@ -53,6 +53,7 @@
   "build": {
     "appId": "com.alexkroman.assembly-notes",
     "productName": "Assembly-Notes",
+    "artifactName": "Assembly-Notes-${version}-${arch}.${ext}",
     "forceCodeSigning": false,
     "publish": {
       "provider": "github"
