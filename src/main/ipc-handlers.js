@@ -55,6 +55,12 @@ function setupIpcHandlers(mainWindow) {
 
   // Auto-updater IPC handlers
   ipcMain.handle('install-update', () => {
+    // Download the update (it will trigger download-progress and update-downloaded events)
+    const { autoUpdater } = require('electron-updater');
+    autoUpdater.downloadUpdate();
+  });
+
+  ipcMain.handle('quit-and-install', () => {
     quitAndInstall();
   });
 

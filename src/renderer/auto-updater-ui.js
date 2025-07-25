@@ -57,17 +57,50 @@ window.AutoUpdaterUI = (function () {
     // Handle install button click
     document.getElementById('installUpdate').onclick = () => {
       window.electronAPI.installUpdate();
-      dialog.remove();
-      createUpdateNotification(
-        'Update will be installed on restart',
-        'success'
-      );
+      updateDialogProgress(dialog, 'Downloading update...', 0);
     };
 
     // Handle skip button click
     document.getElementById('skipUpdate').onclick = () => {
       dialog.remove();
     };
+
+    // Store dialog reference for later updates
+    window.currentUpdateDialog = dialog;
+  }
+
+  /**
+   * Update the dialog to show progress
+   * @param {HTMLElement} dialog - The dialog element
+   * @param {string} message - Progress message
+   * @param {number} percent - Progress percentage (optional)
+   * @param {boolean} showQuitButton - Whether to show quit and reopen button
+   */
+  function updateDialogProgress(dialog, message, percent = null, showQuitButton = false) {
+    const content = dialog.querySelector('.dialog-content');
+    const progressText = percent !== null ? ` (${Math.round(percent)}%)` : '';
+    
+    if (showQuitButton) {
+      content.innerHTML = `
+        <h3>Update Ready</h3>
+        <p>${message}</p>
+        <div class="dialog-buttons">
+          <button id="quitAndReopen" class="primary">Quit and Reopen</button>
+        </div>
+      `;
+      
+      document.getElementById('quitAndReopen').onclick = () => {
+        window.electronAPI.quitAndInstall();
+      };
+    } else {
+      content.innerHTML = `
+        <h3>Updating...</h3>
+        <p>${message}${progressText}</p>
+        <div class="dialog-buttons">
+          <button disabled>Installing...</button>
+        </div>
+      `;
+    }
   }
 
   /**
@@ -85,7 +118,9 @@ window.AutoUpdaterUI = (function () {
    */
   function handleDownloadProgress(progress) {
     const percent = Math.round(progress.percent);
-    createUpdateNotification(`Downloading update: ${percent}%`, 'info');
+    if (window.currentUpdateDialog) {
+      updateDialogProgress(window.currentUpdateDialog, 'Downloading update...', percent);
+    }
   }
 
   /**
@@ -94,10 +129,9 @@ window.AutoUpdaterUI = (function () {
    */
   function handleUpdateDownloaded(info) {
     window.logger.info('Update downloaded:', info);
-    createUpdateNotification(
-      'Update downloaded! Restart to install.',
-      'success'
-    );
+    if (window.currentUpdateDialog) {
+      updateDialogProgress(window.currentUpdateDialog, 'Update ready to install!', null, true);
+    }
   }
 
   /**
