@@ -16,12 +16,37 @@ export default tseslint.config(
     ],
   },
 
-  // 2. Base configurations for all TypeScript files
+  // 2. Base JavaScript configuration for all files
   js.configs.recommended,
-  ...tseslint.configs.strictTypeChecked,
-  ...tseslint.configs.stylisticTypeChecked,
 
-  // 3. All TypeScript files with strict type checking
+  // 3. JavaScript mock files - basic linting only
+  {
+    files: ['__mocks__/**/*.js'],
+    languageOptions: {
+      globals: {
+        ...globals.jest,
+        ...globals.node,
+      },
+    },
+    rules: {
+      // Basic JavaScript linting only
+      'prefer-const': 'error',
+      'no-var': 'error',
+      'no-console': ['error', { allow: ['warn', 'error'] }],
+    },
+  },
+
+  // 4. TypeScript files with strict type checking
+  ...tseslint.configs.strictTypeChecked.map(config => ({
+    ...config,
+    files: ['**/*.ts', '**/*.tsx'],
+  })),
+  ...tseslint.configs.stylisticTypeChecked.map(config => ({
+    ...config,
+    files: ['**/*.ts', '**/*.tsx'],
+  })),
+
+  // 5. All TypeScript files with strict type checking
   {
     files: ['**/*.ts', '**/*.tsx'],
     languageOptions: {
@@ -66,7 +91,7 @@ export default tseslint.config(
     },
   },
 
-  // 3b. Test files - relax some rules but keep strict type checking
+  // 6. Test files - relax some rules but keep strict type checking
   {
     files: [
       '__tests__/**/*.ts',
