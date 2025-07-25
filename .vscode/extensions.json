@@ -10,8 +10,9 @@
     // Testing
     "orta.vscode-jest",
 
-    // JavaScript/Node.js development
+    // TypeScript/Node.js development
     "ms-vscode.vscode-json",
+    "ms-vscode.vscode-typescript-next",
     "bradlc.vscode-tailwindcss",
 
     // YAML support
@@ -21,7 +22,6 @@
     "eamodio.gitlens",
 
     // General productivity
-    "ms-vscode.vscode-typescript-next",
     "christian-kohler.path-intellisense",
     "formulahendry.auto-rename-tag",
     "ms-vscode.hexeditor"

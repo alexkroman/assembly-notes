@@ -1,8 +1,19 @@
 {
+  // TypeScript settings
+  "typescript.preferences.quoteStyle": "double",
+  "typescript.preferences.includePackageJsonAutoImports": "auto",
+  "typescript.suggest.autoImports": true,
+  "typescript.updateImportsOnFileMove.enabled": "always",
+  "typescript.inlayHints.parameterNames.enabled": "literals",
+  "typescript.inlayHints.variableTypes.enabled": false,
+  "typescript.inlayHints.functionLikeReturnTypes.enabled": true,
+  "typescript.format.enable": true,
+
   // Editor settings
   "editor.formatOnSave": true,
   "editor.codeActionsOnSave": {
-    "source.fixAll.eslint": "explicit"
+    "source.fixAll.eslint": "explicit",
+    "source.organizeImports": "explicit"
   },
   "editor.defaultFormatter": "esbenp.prettier-vscode",
   "editor.tabSize": 2,
@@ -11,18 +22,16 @@
 
   // ESLint settings
   "eslint.enable": true,
-  "eslint.validate": ["javascript", "javascriptreact"],
-  "eslint.options": {
-    "configFile": "./eslint.config.js"
-  },
+  "eslint.validate": ["typescript"],
+  "eslint.format.enable": true,
 
   // Prettier settings
   "prettier.enable": true,
   "prettier.configPath": "./.prettierrc",
   "prettier.requireConfig": true,
 
-  // File associations for Electron project
-  "[javascript]": {
+  // File associations for TypeScript Electron project
+  "[typescript]": {
     "editor.defaultFormatter": "esbenp.prettier-vscode"
   },
   "[json]": {
@@ -40,7 +49,7 @@
 
   // Electron-specific settings
   "files.associations": {
-    "*.js": "javascript"
+    "*.ts": "typescript"
   },
 
   // Test file settings
@@ -55,11 +64,12 @@
 
   // Search and file exclusions
   "search.exclude": {
-    "node_modules": true,
-    "dist": true,
-    "coverage": true,
-    "build": true,
-    "*.log": true
+    "**/node_modules": true,
+    "**/dist": true,
+    "**/coverage": true,
+    "**/build": true,
+    "**/*.js.map": true,
+    "**/*.log": true
   },
   "files.watcherExclude": {
     "**/.git/objects/**": true,
