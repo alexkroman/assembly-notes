@@ -1,8 +1,47 @@
-const { AssemblyAI } = require('assemblyai');
-const { EventEmitter } = require('events');
-const log = require('./logger.js');
+import { AssemblyAI } from 'assemblyai';
+import { EventEmitter } from 'events';
+import log from './logger.js';
+
+interface KeepAliveSettings {
+  enabled?: boolean;
+  intervalSeconds?: number;
+}
+
+interface KeepAliveConfig {
+  intervalMs: number;
+  enabled: boolean;
+}
+
+interface RetryConfig {
+  maxRetries: number;
+  initialDelay: number;
+  maxDelay: number;
+  backoffMultiplier: number;
+}
+
+interface ConnectionState {
+  isConnecting: boolean;
+  isConnected: boolean;
+  retryCount: number;
+  retryTimeout: NodeJS.Timeout | null;
+}
+
+interface TranscriptData {
+  streamType: string;
+  text: string;
+  partial: boolean;
+}
 
 class TranscriptionService extends EventEmitter {
+  private microphoneTranscriber: any | null;
+  private systemAudioTranscriber: any | null;
+  private aai: AssemblyAI | null;
+  private keepAliveInterval: NodeJS.Timeout | null;
+  private isActive: boolean;
+  private keepAliveConfig: KeepAliveConfig;
+  private retryConfig: RetryConfig;
+  private connectionState: { microphone: ConnectionState; system: ConnectionState };
+
   constructor() {
     super();
     this.microphoneTranscriber = null;
@@ -42,7 +81,7 @@ class TranscriptionService extends EventEmitter {
     };
   }
 
-  initialize(apiKey, keepAliveSettings = {}) {
+  initialize(apiKey: string, keepAliveSettings: KeepAliveSettings = {}): void {
     this.aai = new AssemblyAI({ apiKey });
 
     // Update keep-alive config from settings
@@ -51,7 +90,7 @@ class TranscriptionService extends EventEmitter {
       (keepAliveSettings.intervalSeconds ?? 30) * 1000;
   }
 
-  calculateRetryDelay(retryCount) {
+  calculateRetryDelay(retryCount: number): number {
     const delay = Math.min(
       this.retryConfig.initialDelay *
         Math.pow(this.retryConfig.backoffMultiplier, retryCount),
@@ -60,7 +99,7 @@ class TranscriptionService extends EventEmitter {
     return delay;
   }
 
-  startKeepAlive() {
+  startKeepAlive(): void {
     if (this.keepAliveInterval) {
       clearInterval(this.keepAliveInterval);
     }
@@ -98,7 +137,7 @@ class TranscriptionService extends EventEmitter {
     );
   }
 
-  stopKeepAlive() {
+  stopKeepAlive(): void {
     if (this.keepAliveInterval) {
       clearInterval(this.keepAliveInterval);
       this.keepAliveInterval = null;
@@ -106,7 +145,7 @@ class TranscriptionService extends EventEmitter {
     }
   }
 
-  async createTranscriberWithRetry(streamType) {
+  async createTranscriberWithRetry(streamType: 'microphone' | 'system'): Promise<void> {
     const state = this.connectionState[streamType];
 
     if (!this.isActive || state.isConnecting || state.isConnected) {
@@ -182,7 +221,7 @@ class TranscriptionService extends EventEmitter {
     }
   }
 
-  setupTranscriberHandlers(transcriber, streamType) {
+  setupTranscriberHandlers(transcriber: any, streamType: 'microphone' | 'system'): void {
     const state = this.connectionState[streamType];
 
     transcriber.on('open', () => {
@@ -240,7 +279,7 @@ class TranscriptionService extends EventEmitter {
     });
   }
 
-  async start() {
+  async start(): Promise<void> {
     if (!this.aai) {
       throw new Error(
         'TranscriptionService not initialized. Call initialize() first.'
@@ -269,7 +308,7 @@ class TranscriptionService extends EventEmitter {
     this.emit('transcription-started');
   }
 
-  async stop() {
+  async stop(): Promise<void> {
     this.isActive = false;
     this.stopKeepAlive();
 
@@ -303,7 +342,7 @@ class TranscriptionService extends EventEmitter {
     this.emit('transcription-stopped');
   }
 
-  sendMicrophoneAudio(audioData) {
+  sendMicrophoneAudio(audioData: ArrayBuffer): void {
     if (this.microphoneTranscriber) {
       try {
         const buffer = Buffer.from(audioData);
@@ -314,7 +353,7 @@ class TranscriptionService extends EventEmitter {
     }
   }
 
-  sendSystemAudio(audioData) {
+  sendSystemAudio(audioData: ArrayBuffer): void {
     if (this.systemAudioTranscriber) {
       try {
         const buffer = Buffer.from(audioData);
@@ -325,13 +364,13 @@ class TranscriptionService extends EventEmitter {
     }
   }
 
-  reset() {
+  reset(): void {
     this.aai = null;
   }
 
-  getAai() {
+  getAai(): AssemblyAI | null {
     return this.aai;
   }
 }
 
-module.exports = TranscriptionService;
+export default TranscriptionService;

@@ -1,6 +1,6 @@
-const log = require('electron-log');
-const { app } = require('electron');
-const path = require('path');
+import log from 'electron-log';
+import { app } from 'electron';
+import path from 'path';
 
 // Configure file logging
 log.transports.file.resolvePathFn = () => {
@@ -21,4 +21,4 @@ if (log.errorHandler) {
   log.errorHandler.startCatching();
 }
 
-module.exports = log;
+export default log;

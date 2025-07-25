@@ -1,13 +1,13 @@
-const transcriptionResults = document.getElementById('transcriptionResults');
-const audioStatus = document.getElementById('audioStatus');
-const toggleBtn = document.getElementById('toggleBtn');
-const settingsBtn = document.getElementById('settingsBtn');
+const transcriptionResults = document.getElementById('transcriptionResults') as HTMLElement;
+const audioStatus = document.getElementById('audioStatus') as HTMLElement;
+const toggleBtn = document.getElementById('toggleBtn') as HTMLButtonElement;
+const settingsBtn = document.getElementById('settingsBtn') as HTMLButtonElement;
 
-let autoScrollEnabled = true;
-let micConnected = false;
-let systemConnected = false;
+let autoScrollEnabled: boolean = true;
+let micConnected: boolean = false;
+let systemConnected: boolean = false;
 
-function isAtBottom() {
+function isAtBottom(): boolean {
   const threshold = 50; // pixels from bottom
   return (
     transcriptionResults.scrollHeight -
@@ -21,7 +21,7 @@ transcriptionResults.addEventListener('scroll', () => {
   autoScrollEnabled = isAtBottom();
 });
 
-export function renderTranscript(data) {
+export function renderTranscript(data: {text: string, partial: boolean}): void {
   const { text, partial } = data;
 
   if (!text) return;
@@ -64,7 +64,7 @@ export function renderTranscript(data) {
   }
 }
 
-export function updateAudioStatus(status) {
+export function updateAudioStatus(status?: {text: string, className: string}): void {
   if (status) {
     audioStatus.textContent = status.text;
     audioStatus.className = `status ${status.className}`;
@@ -79,7 +79,7 @@ export function updateAudioStatus(status) {
   }
 }
 
-export function updateConnectionStatus(stream, connected) {
+export function updateConnectionStatus(stream: string, connected: boolean): void {
   if (stream === 'microphone') {
     micConnected = connected;
   } else if (stream === 'system') {
@@ -88,7 +88,7 @@ export function updateConnectionStatus(stream, connected) {
   updateAudioStatus();
 }
 
-export function setButtonState(state) {
+export function setButtonState(state: 'starting' | 'recording' | 'stopping' | 'idle'): void {
   switch (state) {
     case 'starting':
       toggleBtn.disabled = true;
@@ -113,11 +113,11 @@ export function setButtonState(state) {
   }
 }
 
-export function clearTranscripts() {
+export function clearTranscripts(): void {
   transcriptionResults.innerHTML = '';
 }
 
-export function getElements() {
+export function getElements(): {toggleBtn: HTMLButtonElement, settingsBtn: HTMLButtonElement, transcriptionResults: HTMLElement, audioStatus: HTMLElement} {
   return {
     toggleBtn,
     settingsBtn,

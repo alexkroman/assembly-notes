@@ -1,9 +1,10 @@
-const { getSettings } = require('./settings.js');
-const TranscriptionService = require('./transcriptionService.js');
-const log = require('./logger.js');
+import { BrowserWindow } from 'electron';
+import { getSettings } from './settings.js';
+import TranscriptionService from './transcriptionService.js';
+import log from './logger.js';
 
-let transcriptionService = null;
-let mainWindowRef = null;
+let transcriptionService: TranscriptionService | null = null;
+let mainWindowRef: BrowserWindow | null = null;
 
 let microphoneTranscript = '';
 let systemAudioTranscript = '';
@@ -11,7 +12,7 @@ let systemAudioTranscript = '';
 const DEFAULT_SUMMARY_PROMPT =
   'Summarize the key decisions and action items from the following transcript:';
 
-function initializeTranscriptionService() {
+function initializeTranscriptionService(): TranscriptionService {
   if (!transcriptionService) {
     transcriptionService = new TranscriptionService();
     setupTranscriptionServiceEvents();
@@ -19,20 +20,20 @@ function initializeTranscriptionService() {
   return transcriptionService;
 }
 
-function setupTranscriptionServiceEvents() {
-  transcriptionService.on('connection-status', (status) => {
+function setupTranscriptionServiceEvents(): void {
+  transcriptionService!.on('connection-status', (status: any) => {
     if (mainWindowRef) {
       mainWindowRef.webContents.send('connection-status', status);
     }
   });
 
-  transcriptionService.on('error', (error) => {
+  transcriptionService!.on('error', (error: string) => {
     if (mainWindowRef) {
       mainWindowRef.webContents.send('error', error);
     }
   });
 
-  transcriptionService.on('transcript', (data) => {
+  transcriptionService!.on('transcript', (data: any) => {
     if (!data.text) return;
 
     if (!data.partial) {
@@ -52,20 +53,20 @@ function setupTranscriptionServiceEvents() {
     }
   });
 
-  transcriptionService.on('transcription-started', () => {
+  transcriptionService!.on('transcription-started', () => {
     if (mainWindowRef) {
       mainWindowRef.webContents.send('start-audio-capture');
     }
   });
 
-  transcriptionService.on('transcription-stopped', () => {
+  transcriptionService!.on('transcription-stopped', () => {
     if (mainWindowRef) {
       mainWindowRef.webContents.send('recording-stopped');
     }
   });
 }
 
-async function processRecordingComplete() {
+async function processRecordingComplete(): Promise<boolean> {
   const fullTranscript = microphoneTranscript + systemAudioTranscript;
   if (!fullTranscript.trim()) {
     return false;
@@ -76,7 +77,7 @@ async function processRecordingComplete() {
     const settings = getSettings();
     const summaryPrompt = settings.summaryPrompt || DEFAULT_SUMMARY_PROMPT;
 
-    const aai = transcriptionService.getAai();
+    const aai = transcriptionService!.getAai();
     if (!aai) {
       throw new Error('AssemblyAI client not available');
     }
@@ -89,13 +90,13 @@ async function processRecordingComplete() {
     });
     // Summary generated successfully
     return true;
-  } catch (err) {
+  } catch (err: any) {
     log.error(`Error during summarization: ${err.message}`);
     return false;
   }
 }
 
-async function startTranscription(mainWindow) {
+async function startTranscription(mainWindow: BrowserWindow): Promise<boolean> {
   const settings = getSettings();
   const assemblyAiApiKey = settings.assemblyaiKey;
 
@@ -134,7 +135,7 @@ async function startTranscription(mainWindow) {
   }
 }
 
-async function stopTranscription(mainWindow) {
+async function stopTranscription(mainWindow: BrowserWindow): Promise<boolean> {
   mainWindow.webContents.send('stop-audio-capture');
 
   if (transcriptionService) {
@@ -151,25 +152,25 @@ async function stopTranscription(mainWindow) {
   return true;
 }
 
-function sendMicrophoneAudio(audioData) {
+function sendMicrophoneAudio(audioData: ArrayBuffer): void {
   if (transcriptionService) {
     transcriptionService.sendMicrophoneAudio(audioData);
   }
 }
 
-function sendSystemAudio(audioData) {
+function sendSystemAudio(audioData: ArrayBuffer): void {
   if (transcriptionService) {
     transcriptionService.sendSystemAudio(audioData);
   }
 }
 
-function resetAai() {
+function resetAai(): void {
   if (transcriptionService) {
     transcriptionService.reset();
   }
 }
 
-module.exports = {
+export {
   startTranscription,
   stopTranscription,
   sendMicrophoneAudio,

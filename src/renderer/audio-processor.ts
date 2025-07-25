@@ -1,4 +1,13 @@
+declare class AudioWorkletProcessor {
+  port: MessagePort;
+  process(inputs: Float32Array[][]): boolean;
+}
+
+declare function registerProcessor(name: string, processor: any): void;
+
 class AudioProcessor extends AudioWorkletProcessor {
+  private isRecording: boolean;
+
   constructor() {
     super();
     this.isRecording = false;

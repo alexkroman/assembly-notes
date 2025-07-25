@@ -8,7 +8,10 @@
   "author": "Alex Kroman <alex@alexkroman.com>",
   "scripts": {
     "start": "npm run build:ts && electron .",
-    "build:ts": "tsc",
+    "build:ts": "npm run build:main && npm run build:renderer && npm run copy-assets",
+    "build:main": "tsc -p tsconfig.main.json",
+    "build:renderer": "tsc -p tsconfig.renderer.json",
+    "copy-assets": "cp src/renderer/index.html dist/renderer/ && cp src/renderer/styles.css dist/renderer/ && cp src/renderer/settings-modal.html dist/renderer/",
     "dev": "tsc --watch & electron .",
     "build": "npm run build:ts && npm run build-icons && electron-builder --mac --win --linux",
     "build:mac": "npm run build:ts && npm run build-icons && electron-builder --mac",

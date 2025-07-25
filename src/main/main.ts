@@ -2,10 +2,10 @@ import { app, BrowserWindow } from 'electron';
 import { initMain as initAudioLoopback } from 'electron-audio-loopback';
 import * as path from 'path';
 
-const { loadSettings } = require('../../src/main/settings.js');
-const { setupIpcHandlers } = require('../../src/main/ipc-handlers.js');
-const { initAutoUpdater, startUpdateCheck } = require('../../src/main/auto-updater.js');
-const log = require('../../src/main/logger.js');
+import { loadSettings } from './settings.js';
+import { setupIpcHandlers } from './ipc-handlers.js';
+import { initAutoUpdater, startUpdateCheck } from './auto-updater.js';
+import log from './logger.js';
 
 initAudioLoopback();
 
@@ -19,14 +19,14 @@ function createWindow(): void {
     minHeight: 600,
     title: 'Assembly Notes',
     webPreferences: {
-      preload: path.join(__dirname, '../../src/preload/preload.js'),
+      preload: path.join(__dirname, '../preload/preload.js'),
       contextIsolation: true,
       nodeIntegration: false,
       webSecurity: true,
     },
   });
 
-  mainWindow.loadFile(path.join(__dirname, '../../src/renderer/index.html'));
+  mainWindow.loadFile(path.join(__dirname, '../renderer/index.html'));
 
   setupIpcHandlers(mainWindow);
   initAutoUpdater(mainWindow);

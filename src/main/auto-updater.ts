@@ -1,13 +1,13 @@
-const { autoUpdater } = require('electron-updater');
-const log = require('./logger.js');
+import { autoUpdater } from 'electron-updater';
+import { BrowserWindow } from 'electron';
+import log from './logger.js';
 
-let mainWindow = null;
+let mainWindow: BrowserWindow | null = null;
 
 /**
  * Initialize the auto-updater with the main window reference
- * @param {BrowserWindow} window - The main application window
  */
-function initAutoUpdater(window) {
+function initAutoUpdater(window: BrowserWindow): void {
   mainWindow = window;
 
   // Configure auto-updater
@@ -20,27 +20,27 @@ function initAutoUpdater(window) {
 /**
  * Set up auto-updater event handlers
  */
-function setupEventHandlers() {
+function setupEventHandlers(): void {
   autoUpdater.on('checking-for-update', () => {
     log.info('Checking for update...');
   });
 
-  autoUpdater.on('update-available', (info) => {
+  autoUpdater.on('update-available', (info: any) => {
     log.info('Update available.', info);
     if (mainWindow) {
       mainWindow.webContents.send('update-available', info);
     }
   });
 
-  autoUpdater.on('update-not-available', (info) => {
+  autoUpdater.on('update-not-available', (info: any) => {
     log.info('Update not available.', info);
   });
 
-  autoUpdater.on('error', (err) => {
+  autoUpdater.on('error', (err: Error) => {
     log.error('Error in auto-updater:', err);
   });
 
-  autoUpdater.on('download-progress', (progressObj) => {
+  autoUpdater.on('download-progress', (progressObj: any) => {
     let log_message = `Download speed: ${progressObj.bytesPerSecond}`;
     log_message = `${log_message} - Downloaded ${progressObj.percent}%`;
     log_message = `${log_message} (${progressObj.transferred}/${progressObj.total})`;
@@ -51,7 +51,7 @@ function setupEventHandlers() {
     }
   });
 
-  autoUpdater.on('update-downloaded', (info) => {
+  autoUpdater.on('update-downloaded', (info: any) => {
     log.info('Update downloaded', info);
     if (mainWindow) {
       mainWindow.webContents.send('update-downloaded', info);
@@ -62,28 +62,27 @@ function setupEventHandlers() {
 /**
  * Check for updates and notify user if available
  */
-function checkForUpdatesAndNotify() {
+function checkForUpdatesAndNotify(): void {
   autoUpdater.checkForUpdatesAndNotify();
 }
 
 /**
  * Quit the app and install the update
  */
-function quitAndInstall() {
+function quitAndInstall(): void {
   autoUpdater.quitAndInstall();
 }
 
 /**
  * Start checking for updates after app is ready
- * @param {number} delay - Delay in milliseconds before checking (default: 3000)
  */
-function startUpdateCheck(delay = 3000) {
+function startUpdateCheck(delay: number = 3000): void {
   setTimeout(() => {
     checkForUpdatesAndNotify();
   }, delay);
 }
 
-module.exports = {
+export {
   initAutoUpdater,
   checkForUpdatesAndNotify,
   quitAndInstall,

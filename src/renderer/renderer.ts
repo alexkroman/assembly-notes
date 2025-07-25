@@ -2,25 +2,23 @@ import { acquireStreams, releaseStreams, monitorStream } from './media.js';
 import {
   renderTranscript,
   updateAudioStatus,
-  updateConnectionStatus,
+  updateConnectionStatus,  
   setButtonState,
   clearTranscripts,
   getElements,
 } from './ui.js';
+import { startAudioProcessing, stopAudioProcessing, setRecordingState } from './audio-processing.js';
+import { showSettingsModal } from './settings-modal.js';
+import { initAutoUpdaterUI } from './auto-updater-ui.js';
 
-const { startAudioProcessing, stopAudioProcessing, setRecordingState } =
-  window.AudioProcessing;
-const { showSettingsModal } = window.SettingsModal;
-const { initAutoUpdaterUI } = window.AutoUpdaterUI;
+let isRecording: boolean = false;
+let streams: any = null;
 
-let isRecording = false;
-let streams = null;
-
-window.electronAPI.onTranscript((data) => {
+window.electronAPI.onTranscript((data: any) => {
   renderTranscript(data);
 });
 
-window.electronAPI.onConnectionStatus((data) => {
+window.electronAPI.onConnectionStatus((data: any) => {
   const { stream, connected, retrying, nextRetryIn } = data;
 
   if (retrying) {
@@ -33,13 +31,13 @@ window.electronAPI.onConnectionStatus((data) => {
   }
 });
 
-window.electronAPI.onError((message) => {
+window.electronAPI.onError((message: string) => {
   window.logger.error('Error:', message);
   alert('Error: ' + message);
   stopRecording();
 });
 
-async function start() {
+async function start(): Promise<void> {
   try {
     setButtonState('starting');
     clearTranscripts();
@@ -71,7 +69,7 @@ async function start() {
     isRecording = true;
     setRecordingState(true);
     setButtonState('recording');
-  } catch (error) {
+  } catch (error: any) {
     window.logger.error('Error starting transcription:', error);
     alert('Error starting transcription: ' + error.message);
     setButtonState('idle');
@@ -80,7 +78,7 @@ async function start() {
   }
 }
 
-async function stopRecording() {
+async function stopRecording(): Promise<void> {
   setButtonState('stopping');
   isRecording = false;
 
@@ -96,7 +94,7 @@ async function stopRecording() {
   setButtonState('idle');
 }
 
-async function toggle() {
+async function toggle(): Promise<void> {
   if (isRecording) {
     await stopRecording();
   } else {

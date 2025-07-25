@@ -1,7 +1,15 @@
-const Store = require('electron-store').default || require('electron-store');
-const log = require('./logger.js');
+import Store from 'electron-store';
+import log from './logger.js';
 
-const store = new Store({
+interface SettingsSchema {
+  assemblyaiKey: string;
+  customPrompt: string;
+  keepAliveEnabled: boolean;
+  keepAliveIntervalSeconds: number;
+  summaryPrompt?: string;
+}
+
+const store = new Store<SettingsSchema>({
   defaults: {
     assemblyaiKey: '',
     customPrompt: '',
@@ -30,14 +38,14 @@ const store = new Store({
   },
 });
 
-function loadSettings() {
+function loadSettings(): void {
   // No-op - electron-store handles loading automatically
 }
 
-function saveSettingsToFile(newSettings) {
+function saveSettingsToFile(newSettings: Partial<SettingsSchema>): void {
   try {
     Object.keys(newSettings).forEach((key) => {
-      store.set(key, newSettings[key]);
+      store.set(key as keyof SettingsSchema, (newSettings as any)[key]);
     });
   } catch (error) {
     log.error('Error saving settings:', error);
@@ -45,8 +53,8 @@ function saveSettingsToFile(newSettings) {
   }
 }
 
-function getSettings() {
+function getSettings(): SettingsSchema {
   return store.store;
 }
 
-module.exports = { loadSettings, saveSettingsToFile, getSettings };
+export { loadSettings, saveSettingsToFile, getSettings };
