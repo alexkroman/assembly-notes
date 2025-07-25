@@ -24,7 +24,9 @@
     "test:coverage": "jest --coverage",
     "release:patch": "npm version patch && git push origin main --tags",
     "release:minor": "npm version minor && git push origin main --tags",
-    "release:major": "npm version major && git push origin main --tags"
+    "release:major": "npm version major && git push origin main --tags",
+    "check-updates": "ncu",
+    "update-deps": "ncu -u"
   },
   "dependencies": {
     "@slack/web-api": "^7.9.3",
