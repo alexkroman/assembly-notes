@@ -6,6 +6,8 @@ module.exports = {
     '!src/main/main.js',
     '!src/preload/preload.js',
     '!src/renderer/renderer.js',
+    '!src/renderer/media.js',
+    '!src/renderer/ui.js',
   ],
   coverageDirectory: 'coverage',
   coverageReporters: ['text', 'lcov', 'html'],
