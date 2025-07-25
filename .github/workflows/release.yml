@@ -87,7 +87,7 @@ jobs:
 
       - name: Build Electron app (Windows)
         if: matrix.os == 'windows-latest'
-        run: npm run build-icons && npx electron-builder --win --publish never
+        run: npm run build:win
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
@@ -186,7 +186,7 @@ jobs:
             artifacts/dist-macos-latest/*.dmg
             artifacts/dist-macos-latest/latest-mac.yml
             artifacts/dist-windows-latest/*.exe
-            artifacts/dist-windows-latest/latest-windows.yml
+            artifacts/dist-windows-latest/latest.yml
             artifacts/dist-ubuntu-latest/*.AppImage
             artifacts/dist-ubuntu-latest/latest-linux.yml
           draft: false
