@@ -1,0 +1,31 @@
+{
+  "recommendations": [
+    // Essential extensions for this project
+    "esbenp.prettier-vscode",
+    "dbaeumer.vscode-eslint",
+    
+    // Electron development
+    "ms-vscode.vscode-electron",
+    
+    // Testing
+    "orta.vscode-jest",
+    
+    // JavaScript/Node.js development
+    "ms-vscode.vscode-json",
+    "bradlc.vscode-tailwindcss",
+    
+    // Git integration
+    "eamodio.gitlens",
+    
+    // General productivity
+    "ms-vscode.vscode-typescript-next",
+    "christian-kohler.path-intellisense",
+    "formulahendry.auto-rename-tag",
+    "ms-vscode.hexeditor"
+  ],
+  "unwantedRecommendations": [
+    // Avoid conflicting formatters
+    "HookyQR.beautify",
+    "ms-vscode.vscode-typescript-tslint-plugin"
+  ]
+}
