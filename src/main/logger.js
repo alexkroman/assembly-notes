@@ -17,8 +17,8 @@ log.transports.file.format = '[{y}-{m}-{d} {h}:{i}:{s}.{ms}] [{level}] {text}';
 log.transports.console.format = '[{h}:{i}:{s}.{ms}] [{level}] {text}';
 
 // Catch errors (different API in v4)
-if (log.catchErrors) {
-  log.catchErrors();
+if (log.errorHandler) {
+  log.errorHandler.startCatching();
 }
 
 module.exports = log;
