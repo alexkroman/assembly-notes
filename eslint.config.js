@@ -37,6 +37,28 @@ module.exports = [
     },
   },
   {
-    ignores: ['node_modules/**', 'mypy_cache/**'],
+    files: [
+      '**/__tests__/**/*.js',
+      '**/__mocks__/**/*.js',
+      '**/*.test.js',
+      '**/*.spec.js',
+    ],
+    languageOptions: {
+      globals: {
+        ...globals.node,
+        ...globals.jest,
+        jest: 'readonly',
+        describe: 'readonly',
+        it: 'readonly',
+        expect: 'readonly',
+        beforeEach: 'readonly',
+        afterEach: 'readonly',
+        beforeAll: 'readonly',
+        afterAll: 'readonly',
+      },
+    },
+  },
+  {
+    ignores: ['node_modules/**', 'mypy_cache/**', 'coverage/**', 'dist/**'],
   },
 ];

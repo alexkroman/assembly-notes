@@ -25,7 +25,7 @@ jobs:
           script: |
             const fs = require('fs');
             const protection = JSON.parse(fs.readFileSync('.github/branch-protection.json', 'utf8'));
-            
+
             for (const rule of protection.protection_rules) {
               try {
                 await github.rest.repos.updateBranchProtection({

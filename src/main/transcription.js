@@ -79,14 +79,14 @@ async function startTranscription(mainWindow) {
       );
 
       // Check for various connection/session errors that should stop recording
-      const shouldStop = error.message && (
-        error.message.includes('Session idle for too long') ||
-        error.message.includes('Connection lost') ||
-        error.message.includes('WebSocket') ||
-        error.message.includes('ECONNRESET') ||
-        error.message.includes('ENOTFOUND') ||
-        error.message.includes('timeout')
-      );
+      const shouldStop =
+        error.message &&
+        (error.message.includes('Session idle for too long') ||
+          error.message.includes('Connection lost') ||
+          error.message.includes('WebSocket') ||
+          error.message.includes('ECONNRESET') ||
+          error.message.includes('ENOTFOUND') ||
+          error.message.includes('timeout'));
 
       if (shouldStop) {
         log.info('Connection error detected, stopping recording...');
@@ -100,7 +100,7 @@ async function startTranscription(mainWindow) {
         stream: 'microphone',
         connected: false,
       });
-      
+
       // If recording is still active and this wasn't an intentional stop, auto-stop
       if (microphoneTranscriber || systemAudioTranscriber) {
         log.info('Microphone connection lost during recording, stopping...');
@@ -145,14 +145,14 @@ async function startTranscription(mainWindow) {
       );
 
       // Check for various connection/session errors that should stop recording
-      const shouldStop = error.message && (
-        error.message.includes('Session idle for too long') ||
-        error.message.includes('Connection lost') ||
-        error.message.includes('WebSocket') ||
-        error.message.includes('ECONNRESET') ||
-        error.message.includes('ENOTFOUND') ||
-        error.message.includes('timeout')
-      );
+      const shouldStop =
+        error.message &&
+        (error.message.includes('Session idle for too long') ||
+          error.message.includes('Connection lost') ||
+          error.message.includes('WebSocket') ||
+          error.message.includes('ECONNRESET') ||
+          error.message.includes('ENOTFOUND') ||
+          error.message.includes('timeout'));
 
       if (shouldStop) {
         log.info('Connection error detected, stopping recording...');
@@ -166,7 +166,7 @@ async function startTranscription(mainWindow) {
         stream: 'system',
         connected: false,
       });
-      
+
       // If recording is still active and this wasn't an intentional stop, auto-stop
       if (microphoneTranscriber || systemAudioTranscriber) {
         log.info('System audio connection lost during recording, stopping...');

@@ -64,11 +64,13 @@ window.electronAPI.onConnectionStatus((data) => {
     systemConnected = connected;
   }
   updateAudioStatus();
-  
+
   // If any stream becomes disconnected during recording, stop automatically
   if (!connected && isRecording) {
     log.warn(`${stream} connection lost during recording`);
-    alert(`${stream.charAt(0).toUpperCase() + stream.slice(1)} connection lost. Stopping recording.`);
+    alert(
+      `${stream.charAt(0).toUpperCase() + stream.slice(1)} connection lost. Stopping recording.`
+    );
     stopRecording();
   }
 });
@@ -98,7 +100,7 @@ async function start() {
     microphoneStream = await navigator.mediaDevices.getUserMedia(constraints);
 
     // Monitor microphone stream for disconnection
-    microphoneStream.getTracks().forEach(track => {
+    microphoneStream.getTracks().forEach((track) => {
       track.onended = () => {
         log.warn('Microphone track ended unexpectedly');
         if (isRecording) {
@@ -128,7 +130,7 @@ async function start() {
     systemAudioStream = displayStream;
 
     // Monitor system audio stream for disconnection
-    systemAudioStream.getTracks().forEach(track => {
+    systemAudioStream.getTracks().forEach((track) => {
       track.onended = () => {
         log.warn('System audio track ended unexpectedly');
         if (isRecording) {
