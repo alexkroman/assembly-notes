@@ -114,6 +114,12 @@ jobs:
         with:
           path: artifacts/
 
+      - name: List artifacts for debugging
+        run: |
+          echo "Listing all artifacts:"
+          find artifacts/ -type f -name "*.dmg" -o -name "*.exe" -o -name "*.AppImage" || true
+          ls -la artifacts/*/
+
       - name: Generate update metadata files
         run: |
           # Generate latest-mac.yml for macOS
@@ -133,12 +139,12 @@ jobs:
           EOF
           fi
 
-          # Generate latest.yml for Windows
+          # Generate latest-windows.yml for Windows
           if [ -f artifacts/dist-windows-latest/*.exe ]; then
             EXE_FILE=$(ls artifacts/dist-windows-latest/*.exe | head -1)
             EXE_SIZE=$(stat -c%s "$EXE_FILE" 2>/dev/null || stat -f%z "$EXE_FILE")
             EXE_NAME=$(basename "$EXE_FILE")
-            cat > artifacts/dist-windows-latest/latest.yml << EOF
+            cat > artifacts/dist-windows-latest/latest-windows.yml << EOF
           version: ${GITHUB_REF#refs/tags/v}
           files:
             - url: $EXE_NAME
@@ -151,11 +157,11 @@ jobs:
           fi
 
           # Generate latest-linux.yml for Linux
-          if [ -f artifacts/dist-linux-latest/*.AppImage ]; then
-            APPIMAGE_FILE=$(ls artifacts/dist-linux-latest/*.AppImage | head -1)
+          APPIMAGE_FILE=$(find artifacts/dist-ubuntu-latest/ -name "*.AppImage" | head -1)
+          if [ -n "$APPIMAGE_FILE" ] && [ -f "$APPIMAGE_FILE" ]; then
             APPIMAGE_SIZE=$(stat -c%s "$APPIMAGE_FILE" 2>/dev/null || stat -f%z "$APPIMAGE_FILE")
             APPIMAGE_NAME=$(basename "$APPIMAGE_FILE")
-            cat > artifacts/dist-linux-latest/latest-linux.yml << EOF
+            cat > artifacts/dist-ubuntu-latest/latest-linux.yml << EOF
           version: ${GITHUB_REF#refs/tags/v}
           files:
             - url: $APPIMAGE_NAME
@@ -175,9 +181,9 @@ jobs:
             artifacts/dist-macos-latest/*.dmg
             artifacts/dist-macos-latest/latest-mac.yml
             artifacts/dist-windows-latest/*.exe
-            artifacts/dist-windows-latest/latest.yml
-            artifacts/dist-linux-latest/*.AppImage
-            artifacts/dist-linux-latest/latest-linux.yml
+            artifacts/dist-windows-latest/latest-windows.yml
+            artifacts/dist-ubuntu-latest/*.AppImage
+            artifacts/dist-ubuntu-latest/latest-linux.yml
           draft: false
           prerelease: false
         env:
