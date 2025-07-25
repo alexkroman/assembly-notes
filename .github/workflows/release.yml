@@ -218,13 +218,10 @@ jobs:
         with:
           body: ${{ needs.release-notes.outputs.release-notes }}
           files: |
-            artifacts/dist-macos-latest/*.dmg
             artifacts/dist-macos-latest/*.zip
             artifacts/dist-macos-latest/latest-mac.yml
-            artifacts/dist-windows-latest/*.exe
             artifacts/dist-windows-latest/*.zip
             artifacts/dist-windows-latest/latest.yml
-            artifacts/dist-ubuntu-latest/*.AppImage
             artifacts/dist-ubuntu-latest/*.tar.gz
             artifacts/dist-ubuntu-latest/latest-linux.yml
           draft: false
