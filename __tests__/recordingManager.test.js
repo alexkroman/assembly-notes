@@ -1,5 +1,4 @@
 jest.mock('../src/main/settings.js');
-jest.mock('../src/main/slack.js');
 jest.mock('../src/main/logger.js', () => ({
   info: jest.fn(),
   warn: jest.fn(),
@@ -24,7 +23,6 @@ jest.mock('../src/main/transcriptionService.js', () => {
 });
 
 const { getSettings } = require('../src/main/settings.js');
-const { postToSlack } = require('../src/main/slack.js');
 const TranscriptionService = require('../src/main/transcriptionService.js');
 
 describe('Recording Manager', () => {
@@ -44,8 +42,6 @@ describe('Recording Manager', () => {
       keepAliveIntervalSeconds: 30,
     });
 
-    // Mock postToSlack
-    postToSlack.mockResolvedValue(true);
 
     // Mock lemur for AI summarization
     mockLemur = {

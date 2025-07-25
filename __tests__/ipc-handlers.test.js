@@ -14,9 +14,6 @@ jest.mock('../src/main/settings.js', () => ({
   saveSettingsToFile: jest.fn(),
 }));
 
-jest.mock('../src/main/slack.js', () => ({
-  resetSlackClient: jest.fn(),
-}));
 
 jest.mock('../src/main/recordingManager.js', () => ({
   startTranscription: jest.fn(() => Promise.resolve('started')),
@@ -97,7 +94,6 @@ describe('IPC Handlers', () => {
     });
 
     it('should handle log messages from renderer', () => {
-      const { getSettings } = require('../src/main/settings.js');
       const log = require('../src/main/logger.js');
 
       setupIpcHandlers(mockMainWindow);
@@ -202,7 +198,6 @@ describe('IPC Handlers', () => {
 
     it('should handle save-settings request', () => {
       const { saveSettingsToFile } = require('../src/main/settings.js');
-      const { resetSlackClient } = require('../src/main/slack.js');
       const { resetAai } = require('../src/main/recordingManager.js');
 
       setupIpcHandlers(mockMainWindow);
@@ -217,7 +212,6 @@ describe('IPC Handlers', () => {
       const result = saveHandler(mockEvent, mockSettings);
 
       expect(saveSettingsToFile).toHaveBeenCalledWith(mockSettings);
-      expect(resetSlackClient).toHaveBeenCalled();
       expect(resetAai).toHaveBeenCalled();
       expect(result).toBe(true);
     });

@@ -4,22 +4,12 @@ const log = require('./logger.js');
 const store = new Store({
   defaults: {
     assemblyaiKey: '',
-    slackToken: '',
-    slackChannel: '',
     customPrompt: '',
     keepAliveEnabled: true,
     keepAliveIntervalSeconds: 30,
   },
   schema: {
     assemblyaiKey: {
-      type: 'string',
-      default: '',
-    },
-    slackToken: {
-      type: 'string',
-      default: '',
-    },
-    slackChannel: {
       type: 'string',
       default: '',
     },

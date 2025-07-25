@@ -1,8 +1,6 @@
 window.SettingsModal = (function () {
   let settingsModal;
   let assemblyaiKeyInput;
-  let slackTokenInput;
-  let slackChannelInput;
   let summaryPromptInput;
   let closeBtn;
   let saveBtn;
@@ -18,8 +16,6 @@ window.SettingsModal = (function () {
 
     settingsModal = document.getElementById('settingsModal');
     assemblyaiKeyInput = document.getElementById('assemblyaiKey');
-    slackTokenInput = document.getElementById('slackToken');
-    slackChannelInput = document.getElementById('slackChannel');
     summaryPromptInput = document.getElementById('summaryPrompt');
     closeBtn = document.getElementById('closeBtn');
     saveBtn = document.getElementById('saveBtn');
@@ -42,8 +38,6 @@ window.SettingsModal = (function () {
     try {
       const settings = await window.electronAPI.getSettings();
       assemblyaiKeyInput.value = settings.assemblyaiKey || '';
-      slackTokenInput.value = settings.slackToken || '';
-      slackChannelInput.value = settings.slackChannel || '';
       summaryPromptInput.value = settings.summaryPrompt || '';
     } catch (error) {
       console.error('Error loading settings:', error);
@@ -54,8 +48,6 @@ window.SettingsModal = (function () {
     try {
       const settings = {
         assemblyaiKey: assemblyaiKeyInput.value,
-        slackToken: slackTokenInput.value,
-        slackChannel: slackChannelInput.value,
         summaryPrompt: summaryPromptInput.value.trim(),
       };
 

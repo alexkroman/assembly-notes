@@ -1,6 +1,5 @@
 const { ipcMain } = require('electron');
 const { getSettings, saveSettingsToFile } = require('./settings.js');
-const { resetSlackClient } = require('./slack.js');
 const {
   startTranscription,
   stopTranscription,
@@ -48,7 +47,6 @@ function setupIpcHandlers(mainWindow) {
 
   ipcMain.handle('save-settings', (event, newSettings) => {
     saveSettingsToFile(newSettings);
-    resetSlackClient();
     resetAai();
     return true;
   });

@@ -29,7 +29,6 @@
     "update-deps": "ncu -u"
   },
   "dependencies": {
-    "@slack/web-api": "^7.9.3",
     "assemblyai": "^4.14.0",
     "electron-audio-loopback": "^1.0.5",
     "electron-log": "^5.4.1",
@@ -107,7 +106,7 @@
       "icon": "build/icons/png",
       "category": "Office",
       "synopsis": "Real-time transcription and meeting notes",
-      "description": "Assembly Notes provides real-time transcription of microphone and system audio with AI-generated meeting summaries posted to Slack."
+      "description": "Assembly Notes provides real-time transcription of microphone and system audio with AI-generated meeting summaries."
     }
   }
 }

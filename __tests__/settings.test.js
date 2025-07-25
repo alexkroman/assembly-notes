@@ -15,8 +15,6 @@ describe('Settings Module', () => {
       return jest.fn().mockImplementation(() => ({
         store: {
           assemblyaiKey: 'test-key',
-          slackToken: 'test-token',
-          slackChannel: 'test-channel',
           customPrompt: 'test-prompt',
         },
         set: jest.fn(function (key, value) {
@@ -42,8 +40,6 @@ describe('Settings Module', () => {
       const settings = getSettings();
       expect(settings).toEqual({
         assemblyaiKey: 'test-key',
-        slackToken: 'test-token',
-        slackChannel: 'test-channel',
         customPrompt: 'test-prompt',
       });
     });
@@ -56,14 +52,12 @@ describe('Settings Module', () => {
       const mockStore = Store.mock.results[0].value;
       const newSettings = {
         assemblyaiKey: 'new-key',
-        slackToken: 'new-token',
       };
 
       saveSettingsToFile(newSettings);
 
-      expect(mockStore.set).toHaveBeenCalledTimes(2);
+      expect(mockStore.set).toHaveBeenCalledTimes(1);
       expect(mockStore.set).toHaveBeenCalledWith('assemblyaiKey', 'new-key');
-      expect(mockStore.set).toHaveBeenCalledWith('slackToken', 'new-token');
     });
 
     it('should handle partial settings updates', () => {
@@ -71,13 +65,13 @@ describe('Settings Module', () => {
       const Store = require('electron-store');
       const mockStore = Store.mock.results[0].value;
       const partialSettings = {
-        slackChannel: 'new-channel',
+        customPrompt: 'new-prompt',
       };
 
       saveSettingsToFile(partialSettings);
 
       expect(mockStore.set).toHaveBeenCalledTimes(1);
-      expect(mockStore.set).toHaveBeenCalledWith('slackChannel', 'new-channel');
+      expect(mockStore.set).toHaveBeenCalledWith('customPrompt', 'new-prompt');
     });
 
     it('should throw error when store.set fails', () => {

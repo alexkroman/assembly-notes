@@ -1,5 +1,4 @@
 const { getSettings } = require('./settings.js');
-const { postToSlack } = require('./slack.js');
 const TranscriptionService = require('./transcriptionService.js');
 const log = require('./logger.js');
 
@@ -72,8 +71,6 @@ async function processRecordingComplete() {
     return false;
   }
 
-  const now = new Date();
-  const title = `Meeting Summary - ${now.toLocaleString()}`;
 
   try {
     const settings = getSettings();
@@ -85,14 +82,12 @@ async function processRecordingComplete() {
     }
 
     const lemur = aai.lemur;
-    const result = await lemur.task({
+    await lemur.task({
       prompt: summaryPrompt,
       input_text: fullTranscript,
       final_model: 'anthropic/claude-sonnet-4-20250514',
     });
-    const summary = result.response;
-
-    await postToSlack(summary, title);
+    // Summary generated successfully
     return true;
   } catch (err) {
     log.error(`Error during summarization: ${err.message}`);
