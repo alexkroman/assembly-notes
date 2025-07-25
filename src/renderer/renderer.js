@@ -1,4 +1,3 @@
-const log = window.logger;
 
 const { processEchoCancellation, cleanupEchoCancellation } =
   window.EchoCancellation;
@@ -67,7 +66,7 @@ window.electronAPI.onConnectionStatus((data) => {
 
   // If any stream becomes disconnected during recording, stop automatically
   if (!connected && isRecording) {
-    log.warn(`${stream} connection lost during recording`);
+    window.logger.warn(`${stream} connection lost during recording`);
     alert(
       `${stream.charAt(0).toUpperCase() + stream.slice(1)} connection lost. Stopping recording.`
     );
@@ -76,7 +75,7 @@ window.electronAPI.onConnectionStatus((data) => {
 });
 
 window.electronAPI.onError((message) => {
-  log.error('Error:', message);
+  window.logger.error('Error:', message);
   alert('Error: ' + message);
   stopRecording();
 });
@@ -102,7 +101,7 @@ async function start() {
     // Monitor microphone stream for disconnection
     microphoneStream.getTracks().forEach((track) => {
       track.onended = () => {
-        log.warn('Microphone track ended unexpectedly');
+        window.logger.warn('Microphone track ended unexpectedly');
         if (isRecording) {
           alert('Microphone disconnected. Stopping recording.');
           stopRecording();
@@ -132,7 +131,7 @@ async function start() {
     // Monitor system audio stream for disconnection
     systemAudioStream.getTracks().forEach((track) => {
       track.onended = () => {
-        log.warn('System audio track ended unexpectedly');
+        window.logger.warn('System audio track ended unexpectedly');
         if (isRecording) {
           alert('System audio disconnected. Stopping recording.');
           stopRecording();
@@ -161,7 +160,7 @@ async function start() {
     toggleBtn.classList.remove('start');
     toggleBtn.classList.add('recording');
   } catch (error) {
-    log.error('Error starting transcription:', error);
+    window.logger.error('Error starting transcription:', error);
     alert('Error starting transcription: ' + error.message);
     toggleBtn.disabled = false;
     toggleBtn.textContent = 'Start Recording';
