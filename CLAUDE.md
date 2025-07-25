@@ -12,6 +12,9 @@ Assembly Notes is an Electron desktop application for real-time transcription an
 npm start              # Start the Electron app for development
 npm run lint           # Run ESLint code analysis
 npm run format         # Format code with Prettier
+npm test               # Run Jest tests
+npm run test:watch     # Run Jest tests in watch mode
+npm run test:coverage  # Run tests with coverage report
 npm run build          # Build for all platforms (macOS, Windows, Linux)
 npm run build:mac      # Build DMG for macOS
 npm run build:win      # Build NSIS installer for Windows
@@ -80,5 +83,13 @@ Uses electron-builder for cross-platform packaging with platform-specific output
 ## Development Notes
 
 The codebase uses modern JavaScript (ES2022) with ES modules throughout. ESLint is configured for Node.js and browser environments with custom rules favoring const declarations and allowing console usage for debugging.
+
+### Testing
+
+Tests are configured with Jest and use:
+- Test files located in `__tests__/` directories with `.test.js` extension
+- Mock files in `__mocks__/` directory
+- Coverage reports exclude main entry points (`main.js`, `preload.js`, `renderer.js`)
+- Setup file at `__tests__/setup.js` for test environment initialization
 
 Audio processing involves complex coordination between microphone capture, system audio loopback, echo cancellation, and dual transcription streams - test audio functionality thoroughly when making changes.
