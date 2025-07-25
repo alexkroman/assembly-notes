@@ -34,16 +34,11 @@ describe('AutoUpdaterUI Module', () => {
     window.logger = mockLogger;
     window.currentUpdateDialog = null;
     
-    // Load the module
-    const fs = require('fs');
-    const path = require('path');
-    const moduleCode = fs.readFileSync(
-      path.join(__dirname, '../src/renderer/auto-updater-ui.js'),
-      'utf8'
-    );
+    // Clear module cache to ensure fresh load for coverage
+    delete require.cache[require.resolve('../src/renderer/auto-updater-ui.js')];
     
-    // Execute the module code in the current context
-    eval(moduleCode);
+    // Load the module directly (this will execute the IIFE and assign to window.AutoUpdaterUI)
+    require('../src/renderer/auto-updater-ui.js');
     AutoUpdaterUI = window.AutoUpdaterUI;
   });
 
@@ -129,6 +124,20 @@ describe('AutoUpdaterUI Module', () => {
       
       const notification = document.querySelector('.update-notification');
       expect(notification).toBeFalsy();
+    });
+
+    it('should handle timeout when notification is already removed', () => {
+      AutoUpdaterUI.createUpdateNotification('Test message', 'info');
+      
+      // Manually remove the notification before timeout
+      const notification = document.querySelector('.update-notification');
+      notification.remove();
+      
+      // Advance timer to trigger the timeout callback
+      jest.advanceTimersByTime(10000);
+      
+      // Should not throw error even though notification is already removed
+      expect(document.querySelector('.update-notification')).toBeFalsy();
     });
   });
 
