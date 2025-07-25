@@ -18,6 +18,9 @@
     "pack": "electron-builder --dir",
     "lint": "eslint .",
     "format": "prettier --write .",
+    "test": "jest",
+    "test:watch": "jest --watch",
+    "test:coverage": "jest --coverage",
     "release:patch": "npm version patch && git push origin main --tags",
     "release:minor": "npm version minor && git push origin main --tags",
     "release:major": "npm version major && git push origin main --tags"
@@ -32,11 +35,15 @@
   },
   "devDependencies": {
     "@eslint/js": "^9.15.0",
+    "@types/jest": "^30.0.0",
     "electron": "35.0.0",
     "electron-builder": "^25.1.8",
     "electron-icon-builder": "^2.0.1",
     "eslint": "^9.15.0",
     "globals": "^15.12.0",
+    "jest": "^30.0.5",
+    "jest-environment-jsdom": "^30.0.5",
+    "jest-environment-node": "^30.0.5",
     "prettier": "^3.4.2"
   },
   "build": {

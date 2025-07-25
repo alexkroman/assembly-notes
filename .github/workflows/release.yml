@@ -71,6 +71,9 @@ jobs:
       - name: Run linting
         run: npm run lint
 
+      - name: Run tests
+        run: npm test
+
       - name: Build Electron app (macOS)
         if: matrix.os == 'macos-latest'
         run: npm run build-icons && npx electron-builder --mac --publish never
