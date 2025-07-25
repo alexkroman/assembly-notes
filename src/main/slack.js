@@ -6,22 +6,22 @@ let slackClient = null;
 
 function convertMarkdownToSlackMrkdwn(markdown) {
   let slackText = markdown;
-  
+
   // Convert headers
   slackText = slackText.replace(/^### (.+)$/gm, '*$1*');
   slackText = slackText.replace(/^## (.+)$/gm, '*$1*');
   slackText = slackText.replace(/^# (.+)$/gm, '*$1*');
-  
+
   // Convert bold text
   slackText = slackText.replace(/\*\*(.+?)\*\*/g, '*$1*');
-  
+
   // Convert lists - Slack doesn't support markdown lists, so we'll use bullet points
   slackText = slackText.replace(/^- (.+)$/gm, '• $1');
   slackText = slackText.replace(/^\* (.+)$/gm, '• $1');
-  
+
   // Convert numbered lists
   slackText = slackText.replace(/^\d+\. (.+)$/gm, '• $1');
-  
+
   return slackText;
 }
 

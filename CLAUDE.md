@@ -87,6 +87,7 @@ The codebase uses modern JavaScript (ES2022) with ES modules throughout. ESLint 
 ### Testing
 
 Tests are configured with Jest and use:
+
 - Test files located in `__tests__/` directories with `.test.js` extension
 - Mock files in `__mocks__/` directory
 - Coverage reports exclude main entry points (`main.js`, `preload.js`, `renderer.js`)

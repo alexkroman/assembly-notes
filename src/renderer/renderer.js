@@ -20,7 +20,12 @@ const settingsBtn = document.getElementById('settingsBtn');
 // Check if user is at bottom of transcript area (with small threshold)
 function isAtBottom() {
   const threshold = 50; // pixels from bottom
-  return transcriptionResults.scrollHeight - transcriptionResults.scrollTop - transcriptionResults.clientHeight < threshold;
+  return (
+    transcriptionResults.scrollHeight -
+      transcriptionResults.scrollTop -
+      transcriptionResults.clientHeight <
+    threshold
+  );
 }
 
 // Listen for manual scrolling
@@ -43,7 +48,9 @@ window.electronAPI.onTranscript((data) => {
 
   if (!text) return;
 
-  const timestamp = new Date().toLocaleTimeString().replace(/\s?(AM|PM)/i, (match, ampm) => ampm.toLowerCase().charAt(0));
+  const timestamp = new Date()
+    .toLocaleTimeString()
+    .replace(/\s?(AM|PM)/i, (match, ampm) => ampm.toLowerCase().charAt(0));
   const prefix = partial ? '>> ' : '';
 
   if (partial) {
@@ -67,7 +74,7 @@ window.electronAPI.onTranscript((data) => {
       const timestampSpan = document.createElement('span');
       timestampSpan.className = 'timestamp';
       timestampSpan.textContent = `[${timestamp}] `;
-      
+
       transcriptElement.appendChild(timestampSpan);
       transcriptElement.appendChild(document.createTextNode(text));
     }
@@ -87,7 +94,7 @@ window.electronAPI.onConnectionStatus((data) => {
   } else if (stream === 'system') {
     systemConnected = connected;
   }
-  
+
   if (retrying) {
     audioStatus.textContent = `Audio: Reconnecting ${stream}... (${Math.round(nextRetryIn / 1000)}s)`;
     audioStatus.className = 'status reconnecting';

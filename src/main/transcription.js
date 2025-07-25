@@ -11,7 +11,7 @@ let microphoneTranscript = '';
 let systemAudioTranscript = '';
 
 // Keep-alive configuration (will be updated from settings)
-let KEEP_ALIVE_CONFIG = {
+const KEEP_ALIVE_CONFIG = {
   intervalMs: 30000, // Send keep-alive every 30 seconds
   enabled: true,
 };
@@ -50,7 +50,8 @@ const DEFAULT_SUMMARY_PROMPT =
 
 function calculateRetryDelay(retryCount) {
   const delay = Math.min(
-    RETRY_CONFIG.initialDelay * Math.pow(RETRY_CONFIG.backoffMultiplier, retryCount),
+    RETRY_CONFIG.initialDelay *
+      Math.pow(RETRY_CONFIG.backoffMultiplier, retryCount),
     RETRY_CONFIG.maxDelay
   );
   return delay;
@@ -60,11 +61,11 @@ function startKeepAlive() {
   if (keepAliveInterval) {
     clearInterval(keepAliveInterval);
   }
-  
+
   keepAliveInterval = setInterval(() => {
     // Send a small buffer of silence (16000 Hz * 0.1 seconds = 1600 samples)
     const silenceBuffer = Buffer.alloc(1600 * 2); // 2 bytes per sample for 16-bit
-    
+
     if (microphoneTranscriber && connectionState.microphone.isConnected) {
       try {
         microphoneTranscriber.sendAudio(silenceBuffer);
@@ -73,7 +74,7 @@ function startKeepAlive() {
         log.error('Error sending keep-alive audio to microphone:', error);
       }
     }
-    
+
     if (systemAudioTranscriber && connectionState.system.isConnected) {
       try {
         systemAudioTranscriber.sendAudio(silenceBuffer);
@@ -83,8 +84,10 @@ function startKeepAlive() {
       }
     }
   }, KEEP_ALIVE_CONFIG.intervalMs);
-  
-  log.info(`Keep-alive started for both transcribers (${KEEP_ALIVE_CONFIG.intervalMs}ms interval)`);
+
+  log.info(
+    `Keep-alive started for both transcribers (${KEEP_ALIVE_CONFIG.intervalMs}ms interval)`
+  );
 }
 
 function stopKeepAlive() {
@@ -97,7 +100,7 @@ function stopKeepAlive() {
 
 async function createTranscriberWithRetry(streamType) {
   const state = connectionState[streamType];
-  
+
   if (!isRecordingActive || state.isConnecting || state.isConnected) {
     return;
   }
@@ -105,43 +108,47 @@ async function createTranscriberWithRetry(streamType) {
   state.isConnecting = true;
 
   try {
-    log.info(`Creating ${streamType} transcriber (attempt ${state.retryCount + 1})...`);
-    
+    log.info(
+      `Creating ${streamType} transcriber (attempt ${state.retryCount + 1})...`
+    );
+
     const transcriber = aai.realtime.transcriber({
       sampleRate: 16000,
     });
 
     setupTranscriberHandlers(transcriber, streamType);
-    
+
     await transcriber.connect();
-    
+
     if (streamType === 'microphone') {
       microphoneTranscriber = transcriber;
     } else {
       systemAudioTranscriber = transcriber;
     }
-    
+
     state.retryCount = 0;
     state.isConnecting = false;
     state.isConnected = true;
-    
+
     log.info(`${streamType} transcriber connected successfully`);
-    
+
     // Start keep-alive when both transcribers are connected
-    if (KEEP_ALIVE_CONFIG.enabled && 
-        connectionState.microphone.isConnected && 
-        connectionState.system.isConnected) {
+    if (
+      KEEP_ALIVE_CONFIG.enabled &&
+      connectionState.microphone.isConnected &&
+      connectionState.system.isConnected
+    ) {
       startKeepAlive();
     }
   } catch (error) {
     log.error(`Failed to connect ${streamType} transcriber:`, error);
     state.isConnecting = false;
     state.isConnected = false;
-    
+
     if (state.retryCount < RETRY_CONFIG.maxRetries && isRecordingActive) {
       state.retryCount++;
       const delay = calculateRetryDelay(state.retryCount - 1);
-      
+
       log.info(`Retrying ${streamType} connection in ${delay}ms...`);
       mainWindowRef.webContents.send('connection-status', {
         stream: streamType,
@@ -149,13 +156,14 @@ async function createTranscriberWithRetry(streamType) {
         retrying: true,
         nextRetryIn: delay,
       });
-      
+
       state.retryTimeout = setTimeout(() => {
         createTranscriberWithRetry(streamType);
       }, delay);
     } else {
       log.error(`Max retries reached for ${streamType} transcriber`);
-      mainWindowRef.webContents.send('error', 
+      mainWindowRef.webContents.send(
+        'error',
         `Failed to connect ${streamType} after ${RETRY_CONFIG.maxRetries} attempts`
       );
     }
@@ -164,7 +172,7 @@ async function createTranscriberWithRetry(streamType) {
 
 function setupTranscriberHandlers(transcriber, streamType) {
   const state = connectionState[streamType];
-  
+
   transcriber.on('open', () => {
     state.isConnected = true;
     mainWindowRef.webContents.send('connection-status', {
@@ -175,12 +183,13 @@ function setupTranscriberHandlers(transcriber, streamType) {
 
   transcriber.on('error', async (error) => {
     log.error(`${streamType} transcription error:`, error);
-    
+
     // Don't send error to UI if we're going to retry
     if (state.retryCount < RETRY_CONFIG.maxRetries && isRecordingActive) {
       log.info(`Will attempt to reconnect ${streamType}...`);
     } else {
-      mainWindowRef.webContents.send('error', 
+      mainWindowRef.webContents.send(
+        'error',
         `${streamType} error: ${error.message}`
       );
     }
@@ -190,13 +199,13 @@ function setupTranscriberHandlers(transcriber, streamType) {
     log.warn(`${streamType} transcriber connection closed`);
     state.isConnected = false;
     state.isConnecting = false;
-    
+
     if (streamType === 'microphone') {
       microphoneTranscriber = null;
     } else {
       systemAudioTranscriber = null;
     }
-    
+
     mainWindowRef.webContents.send('connection-status', {
       stream: streamType,
       connected: false,
@@ -206,7 +215,7 @@ function setupTranscriberHandlers(transcriber, streamType) {
     if (isRecordingActive && state.retryCount < RETRY_CONFIG.maxRetries) {
       const delay = calculateRetryDelay(state.retryCount);
       log.info(`Scheduling ${streamType} reconnection in ${delay}ms...`);
-      
+
       state.retryTimeout = setTimeout(() => {
         createTranscriberWithRetry(streamType);
       }, delay);
@@ -280,14 +289,15 @@ async function startTranscription(mainWindow) {
   try {
     // Update keep-alive config from settings
     KEEP_ALIVE_CONFIG.enabled = settings.keepAliveEnabled ?? true;
-    KEEP_ALIVE_CONFIG.intervalMs = (settings.keepAliveIntervalSeconds ?? 30) * 1000;
-    
+    KEEP_ALIVE_CONFIG.intervalMs =
+      (settings.keepAliveIntervalSeconds ?? 30) * 1000;
+
     aai = new AssemblyAI({ apiKey: assemblyAiApiKey });
     mainWindowRef = mainWindow;
     isRecordingActive = true;
 
     // Reset connection state
-    Object.keys(connectionState).forEach(stream => {
+    Object.keys(connectionState).forEach((stream) => {
       connectionState[stream].isConnecting = false;
       connectionState[stream].isConnected = false;
       connectionState[stream].retryCount = 0;
@@ -325,7 +335,7 @@ async function stopTranscription(mainWindow) {
   stopKeepAlive();
 
   // Clear any pending retry timeouts
-  Object.keys(connectionState).forEach(stream => {
+  Object.keys(connectionState).forEach((stream) => {
     if (connectionState[stream].retryTimeout) {
       clearTimeout(connectionState[stream].retryTimeout);
       connectionState[stream].retryTimeout = null;
