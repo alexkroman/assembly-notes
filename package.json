@@ -9,7 +9,7 @@
   "author": "Alex Kroman <alex@alexkroman.com>",
   "scripts": {
     "start": "npm run build:ts && electron .",
-    "build:ts": "tsc && npm run copy-assets",
+    "build:ts": "tsc && tsc --project tsconfig.preload.json && npm run copy-assets",
     "copy-assets": "cp src/renderer/index.html dist/renderer/ && cp src/renderer/styles.css dist/renderer/ && cp src/renderer/settings-modal.html dist/renderer/",
     "dev": "tsc --watch & electron .",
     "build": "npm run build:ts && npm run build-icons && electron-builder --mac --win --linux",

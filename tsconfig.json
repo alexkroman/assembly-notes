@@ -162,5 +162,5 @@
     "isolatedModules": true
   },
   "include": ["src/**/*"],
-  "exclude": ["node_modules", "dist", "build", "__tests__"]
+  "exclude": ["node_modules", "dist", "build", "__tests__", "src/preload"]
 }
