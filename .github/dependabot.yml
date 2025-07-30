@@ -1,0 +1,21 @@
+version: 2
+updates:
+  - package-ecosystem: 'npm'
+    directory: '/'
+    schedule:
+      interval: 'weekly'
+      day: 'monday'
+      time: '08:00'
+    open-pull-requests-limit: 10
+    allow:
+      - dependency-type: 'all'
+    commit-message:
+      prefix: 'npm'
+      include: 'scope'
+    labels:
+      - 'dependencies'
+      - 'npm'
+    assignees:
+      - 'alexkroman'
+    reviewers:
+      - 'alexkroman'

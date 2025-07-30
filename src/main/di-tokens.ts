@@ -1,0 +1,15 @@
+export const DI_TOKENS = {
+  MainWindow: Symbol('MainWindow'),
+  Store: Symbol('Store'),
+  Logger: Symbol('Logger'),
+  DatabaseService: Symbol('DatabaseService'),
+  SettingsService: Symbol('SettingsService'),
+  TranscriptionService: Symbol('TranscriptionService'),
+  RecordingManager: Symbol('RecordingManager'),
+  SlackService: Symbol('SlackService'),
+  AutoUpdaterService: Symbol('AutoUpdaterService'),
+  AssemblyAIFactory: Symbol('AssemblyAIFactory'),
+  AssemblyAIFactoryWithLemur: Symbol('AssemblyAIFactoryWithLemur'),
+  SummarizationService: Symbol('SummarizationService'),
+  HttpClient: Symbol('HttpClient'),
+} as const;

@@ -1,0 +1,50 @@
+name: Enforce Branch Protection
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/branch-protection.json'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  enforce-protection:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Apply Branch Protection
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const fs = require('fs');
+            const protection = JSON.parse(fs.readFileSync('.github/branch-protection.json', 'utf8'));
+
+            for (const rule of protection.protection_rules) {
+              try {
+                await github.rest.repos.updateBranchProtection({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  branch: rule.name,
+                  enforce_admins: rule.enforce_admins,
+                  required_status_checks: rule.required_status_checks,
+                  required_pull_request_reviews: rule.required_pull_request_reviews,
+                  restrictions: rule.restrictions,
+                  allow_force_pushes: rule.allow_force_pushes,
+                  allow_deletions: rule.allow_deletions,
+                  require_linear_history: rule.require_linear_history,
+                  required_conversation_resolution: rule.required_conversation_resolution,
+                  lock_branch: rule.lock_branch,
+                  allow_fork_syncing: rule.allow_fork_syncing
+                });
+                console.log(`✅ Applied protection to ${rule.name} branch`);
+              } catch (error) {
+                console.error(`❌ Failed to protect ${rule.name}: ${error.message}`);
+                throw error;
+              }
+            }

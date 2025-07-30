@@ -1,0 +1,107 @@
+{
+  // TypeScript settings
+  "typescript.preferences.quoteStyle": "double",
+  "typescript.preferences.includePackageJsonAutoImports": "auto",
+  "typescript.suggest.autoImports": true,
+  "typescript.updateImportsOnFileMove.enabled": "always",
+  "typescript.inlayHints.parameterNames.enabled": "literals",
+  "typescript.inlayHints.variableTypes.enabled": false,
+  "typescript.inlayHints.functionLikeReturnTypes.enabled": true,
+  "typescript.format.enable": true,
+  // Use the test tsconfig for test files to match ESLint behavior
+  "typescript.preferences.useAliasesForRenames": false,
+  // Disable strict checking that doesn't match project settings
+  "typescript.surveys.enabled": false,
+
+  // Editor settings
+  "editor.formatOnSave": true,
+  "editor.codeActionsOnSave": {
+    "source.fixAll.eslint": "explicit"
+  },
+  "editor.defaultFormatter": "esbenp.prettier-vscode",
+  "editor.tabSize": 2,
+  "editor.insertSpaces": true,
+  "editor.detectIndentation": false,
+
+  // ESLint settings
+  "eslint.enable": true,
+  "eslint.validate": ["typescript"],
+  "eslint.format.enable": true,
+  // Match ESLint's TypeScript configuration for test files
+  "eslint.workingDirectories": ["."],
+  // Disable VS Code's built-in import organization to let ESLint handle it
+  "typescript.preferences.organizeImports": false,
+  "javascript.preferences.organizeImports": false,
+
+  // Prettier settings
+  "prettier.enable": true,
+  "prettier.configPath": "./.prettierrc",
+  "prettier.requireConfig": true,
+
+  // File associations for TypeScript Electron project
+  "[typescript]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode"
+  },
+  "[json]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode"
+  },
+  "[html]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode"
+  },
+  "[css]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode"
+  },
+  "[yaml]": {
+    "editor.defaultFormatter": "redhat.vscode-yaml"
+  },
+
+  // Electron-specific settings
+  "files.associations": {
+    "*.ts": "typescript"
+  },
+
+  // Test file settings
+  "jest.jestCommandLine": "node --experimental-vm-modules ./node_modules/jest/bin/jest.js",
+  "jest.autoRun.watch": false,
+  "jest.rootPath": ".",
+  "jest.testMatch": [
+    "**/__tests__/**/*.test.ts",
+    "!**/__tests__/disabled/**",
+    "!**/__tests__/e2e/**"
+  ],
+
+  // YAML settings
+  "yaml.schemas": {},
+  "yaml.format.enable": true,
+  "yaml.validate": false,
+  "yaml.schemaStore.enable": false,
+
+  // Search and file exclusions
+  "search.exclude": {
+    "**/node_modules": true,
+    "**/dist": true,
+    "**/coverage": true,
+    "**/build": true,
+    "**/*.js.map": true,
+    "**/*.log": true
+  },
+  "files.watcherExclude": {
+    "**/.git/objects/**": true,
+    "**/.git/subtree-cache/**": true,
+    "**/node_modules/**": true,
+    "**/dist/**": true,
+    "**/coverage/**": true,
+    "**/build/**": true
+  },
+
+  // Terminal settings for Node.js/Electron development
+  "terminal.integrated.env.osx": {
+    "NODE_ENV": "development"
+  },
+  "terminal.integrated.env.linux": {
+    "NODE_ENV": "development"
+  },
+  "terminal.integrated.env.windows": {
+    "NODE_ENV": "development"
+  }
+}

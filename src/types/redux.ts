@@ -1,0 +1,111 @@
+// Redux state types extracted from store slices
+
+import type { PromptTemplate, Recording, UpdateInfo } from './common.js';
+
+// Recording slice state
+export type RecordingStatus =
+  | 'idle'
+  | 'starting'
+  | 'recording'
+  | 'stopping'
+  | 'error';
+
+export interface RecordingState {
+  status: RecordingStatus;
+  recordingId: string | null;
+  startTime: number | null;
+  error: string | null;
+  connectionStatus: {
+    microphone: boolean;
+    system: boolean;
+  };
+}
+
+// Recordings slice state
+export interface RecordingsState {
+  recordings: Recording[];
+  currentRecording: Recording | null;
+  searchResults: Recording[];
+  searchQuery: string;
+  loading: {
+    fetchAll: boolean;
+    search: boolean;
+    fetchOne: boolean;
+    update: boolean;
+    delete: boolean;
+  };
+  error: string | null;
+}
+
+// Transcription slice state
+export interface TranscriptSegment {
+  text: string;
+  timestamp: number;
+  isFinal: boolean;
+  source: 'microphone' | 'system';
+}
+
+export interface TranscriptionState {
+  currentTranscript: string;
+  segments: TranscriptSegment[];
+  isTranscribing: boolean;
+  isActive: boolean;
+  microphoneTranscriptBuffer: string;
+  systemAudioTranscriptBuffer: string;
+  error: string | null;
+}
+
+// Update slice state
+export interface UpdateState {
+  checking: boolean;
+  available: boolean;
+  downloading: boolean;
+  progress: number;
+  downloaded: boolean;
+  error: string | null;
+  updateInfo: UpdateInfo | null;
+}
+
+// Settings slice state
+export interface FullSettingsState {
+  assemblyaiKey: string;
+  slackBotToken: string;
+  slackChannels: string;
+  selectedSlackChannel: string;
+  summaryPrompt: string;
+  selectedPromptIndex: number;
+  prompts: PromptTemplate[];
+  autoStart: boolean;
+}
+
+export interface SettingsState extends FullSettingsState {
+  loading: boolean;
+  error: string | null;
+  theme: 'light' | 'dark';
+  // Computed properties for safe trim operations
+  hasAssemblyAIKey: boolean;
+  hasSlackBotToken: boolean;
+  hasSlackChannels: boolean;
+}
+
+// UI slice state (renderer)
+export type Page = 'list' | 'recording';
+
+export interface UIState {
+  currentPage: Page;
+  currentRecordingId: string | null;
+  isNewRecording: boolean;
+  showSettingsModal: boolean;
+  showPromptModal: boolean;
+  showChannelModal: boolean;
+  status: string;
+}
+
+// Main process state structure (renderer store)
+export interface MainProcessState {
+  recording: RecordingState;
+  recordings: RecordingsState;
+  transcription: TranscriptionState;
+  settings: SettingsState;
+  update: UpdateState;
+}

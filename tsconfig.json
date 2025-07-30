@@ -1,0 +1,182 @@
+{
+  "compilerOptions": {
+    /* =================================================================================
+       Build Options
+       ================================================================================= */
+    /**
+     * Set the JavaScript language version for emitted JavaScript and include compatible
+     * library declarations.
+     * 'ES2022' is a modern and stable target.
+     */
+    "target": "ES2022",
+
+    /**
+     * Specify what module code is generated.
+     * 'ESNext' for ES modules to work consistently across the application.
+     */
+    "module": "ESNext",
+
+    /**
+     * Specify how TypeScript looks up a file from a given module specifier.
+     * 'Node' for standard Node.js module resolution with ES modules.
+     */
+    "moduleResolution": "Node",
+
+    /**
+     * Specify a set of bundled library declaration files that describe the target runtime environment.
+     * 'ES2022' for modern JavaScript features.
+     * 'DOM' for renderer process code that interacts with the browser environment.
+     */
+    "lib": ["ES2022", "DOM"],
+
+    /**
+     * Create source map files for emitted JavaScript files.
+     * Essential for debugging TypeScript code.
+     */
+    "sourceMap": true,
+
+    /**
+     * Specify an output folder for all emitted files.
+     */
+    "outDir": "./dist",
+
+    /**
+     * Specify the root folder within your source files.
+     */
+    "rootDir": "./src",
+
+    /* =================================================================================
+       Type Checking (Strictest Recommended Settings)
+       ================================================================================= */
+    /**
+     * Enable all strict type-checking options. This is the cornerstone of a strict setup.
+     */
+    "strict": true,
+
+    /**
+     * When 'strict' is true, this ensures that functions have consistent return types.
+     */
+    "noImplicitReturns": true,
+
+    /**
+     * When 'strict' is true, this flags any unused local variables.
+     */
+    "noUnusedLocals": true,
+
+    /**
+     * When 'strict' is true, this flags any unused function parameters.
+     */
+    "noUnusedParameters": true,
+
+    /**
+     * Ensure overriding members in derived classes are marked with an override keyword.
+     */
+    "noImplicitOverride": true,
+
+    /**
+     * Raise an error when accessing elements of an array/object with an unchecked index.
+     */
+    "noUncheckedIndexedAccess": true,
+
+    /**
+     * When 'strict' is true, this forces you to explicitly type variables instead of
+     * letting them be inferred as 'any'.
+     */
+    "noImplicitAny": true,
+
+    /**
+     * When 'strict' is true, this makes null and undefined distinct types, preventing
+     * a wide range of null-related errors.
+     */
+    "strictNullChecks": true,
+
+    /**
+     * When 'strict' is true, this ensures function types are checked more correctly.
+     */
+    "strictFunctionTypes": true,
+
+    /**
+     * When 'strict' is true, this provides stricter checking of the 'bind', 'call',
+     * and 'apply' methods on functions.
+     */
+    "strictBindCallApply": true,
+
+    /**
+     * When 'strict' is true, this ensures class properties are initialized in the constructor.
+     */
+    "strictPropertyInitialization": true,
+
+    /**
+     * When 'strict' is true, this raises an error on 'this' expressions with an implied 'any' type.
+     */
+    "noImplicitThis": true,
+
+    /**
+     * Default catch clause variables to 'unknown' instead of 'any'.
+     */
+    "useUnknownInCatchVariables": true,
+
+    /**
+     * Differentiate between optional properties that are present and undefined, versus not present at all.
+     */
+    "exactOptionalPropertyTypes": true,
+
+    /**
+     * Raise an error for fallthrough cases in switch statements.
+     */
+    "noFallthroughCasesInSwitch": true,
+
+    /**
+     * Enforce using index signatures for property access.
+     */
+    "noPropertyAccessFromIndexSignature": true,
+
+    /* =================================================================================
+       Interoperability & Other Options
+       ================================================================================= */
+    /**
+     * Emit additional JavaScript to ease support for importing CommonJS modules.
+     * Recommended for better compatibility between module systems.
+     */
+    "esModuleInterop": true,
+
+    /**
+     * Disallow inconsistently-cased references to the same file.
+     */
+    "forceConsistentCasingInFileNames": true,
+
+    /**
+     * Allow importing .json files.
+     */
+    "resolveJsonModule": true,
+
+    /**
+     * Skip type checking all .d.ts files.
+     */
+    "skipLibCheck": true,
+
+    /**
+     * Perform additional checks to ensure that separate compilation
+     * (such as with transpileModule or @babel/plugin-transform-typescript) would be safe.
+     */
+    "isolatedModules": true,
+
+    /**
+     * Specify what JSX code is generated for React.
+     */
+    "jsx": "react",
+
+    /**
+     * Enable experimental support for decorators (required for tsyringe).
+     */
+    "experimentalDecorators": true,
+
+    /**
+     * Emit design-type metadata for decorated declarations (required for tsyringe).
+     */
+    "emitDecoratorMetadata": true
+  },
+  "include": ["src/**/*", "types/**/*"],
+  "typeRoots": ["./node_modules/@types", "./types"],
+  "exclude": ["node_modules", "dist", "build"]
+}

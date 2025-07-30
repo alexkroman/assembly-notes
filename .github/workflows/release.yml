@@ -1,0 +1,246 @@
+name: Build & Release Assembly-Notes
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  # Generate release notes job
+  release-notes:
+    runs-on: ubuntu-latest
+    outputs:
+      release-notes: ${{ steps.notes.outputs.release-notes }}
+    steps:
+      - name: Check out Git repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Generate release notes
+        id: notes
+        run: |
+          # Get the previous tag
+          PREV_TAG=$(git describe --tags --abbrev=0 HEAD~1 2>/dev/null || echo "")
+          CURRENT_TAG=${GITHUB_REF#refs/tags/}
+
+          # Generate release notes from commits
+          if [ -n "$PREV_TAG" ]; then
+            COMMITS=$(git log --pretty=format:"- %s" $PREV_TAG..HEAD)
+          else
+            COMMITS=$(git log --pretty=format:"- %s")
+          fi
+
+          # Create release notes
+          RELEASE_NOTES="## What's Changed
+
+          $COMMITS
+
+          **Full Changelog**: https://github.com/${{ github.repository }}/compare/$PREV_TAG...$CURRENT_TAG"
+
+          # Save to output
+          echo "release-notes<<EOF" >> $GITHUB_OUTPUT
+          echo "$RELEASE_NOTES" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+
+  release:
+    needs: release-notes
+    strategy:
+      matrix:
+        os: [macos-latest, ubuntu-latest, windows-latest]
+
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - name: Check out Git repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci --no-optional --cache .npm
+
+      - name: Fix Rollup optional dependencies (Unix)
+        if: matrix.os != 'windows-latest'
+        run: |
+          rm -rf node_modules package-lock.json
+          npm install
+
+      - name: Clean npm cache (Windows)
+        if: matrix.os == 'windows-latest'
+        run: |
+          if (Test-Path node_modules) { Remove-Item -Recurse -Force node_modules -ErrorAction SilentlyContinue }
+          if (Test-Path package-lock.json) { Remove-Item -Force package-lock.json -ErrorAction SilentlyContinue }
+          npm install
+        shell: powershell
+
+      - name: Run linting
+        run: npm run lint
+
+      - name: Run tests
+        run: npm run test:coverage
+
+      - name: Build Electron app (macOS)
+        if: matrix.os == 'macos-latest'
+        run: npm run build:mac:notarized
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+          CSC_LINK: ${{ secrets.CSC_LINK }}
+          CSC_KEY_PASSWORD: ${{ secrets.CSC_KEY_PASSWORD }}
+
+      - name: Create ZIP file of DMG (macOS)
+        if: matrix.os == 'macos-latest'
+        run: |
+          cd dist
+          if ls *.dmg 1> /dev/null 2>&1; then
+            for dmg in *.dmg; do
+              zip "${dmg%.dmg}.zip" "$dmg"
+              echo "Created ${dmg%.dmg}.zip from $dmg"
+            done
+          fi
+
+      - name: Build Electron app (Windows)
+        if: matrix.os == 'windows-latest'
+        run: |
+          npm run build:win
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          npm_config_cache: .npm
+
+      - name: Create ZIP file of EXE (Windows)
+        if: matrix.os == 'windows-latest'
+        run: |
+          cd dist
+          if (Get-ChildItem -Filter "*.exe" -ErrorAction SilentlyContinue) {
+            Get-ChildItem -Filter "*.exe" | ForEach-Object {
+              $zipName = $_.BaseName + ".zip"
+              Compress-Archive -Path $_.Name -DestinationPath $zipName
+              Write-Host "Created $zipName from $($_.Name)"
+            }
+          }
+        shell: powershell
+
+      - name: Install Linux dependencies
+        if: matrix.os == 'ubuntu-latest'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libfuse2 fuse3 libfuse3-3
+
+      - name: Build Electron app (Linux)
+        if: matrix.os == 'ubuntu-latest'
+        run: npm run build:linux
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Create tar.gz file of AppImage (Linux)
+        if: matrix.os == 'ubuntu-latest'
+        run: |
+          cd dist
+          if ls *.AppImage 1> /dev/null 2>&1; then
+            for appimage in *.AppImage; do
+              tar -czf "${appimage%.AppImage}.tar.gz" "$appimage"
+              echo "Created ${appimage%.AppImage}.tar.gz from $appimage"
+            done
+          fi
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: dist-${{ matrix.os }}
+          path: dist/
+
+  # Create GitHub release with all build artifacts
+  create-release:
+    needs: [release-notes, release]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts/
+
+      - name: List artifacts for debugging
+        run: |
+          echo "Listing all artifacts:"
+          find artifacts/ -type f -name "*.dmg" -o -name "*.zip" -o -name "*.exe" -o -name "*.AppImage" -o -name "*.tar.gz" || true
+          ls -la artifacts/*/
+
+      - name: Generate update metadata files
+        run: |
+          # Generate latest-mac.yml for macOS (using ZIP file for autoupdater)
+          if [ -f artifacts/dist-macos-latest/*.zip ]; then
+            ZIP_FILE=$(ls artifacts/dist-macos-latest/*.zip | head -1)
+            ZIP_SIZE=$(stat -c%s "$ZIP_FILE" 2>/dev/null || stat -f%z "$ZIP_FILE")
+            ZIP_NAME=$(basename "$ZIP_FILE")
+            cat > artifacts/dist-macos-latest/latest-mac.yml << EOF
+          version: ${GITHUB_REF#refs/tags/v}
+          files:
+            - url: $ZIP_NAME
+              sha512: $(shasum -a 512 "$ZIP_FILE" | cut -d' ' -f1)
+              size: $ZIP_SIZE
+          path: $ZIP_NAME
+          sha512: $(shasum -a 512 "$ZIP_FILE" | cut -d' ' -f1)
+          releaseDate: $(date -u +"%Y-%m-%dT%H:%M:%S.%3NZ")
+          EOF
+          fi
+
+          # Generate latest.yml for Windows (using ZIP file for autoupdater)
+          if [ -f artifacts/dist-windows-latest/*.zip ]; then
+            ZIP_FILE=$(ls artifacts/dist-windows-latest/*.zip | head -1)
+            ZIP_SIZE=$(stat -c%s "$ZIP_FILE" 2>/dev/null || stat -f%z "$ZIP_FILE")
+            ZIP_NAME=$(basename "$ZIP_FILE")
+            cat > artifacts/dist-windows-latest/latest.yml << EOF
+          version: ${GITHUB_REF#refs/tags/v}
+          files:
+            - url: $ZIP_NAME
+              sha512: $(shasum -a 512 "$ZIP_FILE" | cut -d' ' -f1)
+              size: $ZIP_SIZE
+          path: $ZIP_NAME
+          sha512: $(shasum -a 512 "$ZIP_FILE" | cut -d' ' -f1)
+          releaseDate: $(date -u +"%Y-%m-%dT%H:%M:%S.%3NZ")
+          EOF
+          fi
+
+          # Generate latest-linux.yml for Linux (using tar.gz file for autoupdater)
+          TARGZ_FILE=$(find artifacts/dist-ubuntu-latest/ -name "*.tar.gz" | head -1)
+          if [ -n "$TARGZ_FILE" ] && [ -f "$TARGZ_FILE" ]; then
+            TARGZ_SIZE=$(stat -c%s "$TARGZ_FILE" 2>/dev/null || stat -f%z "$TARGZ_FILE")
+            TARGZ_NAME=$(basename "$TARGZ_FILE")
+            cat > artifacts/dist-ubuntu-latest/latest-linux.yml << EOF
+          version: ${GITHUB_REF#refs/tags/v}
+          files:
+            - url: $TARGZ_NAME
+              sha512: $(shasum -a 512 "$TARGZ_FILE" | cut -d' ' -f1)
+              size: $TARGZ_SIZE
+          path: $TARGZ_NAME
+          sha512: $(shasum -a 512 "$TARGZ_FILE" | cut -d' ' -f1)
+          releaseDate: $(date -u +"%Y-%m-%dT%H:%M:%S.%3NZ")
+          EOF
+          fi
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v1
+        with:
+          body: ${{ needs.release-notes.outputs.release-notes }}
+          files: |
+            artifacts/dist-macos-latest/*.zip
+            artifacts/dist-macos-latest/latest-mac.yml
+            artifacts/dist-windows-latest/*.zip
+            artifacts/dist-windows-latest/latest.yml
+            artifacts/dist-ubuntu-latest/*.tar.gz
+            artifacts/dist-ubuntu-latest/latest-linux.yml
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

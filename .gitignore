@@ -1,0 +1,10 @@
+node_modules
+out
+.env
+.claude
+.DS_Store
+dist
+.mypy_cache
+coverage
+*.map
+test-results

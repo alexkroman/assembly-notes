@@ -1,0 +1,180 @@
+{
+  "name": "assembly-notes",
+  "productName": "Assembly-Notes",
+  "description": "Assembly Notes",
+  "keywords": [],
+  "main": "./dist/main/main.js",
+  "type": "module",
+  "version": "1.0.47",
+  "author": "Alex Kroman <alex@alexkroman.com>",
+  "scripts": {
+    "start": "npm run build:all && cross-env DEV_MODE=true electron .",
+    "start:fresh": "npm run build:all && cross-env DEV_MODE=true FRESH_MODE=true FRESH_ID=$(date +%s) electron .",
+    "dev": "concurrently \"npm run dev:main\" \"npm run dev:renderer\" \"cross-env DEV_MODE=true electron .\"",
+    "dev:main": "tsc --watch",
+    "dev:renderer": "cross-env BUILD_TARGET=renderer vite",
+    "build:all": "npm run build:main && npm run build:preload && npm run build:renderer",
+    "build:main": "tsc",
+    "build:preload": "cross-env BUILD_TARGET=preload vite build",
+    "build:renderer": "cross-env BUILD_TARGET=renderer vite build",
+    "build": "npm run build:all && npm run build-icons && electron-builder --mac --win --linux",
+    "build:mac": "npm run build:all && npm run build-icons && electron-builder --mac",
+    "build:mac:notarized": "./scripts/build-mac-notarized.sh",
+    "build:win": "npm run build:all && npm run build-icons && electron-builder --win",
+    "build:linux": "npm run build:all && npm run build-icons && electron-builder --linux",
+    "build-icons": "icon-gen -i ./assets/icons/icon.png -o ./build --ico --icns",
+    "pack": "electron-builder --dir",
+    "postinstall": "electron-builder install-app-deps && npx @electron/rebuild -f -w better-sqlite3",
+    "lint": "npm run typecheck && eslint .",
+    "lint:fix": "eslint . --fix",
+    "format": "prettier --write .",
+    "fix": "npm run lint:fix && npm run format",
+    "typecheck": "tsc --noEmit && tsc --noEmit --project tsconfig.test.json",
+    "test": "jest && playwright test",
+    "test:watch": "jest --watch",
+    "test:coverage": "jest --coverage",
+    "test:e2e": "playwright test",
+    "test:all": "concurrently \"npm run test:watch\" \"npm run test:e2e\"",
+    "release:patch": "npm version patch && git push origin main --tags",
+    "release:minor": "npm version minor && git push origin main --tags",
+    "release:major": "npm version major && git push origin main --tags",
+    "check-updates": "ncu",
+    "update-deps": "ncu -u",
+    "setup": "./scripts/setup-env.sh",
+    "prepare": "husky"
+  },
+  "dependencies": {
+    "@reduxjs/toolkit": "^2.8.2",
+    "@slack/web-api": "^7.9.3",
+    "@types/react": "^19.1.9",
+    "@types/react-dom": "^19.1.7",
+    "assemblyai": "^4.14.0",
+    "better-sqlite3": "^12.2.0",
+    "electron-audio-loopback": "^1.0.5",
+    "electron-log": "^5.4.2",
+    "electron-redux": "^2.0.0",
+    "electron-updater": "^6.6.2",
+    "react": "^19.1.1",
+    "react-dom": "^19.1.1",
+    "react-redux": "^9.2.0",
+    "reflect-metadata": "^0.2.2",
+    "tsyringe": "^4.10.0"
+  },
+  "devDependencies": {
+    "@commitlint/cli": "^19.8.1",
+    "@commitlint/config-conventional": "^19.8.1",
+    "@electron/rebuild": "^4.0.1",
+    "@eslint/js": "^9.32.0",
+    "@playwright/test": "^1.54.1",
+    "@tailwindcss/postcss": "^4.1.11",
+    "@testing-library/jest-dom": "^6.6.4",
+    "@testing-library/react": "^16.3.0",
+    "@testing-library/user-event": "^14.6.1",
+    "@types/better-sqlite3": "^7.6.13",
+    "@types/jest": "^30.0.0",
+    "@types/node": "^24.1.0",
+    "@vitejs/plugin-react": "^4.7.0",
+    "autoprefixer": "^10.4.21",
+    "concurrently": "^9.2.0",
+    "cross-env": "^10.0.0",
+    "electron": "37.2.4",
+    "electron-builder": "^26.0.19",
+    "esbuild": "^0.25.8",
+    "eslint": "^9.32.0",
+    "eslint-import-resolver-typescript": "^4.4.4",
+    "eslint-plugin-import": "^2.32.0",
+    "globals": "^16.3.0",
+    "husky": "^9.1.7",
+    "icon-gen": "^5.0.0",
+    "jest": "^30.0.5",
+    "jest-environment-jsdom": "^30.0.5",
+    "jest-environment-node": "^30.0.5",
+    "jiti": "^2.5.1",
+    "lint-staged": "^16.1.2",
+    "npm-check-updates": "^18.0.2",
+    "playwright": "^1.54.1",
+    "postcss": "^8.5.6",
+    "prettier": "^3.6.2",
+    "rimraf": "^6.0.1",
+    "tailwindcss": "^4.1.11",
+    "ts-jest": "^29.4.0",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.8.3",
+    "typescript-eslint": "^8.38.0",
+    "vite": "^7.0.6"
+  },
+  "build": {
+    "appId": "com.alexkroman.assembly-notes",
+    "productName": "Assembly-Notes",
+    "artifactName": "Assembly-Notes-${version}-${arch}.${ext}",
+    "forceCodeSigning": false,
+    "publish": {
+      "provider": "github"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true
+    },
+    "directories": {
+      "output": "dist",
+      "buildResources": "build"
+    },
+    "files": [
+      "src/**/*",
+      "dist/**/*",
+      "node_modules/**/*"
+    ],
+    "asarUnpack": [
+      "node_modules/electron-audio-loopback/**/*",
+      "node_modules/better-sqlite3/**/*",
+      "node_modules/**/*.node"
+    ],
+    "extraMetadata": {
+      "main": "dist/main/main.js"
+    },
+    "npmRebuild": false,
+    "nodeGypRebuild": false,
+    "buildDependenciesFromSource": true,
+    "nativeRebuilder": "sequential",
+    "asar": true,
+    "mac": {
+      "category": "public.app-category.productivity",
+      "target": "dmg",
+      "icon": "build/icons/mac/icon.icns",
+      "hardenedRuntime": true,
+      "gatekeeperAssess": false,
+      "entitlements": "build/entitlements.mac.plist",
+      "entitlementsInherit": "build/entitlements.mac.plist",
+      "notarize": true
+    },
+    "win": {
+      "target": "nsis",
+      "icon": "build/icons/win/icon.ico",
+      "forceCodeSigning": false,
+      "publish": null
+    },
+    "linux": {
+      "target": [
+        {
+          "target": "AppImage",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "icon": "build/icons/png",
+      "category": "Office",
+      "synopsis": "Real-time transcription and meeting notes",
+      "description": "Assembly Notes provides real-time transcription of microphone and system audio with AI-generated meeting summaries."
+    }
+  },
+  "lint-staged": {
+    "*.{ts,tsx,js,jsx}": [
+      "eslint --fix",
+      "prettier --write"
+    ],
+    "*.{json,md,html,css}": [
+      "prettier --write"
+    ]
+  }
+}
