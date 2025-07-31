@@ -94,6 +94,7 @@ const electronAPI = {
   installUpdate: () => ipcRenderer.invoke('install-update'),
   quitAndInstall: () => ipcRenderer.invoke('quit-and-install'),
   checkForUpdates: () => ipcRenderer.invoke('check-for-updates'),
+  getUpdateStatus: () => ipcRenderer.invoke('get-update-status'),
 
   getAllRecordings: () => ipcRenderer.invoke('get-all-recordings'),
   searchRecordings: (query: string) =>
@@ -116,6 +117,14 @@ const electronAPI = {
     }),
   onUpdateDownloaded: (callback: (info: UpdateInfo) => void) =>
     ipcRenderer.on('update-downloaded', (_event, info) => {
+      callback(info as UpdateInfo);
+    }),
+  onUpdateError: (callback: (error: string) => void) =>
+    ipcRenderer.on('update-error', (_event, error) => {
+      callback(error as string);
+    }),
+  onUpdateReadyToInstall: (callback: (info: UpdateInfo) => void) =>
+    ipcRenderer.on('update-ready-to-install', (_event, info) => {
       callback(info as UpdateInfo);
     }),
 };

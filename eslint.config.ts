@@ -14,6 +14,8 @@ export default tseslint.config(
       '.vite/**',
       '.electron-vite/**',
       'vite.config.js',
+      'scripts/**',
+      'docs/**',
     ],
   },
 

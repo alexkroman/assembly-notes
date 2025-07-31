@@ -5,7 +5,7 @@
   "keywords": [],
   "main": "./dist/main/main.js",
   "type": "module",
-  "version": "1.0.50",
+  "version": "1.0.51",
   "author": "Alex Kroman <alex@alexkroman.com>",
   "scripts": {
     "start": "npm run build:all && cross-env DEV_MODE=true electron .",
@@ -43,7 +43,8 @@
     "check-updates": "ncu",
     "update-deps": "ncu -u",
     "setup": "./scripts/setup-env.sh",
-    "prepare": "husky"
+    "prepare": "husky",
+    "dev:update-server": "node scripts/update-server.js"
   },
   "dependencies": {
     "@reduxjs/toolkit": "^2.8.2",

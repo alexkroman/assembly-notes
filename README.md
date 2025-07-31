@@ -76,6 +76,10 @@ npm run test:coverage  # Run tests with coverage report
 npm run test:e2e       # Run Playwright end-to-end tests only
 npm run test:all       # Run Jest watch and Playwright tests concurrently
 
+# Auto-Update Testing
+npm run dev:update-server    # Start local update server for testing auto-updates
+node scripts/test-autoupdate.js     # Run app with local update server config
+
 # Building
 npm run build          # Build for all platforms (macOS, Windows, Linux)
 npm run build:mac      # Build DMG for macOS
@@ -207,6 +211,47 @@ The project uses comprehensive code quality tools:
 - **Jest** - Unit tests with TypeScript support and mocks for Electron APIs
 - **Playwright** - End-to-end testing for the full Electron application
 - **Coverage** - Excludes entry points and UI-only files
+
+### Auto-Update Testing
+
+The application includes a local testing system for Electron auto-updates:
+
+#### **Manual Testing Steps**
+
+```bash
+# Terminal 1: Start the local update server
+npm run dev:update-server
+
+# Terminal 2: Manually increment version in package.json (e.g., 1.0.50 → 1.0.51)
+# Then build the new version
+npm run build:mac
+
+# Terminal 2: Revert to old version to simulate outdated app
+git checkout package.json
+
+# Terminal 2: Run app with auto-update testing enabled
+node scripts/test-autoupdate.js
+```
+
+The app will automatically:
+1. Check for updates after 3 seconds
+2. Find the newer version on localhost:8000
+3. Download the update with progress logging
+4. Notify when ready to install
+
+#### **System Components**
+
+- **Update Server** (`scripts/update-server.js`) - Serves update metadata and files on `http://localhost:8000`
+- **Auto-Updater Service** (`src/main/auto-updater.ts`) - Enhanced with local testing support and comprehensive logging
+- **Test Script** (`scripts/test-autoupdate.js`) - Launches app with proper environment variables for local testing
+
+#### **Environment Variables**
+
+- `USE_LOCAL_UPDATE_SERVER=true` - Enables local testing mode
+- `UPDATE_FEED_URL=http://localhost:8000` - Points to local server
+- `ELECTRON_LOG_LEVEL=debug` - Shows detailed update process logs
+
+> **Note**: Auto-update testing currently focuses on macOS builds for simplicity.
 
 ### Important Development Notes
 
