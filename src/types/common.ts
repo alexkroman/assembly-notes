@@ -33,7 +33,6 @@ export interface SettingsSchema {
   // Slack OAuth fields
   slackInstallations: SlackInstallation[];
   selectedSlackInstallation: string | null; // teamId
-  availableChannels: SlackChannel[];
   slackChannels: string; // Comma-separated favorite channel names for backwards compatibility
   autoStart: boolean;
 }

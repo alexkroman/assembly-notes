@@ -307,7 +307,6 @@ export function createRendererStore() {
         slackChannels: '',
         slackInstallations: [],
         selectedSlackInstallation: '',
-        availableChannels: [],
         summaryPrompt: '',
         prompts: [],
         autoStart: false,

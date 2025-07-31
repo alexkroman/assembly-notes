@@ -15,7 +15,6 @@ export const createMockSettings = (
   autoStart: false,
   slackInstallations: [],
   selectedSlackInstallation: '',
-  availableChannels: [],
   ...overrides,
 });
 

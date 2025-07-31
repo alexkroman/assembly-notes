@@ -3,7 +3,6 @@ import { inject, injectable } from 'tsyringe';
 
 import type {
   SlackInstallation,
-  SlackChannel,
   SettingsSchema,
 } from '../../types/common.js';
 import type { DatabaseService } from '../database.js';
@@ -41,7 +40,6 @@ export class SettingsService {
       autoStart: dbSettings.autoStart,
       slackInstallations: dbSettings.slackInstallations,
       selectedSlackInstallation: dbSettings.selectedSlackInstallation ?? '',
-      availableChannels: dbSettings.availableChannels,
     };
   }
 
@@ -59,7 +57,6 @@ export class SettingsService {
     this.logger.info('Dispatching updated settings to Redux:', {
       slackInstallations: updatedSettings.slackInstallations,
       selectedSlackInstallation: updatedSettings.selectedSlackInstallation,
-      availableChannels: updatedSettings.availableChannels,
     });
     this.store.dispatch(updateSettings(updatedSettings));
   }
@@ -82,11 +79,6 @@ export class SettingsService {
   getSelectedSlackInstallation(): string {
     const settings = this.databaseService.getSettings();
     return settings.selectedSlackInstallation ?? '';
-  }
-
-  getAvailableChannels(): SlackChannel[] {
-    const settings = this.databaseService.getSettings();
-    return settings.availableChannels;
   }
 
   getSummaryPrompt(): string {

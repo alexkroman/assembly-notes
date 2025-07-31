@@ -327,9 +327,6 @@ describe('SlackOAuthService', () => {
           mockSettings.selectedSlackInstallation =
             updates.selectedSlackInstallation;
         }
-        if (updates.availableChannels) {
-          mockSettings.availableChannels = updates.availableChannels;
-        }
       });
 
       // Get the request handler from createServer mock
@@ -556,9 +553,6 @@ describe('SlackOAuthService', () => {
         createMockSettings({
           slackInstallations: installations,
           selectedSlackInstallation: 'T123456',
-          availableChannels: [
-            { id: 'C123', name: 'general', isPrivate: false },
-          ],
         })
       );
     });

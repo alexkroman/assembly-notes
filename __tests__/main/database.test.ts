@@ -225,7 +225,6 @@ describe('DatabaseService', () => {
         { key: 'prompts', value: '[]' },
         { key: 'slackInstallations', value: '[]' },
         { key: 'selectedSlackInstallation', value: '' },
-        { key: 'availableChannels', value: '[]' },
         { key: 'slackChannels', value: 'channel1,channel2' },
         { key: 'autoStart', value: 'false' },
       ]);
@@ -244,7 +243,6 @@ describe('DatabaseService', () => {
         prompts: [],
         slackInstallations: [],
         selectedSlackInstallation: '',
-        availableChannels: [],
         slackChannels: 'channel1,channel2',
         autoStart: false,
       });
@@ -270,7 +268,6 @@ describe('DatabaseService', () => {
         prompts: [],
         slackInstallations: [],
         selectedSlackInstallation: null,
-        availableChannels: [],
         slackChannels: '',
         autoStart: false,
       });
@@ -310,7 +307,6 @@ describe('DatabaseService', () => {
         prompts: [],
         slackInstallations: [],
         selectedSlackInstallation: null,
-        availableChannels: [],
         slackChannels: '',
         autoStart: false,
       });

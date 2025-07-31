@@ -8,7 +8,6 @@ import {
 } from '../../../src/main/services/slackService';
 import {
   createMockInstallation,
-  createMockChannel,
 } from '../../utils/testHelpers.js';
 
 // Mock HTTP client
@@ -30,10 +29,6 @@ describe('SlackService', () => {
         settings: {
           slackInstallations: [createMockInstallation()],
           selectedSlackInstallation: 'T123456',
-          availableChannels: [
-            createMockChannel(),
-            createMockChannel({ id: 'C789012', name: 'dev' }),
-          ],
           slackChannels: '#general,#dev',
         },
       })),
@@ -116,7 +111,6 @@ describe('SlackService', () => {
         settings: {
           slackInstallations: [],
           selectedSlackInstallation: '',
-          availableChannels: [],
         },
       });
 
@@ -134,7 +128,6 @@ describe('SlackService', () => {
         settings: {
           slackInstallations: [createMockInstallation()],
           selectedSlackInstallation: 'T123456',
-          availableChannels: [createMockChannel()],
         },
       });
 
@@ -283,7 +276,6 @@ describe('SlackService', () => {
             createMockInstallation({ botToken: 'invalid-token' }),
           ],
           selectedSlackInstallation: 'T123456',
-          availableChannels: [createMockChannel()],
         },
       });
 
@@ -311,10 +303,6 @@ describe('SlackService', () => {
         settings: {
           slackInstallations: [createMockInstallation()],
           selectedSlackInstallation: 'T123456',
-          availableChannels: [
-            createMockChannel(),
-            createMockChannel({ id: 'C1234567890', name: 'dev' }),
-          ],
           slackChannels: '#general,#dev',
         },
       });
@@ -356,7 +344,6 @@ describe('SlackService', () => {
         settings: {
           slackInstallations: [],
           selectedSlackInstallation: '',
-          availableChannels: [],
         },
       });
 
@@ -370,7 +357,6 @@ describe('SlackService', () => {
         settings: {
           slackInstallations: [createMockInstallation()],
           selectedSlackInstallation: 'T123456',
-          availableChannels: [createMockChannel()],
         },
       });
 
@@ -394,7 +380,6 @@ describe('SlackService', () => {
         settings: {
           slackInstallations: [],
           selectedSlackInstallation: '',
-          availableChannels: [],
         },
       });
 

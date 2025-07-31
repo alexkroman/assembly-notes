@@ -4,6 +4,7 @@ import type { SettingsModalProps } from '../../types/components.js';
 import type { SettingsState } from '../../types/redux.js';
 import { useAppDispatch, useAppSelector } from '../hooks/redux.js';
 import { setStatus } from '../store';
+import { Modal } from './Modal.js';
 import { SlackOAuthConnectionOnly } from './SlackOAuthConnectionOnly.js';
 import '../../types/global.d.ts';
 
@@ -67,74 +68,58 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ onClose }) => {
 
   const isAssemblyAIKeyMissing = !(settings.assemblyaiKey || '').trim();
 
+  const footer = (
+    <>
+      <button
+        className={`btn-secondary ${isAssemblyAIKeyMissing ? 'disabled' : ''}`}
+        data-testid="cancel-settings-btn"
+        onClick={handleCancel}
+        disabled={isAssemblyAIKeyMissing}
+      >
+        Cancel
+      </button>
+      <button
+        className={`btn-primary ${isAssemblyAIKeyMissing ? 'disabled' : ''}`}
+        data-testid="save-settings-btn"
+        onClick={() => {
+          void handleSave();
+        }}
+        disabled={isAssemblyAIKeyMissing}
+      >
+        Save
+      </button>
+    </>
+  );
+
   return (
-    <div
-      className="modal-overlay"
-      data-testid="settings-modal"
-      onClick={(e) => {
-        if (e.target === e.currentTarget) {
-          handleClose();
-        }
-      }}
+    <Modal
+      title="Settings"
+      onClose={handleClose}
+      footer={footer}
+      size="large"
+      testId="settings-modal"
+      bodyTestId="slack-settings"
+      closeDisabled={isAssemblyAIKeyMissing}
     >
-      <div className="modal-content large">
-        <div className="modal-header">
-          <h2>Settings</h2>
-          <button
-            className={`modal-close ${isAssemblyAIKeyMissing ? 'disabled' : ''}`}
-            data-testid="close-modal-btn"
-            onClick={handleClose}
-            disabled={isAssemblyAIKeyMissing}
-          >
-            ×
-          </button>
-        </div>
-
-        <div className="modal-body" data-testid="slack-settings">
-          <div className="form-group">
-            <label htmlFor="assemblyaiKey">
-              AssemblyAI API Key (required):
-            </label>
-            <input
-              type="password"
-              id="assemblyaiKey"
-              data-testid="assemblyai-key-input"
-              value={settings.assemblyaiKey}
-              onChange={(e) => {
-                handleInputChange('assemblyaiKey', e.target.value);
-              }}
-              placeholder="Enter your AssemblyAI API key"
-              className={isAssemblyAIKeyMissing ? 'error' : ''}
-            />
-          </div>
-
-          <div className="form-group">
-            <label>Slack Integration (optional):</label>
-            <SlackOAuthConnectionOnly />
-          </div>
-        </div>
-
-        <div className="modal-footer">
-          <button
-            className={`btn-secondary ${isAssemblyAIKeyMissing ? 'disabled' : ''}`}
-            data-testid="cancel-settings-btn"
-            onClick={handleCancel}
-            disabled={isAssemblyAIKeyMissing}
-          >
-            Cancel
-          </button>
-          <button
-            className={`btn-primary ${isAssemblyAIKeyMissing ? 'disabled' : ''}`}
-            data-testid="save-settings-btn"
-            onClick={() => {
-              void handleSave();
-            }}
-            disabled={isAssemblyAIKeyMissing}
-          >
-            Save
-          </button>
-        </div>
+      <div className="form-group">
+        <label htmlFor="assemblyaiKey">AssemblyAI API Key (required):</label>
+        <input
+          type="password"
+          id="assemblyaiKey"
+          data-testid="assemblyai-key-input"
+          value={settings.assemblyaiKey}
+          onChange={(e) => {
+            handleInputChange('assemblyaiKey', e.target.value);
+          }}
+          placeholder="Enter your AssemblyAI API key"
+          className={isAssemblyAIKeyMissing ? 'error' : ''}
+        />
       </div>
-    </div>
+
+      <div className="form-group">
+        <label>Slack Integration (optional):</label>
+        <SlackOAuthConnectionOnly />
+      </div>
+    </Modal>
   );
 };

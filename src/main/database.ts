@@ -12,7 +12,6 @@ import {
   Recording,
   SettingsSchema,
   SlackInstallation,
-  SlackChannel,
 } from '../types/common.js';
 @injectable()
 class DatabaseService {
@@ -23,14 +22,8 @@ class DatabaseService {
     @inject(DI_TOKENS.Logger)
     private logger: typeof import('./logger.js').default
   ) {
-    // Use development database if DEV_MODE environment variable is set
-    const isDevMode = process.env['DEV_MODE'] === 'true';
-    const dbName = isDevMode ? 'assembly-notes-dev.db' : 'assembly-notes.db';
-    const userDataPath = isDevMode
-      ? path.join(app.getPath('userData'), 'dev')
-      : app.getPath('userData');
-
-    this.dbPath = path.join(userDataPath, dbName);
+    // Use consistent database name - app.setName() in main.ts handles dev/prod separation
+    this.dbPath = path.join(app.getPath('userData'), 'assembly-notes.db');
 
     const dir = path.dirname(this.dbPath);
     if (!fs.existsSync(dir)) {
@@ -146,7 +139,6 @@ class DatabaseService {
       // Slack OAuth fields
       slackInstallations: JSON.stringify([]),
       selectedSlackInstallation: '',
-      availableChannels: JSON.stringify([]),
       autoStart: false,
     };
 
@@ -216,8 +208,6 @@ class DatabaseService {
         selectedSlackInstallation: (settingsMap.get(
           'selectedSlackInstallation'
         ) ?? null) as string | null,
-        availableChannels: (settingsMap.get('availableChannels') ??
-          []) as SlackChannel[],
         slackChannels: (settingsMap.get('slackChannels') ?? '') as string,
         autoStart: (settingsMap.get('autoStart') ?? false) as boolean,
       };
@@ -231,7 +221,6 @@ class DatabaseService {
         // Slack OAuth fields
         slackInstallations: [],
         selectedSlackInstallation: null,
-        availableChannels: [],
         slackChannels: '',
         autoStart: false,
       };

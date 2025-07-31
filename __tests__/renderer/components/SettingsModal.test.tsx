@@ -45,7 +45,6 @@ const createMockStore = (initialState: any = {}) => {
           autoStart: false,
           slackInstallations: [],
           selectedSlackInstallation: '',
-          availableChannels: [],
           selectedChannelId: '',
           slackChannels: '',
         }
@@ -57,7 +56,6 @@ const createMockStore = (initialState: any = {}) => {
         autoStart: false,
         slackInstallations: [],
         selectedSlackInstallation: '',
-        availableChannels: [],
         selectedChannelId: '',
         slackChannels: '',
         ...(initialState.settings || {}),
@@ -118,8 +116,8 @@ describe('SettingsModal', () => {
     const apiKeyInput = screen.getByTestId('assemblyai-key-input');
 
     expect((apiKeyInput as HTMLInputElement).value).toBe('stored-api-key');
-    // Should show connected state for Slack
-    expect(screen.getByText(/Connected to: Test Team/)).toBeInTheDocument();
+    // Should show connected state for Slack - disconnect button should be visible
+    expect(screen.getByText(/Disconnect from Slack/)).toBeInTheDocument();
   });
 
   it('should update assemblyai key on input', () => {

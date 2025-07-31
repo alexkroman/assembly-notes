@@ -104,5 +104,5 @@
   "terminal.integrated.env.windows": {
     "NODE_ENV": "development"
   },
-  "cSpell.words": ["mpim", "tsyringe"]
+  "cSpell.words": ["mpim", "tsyringe", "Vite"]
 }

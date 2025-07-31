@@ -6,7 +6,6 @@ import type {
   PromptTemplate,
   SettingsState,
   SlackInstallation,
-  SlackChannel,
 } from '../../../types/index.js';
 import { DI_TOKENS } from '../../di-tokens.js';
 import type { SettingsService } from '../../services/settingsService.js';
@@ -80,7 +79,6 @@ const initialState: SettingsState = {
   // Slack OAuth fields
   slackInstallations: [],
   selectedSlackInstallation: '',
-  availableChannels: [],
   summaryPrompt: 'Summarize the key points from this meeting transcript:',
   prompts: [],
   autoStart: false,
@@ -125,9 +123,6 @@ const settingsSlice = createSlice({
     setSelectedSlackInstallation: (state, action: PayloadAction<string>) => {
       state.selectedSlackInstallation = action.payload;
       updateComputedProperties(state, state);
-    },
-    setAvailableChannels: (state, action: PayloadAction<SlackChannel[]>) => {
-      state.availableChannels = action.payload;
     },
     setSummaryPrompt: (state, action: PayloadAction<string>) => {
       state.summaryPrompt = action.payload;
@@ -199,7 +194,6 @@ export const {
   setSlackChannels,
   setSlackInstallations,
   setSelectedSlackInstallation,
-  setAvailableChannels,
   setSummaryPrompt,
   setAutoStart,
   setTheme,

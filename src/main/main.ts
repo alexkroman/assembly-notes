@@ -21,6 +21,11 @@ import { store } from './store/store.js';
 
 initAudioLoopback();
 
+// Set different app name for development builds
+if (process.env['NODE_ENV'] !== 'production' && !app.isPackaged) {
+  app.setName('Assembly-Notes-Dev');
+}
+
 let mainWindow: BrowserWindow | null = null;
 
 function createWindow(): void {

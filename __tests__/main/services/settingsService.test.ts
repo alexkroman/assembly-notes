@@ -265,23 +265,6 @@ describe('SettingsService', () => {
       expect(result).toBe('T123');
     });
 
-    it('should get available channels', () => {
-      const channels = [
-        { id: 'C123', name: 'general', isPrivate: false },
-        { id: 'C456', name: 'random', isPrivate: false },
-      ];
-      mockDatabase.getSettings.mockReturnValue(
-        createMockSettings({
-          availableChannels: channels,
-        })
-      );
-
-      const result = settingsService.getAvailableChannels();
-
-      expect(mockDatabase.getSettings).toHaveBeenCalled();
-      expect(result).toEqual(channels);
-    });
-
     it('should get summary prompt', () => {
       mockDatabase.getSettings.mockReturnValue(
         createMockSettings({

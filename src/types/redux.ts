@@ -5,7 +5,6 @@ import type {
   Recording,
   UpdateInfo,
   SlackInstallation,
-  SlackChannel,
 } from './common.js';
 
 // Recording slice state
@@ -78,7 +77,6 @@ export interface FullSettingsState {
   // Slack OAuth fields
   slackInstallations: SlackInstallation[];
   selectedSlackInstallation: string | null;
-  availableChannels: SlackChannel[];
   slackChannels: string; // Comma-separated favorite channel names
   summaryPrompt: string;
   prompts: PromptTemplate[];
