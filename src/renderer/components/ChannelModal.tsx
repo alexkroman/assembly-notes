@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 
+import { Modal } from './Modal.js';
 import type { ChannelModalProps } from '../../types/components.js';
 import { useAppDispatch } from '../hooks/redux';
 import { setStatus } from '../store';
@@ -15,8 +16,7 @@ export const ChannelModal: React.FC<ChannelModalProps> = ({ onClose }) => {
   const loadChannels = async () => {
     try {
       const settings = await window.electronAPI.getSettings();
-      const channelsString = settings.slackChannels || '';
-      setChannelsText(channelsString);
+      setChannelsText(settings.slackChannels || '');
     } catch (error) {
       console.error('Error loading channels:', error);
     }
@@ -38,51 +38,36 @@ export const ChannelModal: React.FC<ChannelModalProps> = ({ onClose }) => {
     }
   };
 
+  const footer = (
+    <>
+      <button className="btn-secondary" onClick={onClose}>
+        Cancel
+      </button>
+      <button
+        className="btn-primary"
+        onClick={() => {
+          void handleSave();
+        }}
+      >
+        Save
+      </button>
+    </>
+  );
+
   return (
-    <div className="modal-overlay" data-testid="channel-modal">
-      <div className="modal-content">
-        <div className="modal-header">
-          <h2>Manage Slack Channels</h2>
-          <button
-            className="modal-close"
-            data-testid="close-modal-btn"
-            onClick={onClose}
-          >
-            ×
-          </button>
-        </div>
-
-        <div className="modal-body">
-          <div className="form-group">
-            <label htmlFor="slackChannels">
-              Slack Channels (comma-separated):
-            </label>
-            <textarea
-              id="slackChannels"
-              value={channelsText}
-              onChange={(e) => {
-                setChannelsText(e.target.value);
-              }}
-              placeholder="general, team-updates, meetings"
-              rows={4}
-            />
-          </div>
-        </div>
-
-        <div className="modal-footer">
-          <button className="btn-secondary" onClick={onClose}>
-            Cancel
-          </button>
-          <button
-            className="btn-primary"
-            onClick={() => {
-              void handleSave();
-            }}
-          >
-            Save
-          </button>
-        </div>
+    <Modal title="Manage Slack Channels" onClose={onClose} footer={footer}>
+      <div className="form-group">
+        <label htmlFor="slackChannels">Slack Channels (comma-separated):</label>
+        <textarea
+          id="slackChannels"
+          value={channelsText}
+          onChange={(e) => {
+            setChannelsText(e.target.value);
+          }}
+          placeholder="general, team-updates, meetings"
+          rows={4}
+        />
       </div>
-    </div>
+    </Modal>
   );
 };
