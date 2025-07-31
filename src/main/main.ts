@@ -13,6 +13,7 @@ import type { DatabaseService } from './database.js';
 import { setupIpcHandlers } from './ipc-handlers.js';
 import log from './logger.js';
 import type { SettingsService } from './services/settingsService.js';
+import type { SlackOAuthService } from './services/slackOAuthService.js';
 import { store } from './store/store.js';
 
 initAudioLoopback();
@@ -63,6 +64,11 @@ function createWindow(): void {
     DI_TOKENS.SettingsService
   );
   settingsService.initializeSettings();
+}
+
+// Register custom protocol for OAuth callback
+if (!app.isDefaultProtocolClient('assemblyai')) {
+  app.setAsDefaultProtocolClient('assemblyai');
 }
 
 void app.whenReady().then(() => {
@@ -151,3 +157,46 @@ app.on('before-quit', () => {
   );
   databaseService.close();
 });
+
+// Handle protocol URLs (for OAuth callback)
+app.on('open-url', (event, url) => {
+  event.preventDefault();
+  log.info('Protocol URL received:', url);
+
+  if (url.startsWith('assemblyai://auth/slack/callback')) {
+    // Forward to the SlackOAuthService
+    const slackOAuthService = container.resolve<SlackOAuthService>(
+      DI_TOKENS.SlackOAuthService
+    );
+    void slackOAuthService.handleProtocolUrl(url);
+  }
+});
+
+// Handle when app is launched with a protocol URL (Windows/Linux)
+if (process.platform !== 'darwin') {
+  app.on('second-instance', (_event, commandLine) => {
+    // Someone tried to run a second instance, focus our window and handle the protocol URL
+    if (mainWindow) {
+      if (mainWindow.isMinimized()) mainWindow.restore();
+      mainWindow.focus();
+
+      // Check for protocol URL in command line
+      const protocolUrl = commandLine.find((arg) =>
+        arg.startsWith('assemblyai://')
+      );
+      if (protocolUrl) {
+        log.info('Protocol URL from second instance:', protocolUrl);
+        const slackOAuthService = container.resolve<SlackOAuthService>(
+          DI_TOKENS.SlackOAuthService
+        );
+        void slackOAuthService.handleProtocolUrl(protocolUrl);
+      }
+    }
+  });
+
+  // Prevent multiple instances
+  const gotTheLock = app.requestSingleInstanceLock();
+  if (!gotTheLock) {
+    app.quit();
+  }
+}

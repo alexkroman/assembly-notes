@@ -1,6 +1,12 @@
 // Redux state types extracted from store slices
 
-import type { PromptTemplate, Recording, UpdateInfo } from './common.js';
+import type {
+  PromptTemplate,
+  Recording,
+  UpdateInfo,
+  SlackInstallation,
+  SlackChannel,
+} from './common.js';
 
 // Recording slice state
 export type RecordingStatus =
@@ -69,9 +75,12 @@ export interface UpdateState {
 // Settings slice state
 export interface FullSettingsState {
   assemblyaiKey: string;
-  slackBotToken: string;
-  slackChannels: string;
-  selectedSlackChannel: string;
+  // Slack OAuth fields
+  slackInstallations: SlackInstallation[];
+  selectedSlackInstallation: string | null;
+  availableChannels: SlackChannel[];
+  selectedChannelId: string | null;
+  slackChannels: string; // Comma-separated favorite channel names
   summaryPrompt: string;
   selectedPromptIndex: number;
   prompts: PromptTemplate[];
@@ -84,8 +93,7 @@ export interface SettingsState extends FullSettingsState {
   theme: 'light' | 'dark';
   // Computed properties for safe trim operations
   hasAssemblyAIKey: boolean;
-  hasSlackBotToken: boolean;
-  hasSlackChannels: boolean;
+  hasSlackConfigured: boolean;
 }
 
 // UI slice state (renderer)

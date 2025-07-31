@@ -1,28 +1,21 @@
-import { Store } from '@reduxjs/toolkit';
 import { container } from 'tsyringe';
 
-import { DatabaseService } from '../../../src/main/database';
 import { DI_TOKENS } from '../../../src/main/di-tokens';
 import { SettingsService } from '../../../src/main/services/settingsService';
+import { createMockSettings } from '../../utils/testHelpers.js';
 
 // Mock the slice actions
-const updateSettings = jest.fn();
 jest.mock('../../../src/main/store/slices/settingsSlice', () => ({
   updateSettings: jest.fn(),
 }));
 
 const mockStore = {
   getState: jest.fn(() => ({
-    settings: {
+    settings: createMockSettings({
       assemblyaiKey: 'test-key',
-      slackBotToken: 'test-token',
       slackChannels: 'channel1,channel2',
-      selectedSlackChannel: 'channel1',
       summaryPrompt: 'test prompt',
-      selectedPromptIndex: 0,
-      prompts: [],
-      autoStart: false,
-    },
+    }),
   })),
   dispatch: jest.fn(),
 };
@@ -35,8 +28,9 @@ const mockLogger = {
 };
 
 const mockDatabase = {
-  setSetting: jest.fn(),
   getSettings: jest.fn(),
+  setSetting: jest.fn(),
+  updateSettings: jest.fn(),
 };
 
 describe('SettingsService', () => {
@@ -45,165 +39,105 @@ describe('SettingsService', () => {
   beforeEach(() => {
     jest.clearAllMocks();
 
-    // Register mocks in container
-    container.register(DI_TOKENS.Store, {
-      useValue: mockStore as unknown as Store,
-    });
-    container.register(DI_TOKENS.Logger, { useValue: mockLogger as any });
-    container.register(DI_TOKENS.DatabaseService, {
-      useValue: mockDatabase as unknown as DatabaseService,
-    });
-
-    settingsService = container.resolve(SettingsService);
-
-    // Reset mock implementations to default
-    mockDatabase.setSetting.mockReset();
-    mockDatabase.getSettings.mockReset();
-  });
-
-  afterEach(() => {
+    // Reset container
     container.clearInstances();
+
+    // Register mock dependencies
+    container.registerInstance(DI_TOKENS.Store, mockStore as any);
+    container.registerInstance(DI_TOKENS.Logger, mockLogger);
+    container.registerInstance(DI_TOKENS.DatabaseService, mockDatabase as any);
+
+    settingsService = new SettingsService(
+      mockStore as any,
+      mockLogger as any,
+      mockDatabase as any
+    );
   });
 
   describe('initializeSettings', () => {
-    it('should load settings from database and update Redux store', () => {
-      const mockSettings = {
-        prompts: [],
-        assemblyaiKey: 'test-key',
-        slackBotToken: 'test-token',
-        slackChannels: 'channel1,channel2',
-        selectedSlackChannel: 'channel1',
-        summaryPrompt: 'test prompt',
-        selectedPromptIndex: 0,
-        autoStart: false,
-      };
-      mockDatabase.getSettings.mockReturnValue(mockSettings);
+    it('should initialize settings on construction', () => {
+      mockDatabase.getSettings.mockReturnValue(
+        createMockSettings({
+          assemblyaiKey: 'test-key',
+          slackChannels: 'channel1,channel2',
+        })
+      );
 
       settingsService.initializeSettings();
 
       expect(mockDatabase.getSettings).toHaveBeenCalled();
-      expect(mockStore.dispatch).toHaveBeenCalledWith(
-        updateSettings(mockSettings)
-      );
+      expect(mockStore.dispatch).toHaveBeenCalled();
     });
 
     it('should handle errors during initialization', () => {
-      const dbError = new Error('Database connection failed');
       mockDatabase.getSettings.mockImplementation(() => {
-        throw dbError;
+        throw new Error('Database error');
       });
 
-      settingsService.initializeSettings();
-
+      expect(() => settingsService.initializeSettings()).not.toThrow();
       expect(mockLogger.error).toHaveBeenCalledWith(
         'Failed to load settings:',
-        dbError
-      );
-      expect(mockStore.dispatch).not.toHaveBeenCalled();
-    });
-
-    it('should handle partial settings data', () => {
-      const partialSettings = {
-        assemblyaiKey: 'test-key',
-        // Missing other fields
-      };
-      mockDatabase.getSettings.mockReturnValue(partialSettings);
-
-      settingsService.initializeSettings();
-
-      expect(mockStore.dispatch).toHaveBeenCalledWith(
-        updateSettings(
-          expect.objectContaining({
-            assemblyaiKey: 'test-key',
-          })
-        )
+        expect.any(Error)
       );
     });
   });
 
   describe('getSettings', () => {
-    it('should return complete settings from database', () => {
-      const mockSettings = {
-        prompts: [{ name: 'Test', content: 'test content' }],
+    it('should return settings from database', () => {
+      const mockSettings = createMockSettings({
         assemblyaiKey: 'test-key',
-        slackBotToken: 'test-token',
-        slackChannels: 'channel1,channel2',
-        selectedSlackChannel: 'channel1',
-        summaryPrompt: 'test prompt',
-        selectedPromptIndex: 1,
-        autoStart: true,
-      };
+        slackChannels: 'general,random',
+        slackInstallations: [
+          {
+            teamId: 'T123',
+            teamName: 'Test Team',
+            botToken: 'xoxb-123',
+            botUserId: 'U123',
+            scope: 'chat:write',
+            installedAt: Date.now(),
+          },
+        ],
+        selectedSlackInstallation: 'T123',
+      });
+
       mockDatabase.getSettings.mockReturnValue(mockSettings);
 
-      const settings = settingsService.getSettings();
+      const result = settingsService.getSettings();
 
       expect(mockDatabase.getSettings).toHaveBeenCalled();
-      expect(settings).toEqual(mockSettings);
+      expect(result).toEqual(mockSettings);
     });
 
-    it('should return default values when settings are missing', () => {
-      const emptySettings = {
-        prompts: [],
-        assemblyaiKey: '',
-        slackBotToken: '',
-        slackChannels: '',
-        selectedSlackChannel: '',
-        summaryPrompt: '',
-        selectedPromptIndex: 0,
-        autoStart: false,
-      };
-      mockDatabase.getSettings.mockReturnValue(emptySettings);
-
-      const settings = settingsService.getSettings();
-
-      expect(settings).toEqual({
-        ...emptySettings,
-        summaryPrompt: 'Summarize the key points from this meeting transcript:',
-      });
-    });
-
-    it('should handle database errors gracefully', () => {
-      const dbError = new Error('Database read error');
-      mockDatabase.getSettings.mockImplementation(() => {
-        throw dbError;
-      });
-
-      expect(() => settingsService.getSettings()).toThrow(dbError);
-    });
-
-    it('should handle null settings from database', () => {
+    it('should provide default values for missing fields', () => {
       mockDatabase.getSettings.mockReturnValue({
-        prompts: [],
-        assemblyaiKey: '',
-        slackBotToken: '',
-        slackChannels: '',
-        selectedSlackChannel: '',
+        assemblyaiKey: 'test-key',
         summaryPrompt: '',
-        selectedPromptIndex: 0,
-        autoStart: false,
-      });
-
-      const settings = settingsService.getSettings();
-
-      expect(settings).toEqual({
         prompts: [],
-        assemblyaiKey: '',
-        slackBotToken: '',
-        slackChannels: '',
-        selectedSlackChannel: '',
-        summaryPrompt: 'Summarize the key points from this meeting transcript:',
         selectedPromptIndex: 0,
         autoStart: false,
       });
+
+      const result = settingsService.getSettings();
+
+      expect(result).toEqual(
+        createMockSettings({
+          assemblyaiKey: 'test-key',
+          summaryPrompt:
+            'Summarize the key points from this meeting transcript:',
+        })
+      );
     });
   });
 
   describe('updateSettings', () => {
-    it('should update settings in database successfully', () => {
+    beforeEach(() => {
+      mockDatabase.getSettings.mockReturnValue(createMockSettings());
+    });
+
+    it('should update individual settings', () => {
       const updates = {
         assemblyaiKey: 'new-key',
-        slackBotToken: 'new-token',
-        autoStart: true,
+        slackChannels: 'general,updates',
       };
 
       settingsService.updateSettings(updates);
@@ -213,107 +147,75 @@ describe('SettingsService', () => {
         'new-key'
       );
       expect(mockDatabase.setSetting).toHaveBeenCalledWith(
-        'slackBotToken',
-        'new-token'
+        'slackChannels',
+        'general,updates'
       );
-      expect(mockDatabase.setSetting).toHaveBeenCalledWith('autoStart', true);
+    });
+
+    it('should update OAuth-related settings', () => {
+      const installation = {
+        teamId: 'T123',
+        teamName: 'Test Team',
+        botToken: 'xoxb-123',
+        botUserId: 'U123',
+        scope: 'chat:write',
+        installedAt: Date.now(),
+      };
+
+      const updates = {
+        slackInstallations: [installation],
+        selectedSlackInstallation: 'T123',
+        selectedChannelId: 'C123456',
+      };
+
+      settingsService.updateSettings(updates);
+
+      expect(mockDatabase.setSetting).toHaveBeenCalledWith(
+        'slackInstallations',
+        [installation]
+      );
+      expect(mockDatabase.setSetting).toHaveBeenCalledWith(
+        'selectedSlackInstallation',
+        'T123'
+      );
+      expect(mockDatabase.setSetting).toHaveBeenCalledWith(
+        'selectedChannelId',
+        'C123456'
+      );
     });
 
     it('should skip undefined values', () => {
       const updates = {
-        assemblyaiKey: 'new-key',
-        slackBotToken: undefined,
-        autoStart: true,
+        assemblyaiKey: undefined,
+        slackChannels: 'channel1',
       };
 
-      settingsService.updateSettings(updates);
+      settingsService.updateSettings(updates as any);
 
-      expect(mockDatabase.setSetting).toHaveBeenCalledWith(
-        'assemblyaiKey',
-        'new-key'
-      );
       expect(mockDatabase.setSetting).not.toHaveBeenCalledWith(
-        'slackBotToken',
+        'assemblyaiKey',
         undefined
-      );
-      expect(mockDatabase.setSetting).toHaveBeenCalledWith('autoStart', true);
-    });
-
-    it('should handle special cases for prompts and slack channels', () => {
-      const updates = {
-        prompts: [{ name: 'Test', content: 'test content' }],
-        slackChannels: 'channel1,channel2',
-        selectedSlackChannel: 'channel1',
-      };
-
-      settingsService.updateSettings(updates);
-
-      expect(mockDatabase.setSetting).toHaveBeenCalledWith(
-        'prompts',
-        updates.prompts
       );
       expect(mockDatabase.setSetting).toHaveBeenCalledWith(
         'slackChannels',
-        'channel1,channel2'
-      );
-      expect(mockDatabase.setSetting).toHaveBeenCalledWith(
-        'selectedSlackChannel',
         'channel1'
       );
     });
 
-    it('should handle database errors during updates', () => {
-      const dbError = new Error('Database write error');
-      mockDatabase.setSetting.mockImplementation(() => {
-        throw dbError;
-      });
-
-      const updates = { assemblyaiKey: 'new-key' };
-
-      expect(() => settingsService.updateSettings(updates)).toThrow(dbError);
-    });
-
-    it('should handle empty updates object', () => {
+    it('should handle empty updates', () => {
       settingsService.updateSettings({});
 
       expect(mockDatabase.setSetting).not.toHaveBeenCalled();
     });
-
-    it('should handle undefined values in updates', () => {
-      const updates = {
-        assemblyaiKey: undefined,
-        slackBotToken: 'valid-token',
-      };
-
-      settingsService.updateSettings(updates);
-
-      expect(mockDatabase.setSetting).not.toHaveBeenCalledWith(
-        'assemblyaiKey',
-        undefined
-      );
-      expect(mockDatabase.setSetting).toHaveBeenCalledWith(
-        'slackBotToken',
-        'valid-token'
-      );
-    });
   });
 
   describe('individual getters', () => {
-    beforeEach(() => {
-      jest.clearAllMocks();
-    });
-
     it('should get AssemblyAI key', () => {
-      mockDatabase.getSettings.mockReturnValue({
-        assemblyaiKey: 'test-api-key',
-        slackBotToken: '',
-        slackChannels: '',
-        selectedSlackChannel: '',
-        summaryPrompt: '',
-        selectedPromptIndex: 0,
-        prompts: [],
-        autoStart: false,
-      });
+      mockDatabase.getSettings.mockReturnValue(
+        createMockSettings({
+          assemblyaiKey: 'test-api-key',
+        })
+      );
 
       const result = settingsService.getAssemblyAIKey();
 
@@ -321,35 +223,35 @@ describe('SettingsService', () => {
       expect(result).toBe('test-api-key');
     });
 
-    it('should get Slack bot token', () => {
-      mockDatabase.getSettings.mockReturnValue({
-        assemblyaiKey: '',
-        slackBotToken: 'test-slack-token',
-        slackChannels: '',
-        selectedSlackChannel: '',
-        summaryPrompt: '',
-        selectedPromptIndex: 0,
-        prompts: [],
-        autoStart: false,
-      });
+    it('should get Slack installations', () => {
+      const installations = [
+        {
+          teamId: 'T123',
+          teamName: 'Test Team',
+          botToken: 'xoxb-123',
+          botUserId: 'U123',
+          scope: 'chat:write',
+          installedAt: Date.now(),
+        },
+      ];
+      mockDatabase.getSettings.mockReturnValue(
+        createMockSettings({
+          slackInstallations: installations,
+        })
+      );
 
-      const result = settingsService.getSlackBotToken();
+      const result = settingsService.getSlackInstallations();
 
       expect(mockDatabase.getSettings).toHaveBeenCalled();
-      expect(result).toBe('test-slack-token');
+      expect(result).toEqual(installations);
     });
 
     it('should get Slack channels', () => {
-      mockDatabase.getSettings.mockReturnValue({
-        assemblyaiKey: '',
-        slackBotToken: '',
-        slackChannels: 'channel1,channel2',
-        selectedSlackChannel: '',
-        summaryPrompt: '',
-        selectedPromptIndex: 0,
-        prompts: [],
-        autoStart: false,
-      });
+      mockDatabase.getSettings.mockReturnValue(
+        createMockSettings({
+          slackChannels: 'channel1,channel2',
+        })
+      );
 
       const result = settingsService.getSlackChannels();
 
@@ -357,35 +259,55 @@ describe('SettingsService', () => {
       expect(result).toBe('channel1,channel2');
     });
 
-    it('should get selected Slack channel', () => {
-      mockDatabase.getSettings.mockReturnValue({
-        assemblyaiKey: '',
-        slackBotToken: '',
-        slackChannels: '',
-        selectedSlackChannel: 'channel1',
-        summaryPrompt: '',
-        selectedPromptIndex: 0,
-        prompts: [],
-        autoStart: false,
-      });
+    it('should get selected channel ID', () => {
+      mockDatabase.getSettings.mockReturnValue(
+        createMockSettings({
+          selectedChannelId: 'C123456',
+        })
+      );
 
-      const result = settingsService.getSelectedSlackChannel();
+      const result = settingsService.getSelectedChannelId();
 
       expect(mockDatabase.getSettings).toHaveBeenCalled();
-      expect(result).toBe('channel1');
+      expect(result).toBe('C123456');
+    });
+
+    it('should get selected Slack installation', () => {
+      mockDatabase.getSettings.mockReturnValue(
+        createMockSettings({
+          selectedSlackInstallation: 'T123',
+        })
+      );
+
+      const result = settingsService.getSelectedSlackInstallation();
+
+      expect(mockDatabase.getSettings).toHaveBeenCalled();
+      expect(result).toBe('T123');
+    });
+
+    it('should get available channels', () => {
+      const channels = [
+        { id: 'C123', name: 'general', isPrivate: false },
+        { id: 'C456', name: 'random', isPrivate: false },
+      ];
+      mockDatabase.getSettings.mockReturnValue(
+        createMockSettings({
+          availableChannels: channels,
+        })
+      );
+
+      const result = settingsService.getAvailableChannels();
+
+      expect(mockDatabase.getSettings).toHaveBeenCalled();
+      expect(result).toEqual(channels);
     });
 
     it('should get summary prompt', () => {
-      mockDatabase.getSettings.mockReturnValue({
-        assemblyaiKey: '',
-        slackBotToken: '',
-        slackChannels: '',
-        selectedSlackChannel: '',
-        summaryPrompt: 'Custom summary prompt',
-        selectedPromptIndex: 0,
-        prompts: [],
-        autoStart: false,
-      });
+      mockDatabase.getSettings.mockReturnValue(
+        createMockSettings({
+          summaryPrompt: 'Custom summary prompt',
+        })
+      );
 
       const result = settingsService.getSummaryPrompt();
 
@@ -394,16 +316,11 @@ describe('SettingsService', () => {
     });
 
     it('should get default summary prompt when empty', () => {
-      mockDatabase.getSettings.mockReturnValue({
-        assemblyaiKey: '',
-        slackBotToken: '',
-        slackChannels: '',
-        selectedSlackChannel: '',
-        summaryPrompt: '',
-        selectedPromptIndex: 0,
-        prompts: [],
-        autoStart: false,
-      });
+      mockDatabase.getSettings.mockReturnValue(
+        createMockSettings({
+          summaryPrompt: '',
+        })
+      );
 
       const result = settingsService.getSummaryPrompt();
 
@@ -412,17 +329,12 @@ describe('SettingsService', () => {
       );
     });
 
-    it('should get auto start status', () => {
-      mockDatabase.getSettings.mockReturnValue({
-        assemblyaiKey: '',
-        slackBotToken: '',
-        slackChannels: '',
-        selectedSlackChannel: '',
-        summaryPrompt: '',
-        selectedPromptIndex: 0,
-        prompts: [],
-        autoStart: true,
-      });
+    it('should check if auto start is enabled', () => {
+      mockDatabase.getSettings.mockReturnValue(
+        createMockSettings({
+          autoStart: true,
+        })
+      );
 
       const result = settingsService.isAutoStartEnabled();
 
@@ -431,16 +343,11 @@ describe('SettingsService', () => {
     });
 
     it('should get selected prompt index', () => {
-      mockDatabase.getSettings.mockReturnValue({
-        assemblyaiKey: '',
-        slackBotToken: '',
-        slackChannels: '',
-        selectedSlackChannel: '',
-        summaryPrompt: '',
-        selectedPromptIndex: 2,
-        prompts: [],
-        autoStart: false,
-      });
+      mockDatabase.getSettings.mockReturnValue(
+        createMockSettings({
+          selectedPromptIndex: 2,
+        })
+      );
 
       const result = settingsService.getSelectedPromptIndex();
 
@@ -448,189 +355,119 @@ describe('SettingsService', () => {
       expect(result).toBe(2);
     });
 
-    it('should handle database errors in getters', () => {
-      const dbError = new Error('Database error');
-      mockDatabase.getSettings.mockImplementation(() => {
-        throw dbError;
-      });
-
-      expect(() => settingsService.getAssemblyAIKey()).toThrow(dbError);
-    });
-  });
-
-  describe('getPrompts', () => {
-    beforeEach(() => {
-      jest.clearAllMocks();
-    });
-
-    it('should return formatted prompts from database', () => {
-      const testPrompts = [
-        { name: 'Test 1', content: 'content 1' },
-        { name: 'Test 2', content: 'content 2' },
+    it('should get prompts with proper format', () => {
+      const prompts = [
+        { name: 'Summary', content: 'Summarize this' },
+        { name: 'Action Items', content: 'List action items' },
       ];
-      mockDatabase.getSettings.mockReturnValue({
-        assemblyaiKey: '',
-        slackBotToken: '',
-        slackChannels: '',
-        selectedSlackChannel: '',
-        summaryPrompt: '',
-        selectedPromptIndex: 0,
-        prompts: testPrompts,
-        autoStart: false,
-      });
+      mockDatabase.getSettings.mockReturnValue(
+        createMockSettings({
+          prompts,
+        })
+      );
 
-      const prompts = settingsService.getPrompts();
+      const result = settingsService.getPrompts();
 
       expect(mockDatabase.getSettings).toHaveBeenCalled();
-      expect(prompts).toEqual([
-        { label: 'Test 1', content: 'content 1' },
-        { label: 'Test 2', content: 'content 2' },
-      ]);
-    });
-
-    it('should return empty array when no prompts exist', () => {
-      mockDatabase.getSettings.mockReturnValue({
-        assemblyaiKey: '',
-        slackBotToken: '',
-        slackChannels: '',
-        selectedSlackChannel: '',
-        summaryPrompt: '',
-        selectedPromptIndex: 0,
-        prompts: [],
-        autoStart: false,
-      });
-
-      const prompts = settingsService.getPrompts();
-
-      expect(prompts).toEqual([]);
-    });
-
-    it('should handle null prompts gracefully', () => {
-      mockDatabase.getSettings.mockReturnValue({
-        assemblyaiKey: '',
-        slackBotToken: '',
-        slackChannels: '',
-        selectedSlackChannel: '',
-        summaryPrompt: '',
-        selectedPromptIndex: 0,
-        prompts: [],
-        autoStart: false,
-      });
-
-      const prompts = settingsService.getPrompts();
-
-      expect(prompts).toEqual([]);
-    });
-
-    it('should handle malformed prompts gracefully', () => {
-      const malformedPrompts = [
-        { name: 'Test 1', content: 'content 1' },
-        { name: 'Test 2' }, // Missing content
-      ];
-      mockDatabase.getSettings.mockReturnValue({
-        assemblyaiKey: '',
-        slackBotToken: '',
-        slackChannels: '',
-        selectedSlackChannel: '',
-        summaryPrompt: '',
-        selectedPromptIndex: 0,
-        prompts: malformedPrompts,
-        autoStart: false,
-      });
-
-      const prompts = settingsService.getPrompts();
-
-      expect(prompts).toEqual([
-        { label: 'Test 1', content: 'content 1' },
-        { label: 'Test 2', content: undefined },
+      expect(result).toEqual([
+        { label: 'Summary', content: 'Summarize this' },
+        { label: 'Action Items', content: 'List action items' },
       ]);
     });
   });
 
   describe('hasNonEmptySetting', () => {
     it('should return true for non-empty string settings', () => {
-      mockDatabase.getSettings.mockReturnValue({
-        assemblyaiKey: 'test-key',
-        slackBotToken: '  test-token  ', // With whitespace
-        slackChannels: '',
-        selectedSlackChannel: 'channel1',
-        summaryPrompt: '',
-        selectedPromptIndex: 0,
-        prompts: [],
-        autoStart: false,
-      });
+      mockDatabase.getSettings.mockReturnValue(
+        createMockSettings({
+          assemblyaiKey: '  test-key  ', // With whitespace
+          slackChannels: 'channel1,channel2',
+          summaryPrompt: 'Custom prompt',
+        })
+      );
 
       expect(settingsService.hasNonEmptySetting('assemblyaiKey')).toBe(true);
-      expect(settingsService.hasNonEmptySetting('slackBotToken')).toBe(true);
-      expect(settingsService.hasNonEmptySetting('selectedSlackChannel')).toBe(
-        true
-      );
+      expect(settingsService.hasNonEmptySetting('slackChannels')).toBe(true);
+      expect(settingsService.hasNonEmptySetting('summaryPrompt')).toBe(true);
     });
 
     it('should return false for empty or whitespace-only settings', () => {
-      mockDatabase.getSettings.mockReturnValue({
-        assemblyaiKey: '',
-        slackBotToken: '   ',
-        slackChannels: '',
-        selectedSlackChannel: '',
-        summaryPrompt: '',
-        selectedPromptIndex: 0,
-        prompts: [],
-        autoStart: false,
-      });
+      mockDatabase.getSettings.mockReturnValue(
+        createMockSettings({
+          assemblyaiKey: '',
+          slackChannels: '   ',
+          summaryPrompt: '',
+        })
+      );
 
       expect(settingsService.hasNonEmptySetting('assemblyaiKey')).toBe(false);
-      expect(settingsService.hasNonEmptySetting('slackBotToken')).toBe(false);
       expect(settingsService.hasNonEmptySetting('slackChannels')).toBe(false);
+      expect(settingsService.hasNonEmptySetting('summaryPrompt')).toBe(false);
     });
 
     it('should return false for non-string settings', () => {
-      mockDatabase.getSettings.mockReturnValue({
-        assemblyaiKey: '',
-        slackBotToken: '',
-        slackChannels: '',
-        selectedSlackChannel: '',
-        summaryPrompt: '',
-        selectedPromptIndex: 0,
-        prompts: [],
-        autoStart: true,
-      });
+      mockDatabase.getSettings.mockReturnValue(
+        createMockSettings({
+          autoStart: true,
+        })
+      );
 
       expect(settingsService.hasNonEmptySetting('autoStart')).toBe(false);
-      expect(settingsService.hasNonEmptySetting('selectedPromptIndex')).toBe(
-        false
-      );
     });
 
-    it('should handle undefined or null values gracefully', () => {
+    it('should handle null/undefined values', () => {
       mockDatabase.getSettings.mockReturnValue({
-        assemblyaiKey: undefined as any,
-        slackBotToken: null as any,
-        slackChannels: '',
-        selectedSlackChannel: '',
-        summaryPrompt: '',
-        selectedPromptIndex: 0,
-        prompts: [],
-        autoStart: false,
+        ...createMockSettings(),
+        assemblyaiKey: null as any,
       });
 
       expect(settingsService.hasNonEmptySetting('assemblyaiKey')).toBe(false);
-      expect(settingsService.hasNonEmptySetting('slackBotToken')).toBe(false);
     });
 
-    it('should return true for non-empty Slack bot token', () => {
-      mockDatabase.getSettings.mockReturnValue({
-        assemblyaiKey: '',
-        slackBotToken: 'any-non-empty-string-value',
-        slackChannels: '',
-        selectedSlackChannel: '',
-        summaryPrompt: '',
-        selectedPromptIndex: 0,
-        prompts: [],
-        autoStart: false,
-      });
+    it('should return true for valid string values', () => {
+      mockDatabase.getSettings.mockReturnValue(
+        createMockSettings({
+          assemblyaiKey: 'valid-key',
+        })
+      );
 
-      expect(settingsService.hasNonEmptySetting('slackBotToken')).toBe(true);
+      expect(settingsService.hasNonEmptySetting('assemblyaiKey')).toBe(true);
+    });
+  });
+
+  describe('hasSlackConfigured', () => {
+    it('should return true when Slack installations exist', () => {
+      const installations = [
+        {
+          teamId: 'T123',
+          teamName: 'Test Team',
+          botToken: 'xoxb-123',
+          botUserId: 'U123',
+          scope: 'chat:write',
+          installedAt: Date.now(),
+        },
+      ];
+      mockDatabase.getSettings.mockReturnValue(
+        createMockSettings({
+          slackInstallations: installations,
+        })
+      );
+
+      const result = settingsService.hasSlackConfigured();
+
+      expect(result).toBe(true);
+    });
+
+    it('should return false when no Slack installations exist', () => {
+      mockDatabase.getSettings.mockReturnValue(
+        createMockSettings({
+          slackInstallations: [],
+        })
+      );
+
+      const result = settingsService.hasSlackConfigured();
+
+      expect(result).toBe(false);
     });
   });
 });

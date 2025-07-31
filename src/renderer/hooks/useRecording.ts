@@ -159,7 +159,7 @@ export const useRecording = (recordingId: string | null) => {
     }
   };
 
-  const handlePostToSlack = async (message: string, channel: string) => {
+  const handlePostToSlack = async (message: string, channelId: string) => {
     try {
       setIsPostingToSlack(true);
       dispatch(setStatus('Posting to Slack...'));
@@ -170,7 +170,7 @@ export const useRecording = (recordingId: string | null) => {
 
       const result = await window.electronAPI.postToSlack(
         formattedMessage,
-        channel
+        channelId
       );
 
       if (result.success) {

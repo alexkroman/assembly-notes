@@ -4,6 +4,7 @@ import type { SettingsModalProps } from '../../types/components.js';
 import type { SettingsState } from '../../types/redux.js';
 import { useAppDispatch, useAppSelector } from '../hooks/redux.js';
 import { setStatus } from '../store';
+import { SlackOAuthSection } from './SlackOAuthSection.js';
 import '../../types/global.d.ts';
 
 export const SettingsModal: React.FC<SettingsModalProps> = ({ onClose }) => {
@@ -108,17 +109,8 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ onClose }) => {
           </div>
 
           <div className="form-group">
-            <label htmlFor="slackBotToken">Slack Bot Token (optional):</label>
-            <input
-              type="password"
-              id="slackBotToken"
-              data-testid="slack-token-input"
-              value={settings.slackBotToken}
-              onChange={(e) => {
-                handleInputChange('slackBotToken', e.target.value);
-              }}
-              placeholder="xoxb-your-slack-bot-token"
-            />
+            <label>Slack Integration (optional):</label>
+            <SlackOAuthSection />
           </div>
         </div>
 

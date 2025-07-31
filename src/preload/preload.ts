@@ -9,6 +9,7 @@ import type {
   PromptTemplate,
   UpdateInfo,
   DownloadProgress,
+  SlackInstallation,
 } from '../types/index.js';
 
 const electronAPI = {
@@ -86,10 +87,16 @@ const electronAPI = {
   savePrompts: (prompts: PromptTemplate[]) =>
     ipcRenderer.invoke('save-prompts', prompts),
   selectPrompt: (index: number) => ipcRenderer.invoke('select-prompt', index),
-  postToSlack: (message: string, channel: string) =>
-    ipcRenderer.invoke('post-to-slack', message, channel),
-  saveSelectedChannel: (channel: string) =>
-    ipcRenderer.invoke('save-selected-channel', channel),
+  postToSlack: (message: string, channelId?: string) =>
+    ipcRenderer.invoke('post-to-slack', message, channelId),
+
+  // Slack OAuth methods
+  slackOAuthInitiate: () => ipcRenderer.invoke('slack-oauth-initiate'),
+  slackOAuthRefreshChannels: (teamId: string) =>
+    ipcRenderer.invoke('slack-oauth-refresh-channels', teamId),
+  slackOAuthRemoveInstallation: (teamId: string) =>
+    ipcRenderer.invoke('slack-oauth-remove-installation', teamId),
+  slackOAuthGetCurrent: () => ipcRenderer.invoke('slack-oauth-get-current'),
 
   installUpdate: () => ipcRenderer.invoke('install-update'),
   quitAndInstall: () => ipcRenderer.invoke('quit-and-install'),
@@ -117,6 +124,16 @@ const electronAPI = {
   onUpdateDownloaded: (callback: (info: UpdateInfo) => void) =>
     ipcRenderer.on('update-downloaded', (_event, info) => {
       callback(info as UpdateInfo);
+    }),
+
+  // Slack OAuth event listeners
+  onSlackOAuthSuccess: (callback: (installation: SlackInstallation) => void) =>
+    ipcRenderer.on('slack-oauth-success', (_event, installation) => {
+      callback(installation as SlackInstallation);
+    }),
+  onSlackOAuthError: (callback: (error: string) => void) =>
+    ipcRenderer.on('slack-oauth-error', (_event, error) => {
+      callback(error as string);
     }),
 };
 

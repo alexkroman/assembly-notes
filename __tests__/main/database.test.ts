@@ -221,13 +221,14 @@ describe('DatabaseService', () => {
     it('should return complete settings schema from bulk query', () => {
       const mockAll = jest.fn().mockReturnValue([
         { key: 'assemblyaiKey', value: 'test-key' },
-        { key: 'customPrompt', value: 'custom prompt' },
         { key: 'summaryPrompt', value: 'summary prompt' },
         { key: 'prompts', value: '[]' },
         { key: 'selectedPromptIndex', value: '0' },
-        { key: 'slackBotToken', value: 'slack-token' },
+        { key: 'slackInstallations', value: '[]' },
+        { key: 'selectedSlackInstallation', value: '' },
+        { key: 'availableChannels', value: '[]' },
+        { key: 'selectedChannelId', value: '' },
         { key: 'slackChannels', value: 'channel1,channel2' },
-        { key: 'selectedSlackChannel', value: 'channel1' },
         { key: 'autoStart', value: 'false' },
       ]);
 
@@ -241,13 +242,14 @@ describe('DatabaseService', () => {
 
       expect(settings).toEqual({
         assemblyaiKey: 'test-key',
-        customPrompt: 'custom prompt',
         summaryPrompt: 'summary prompt',
         prompts: [],
         selectedPromptIndex: 0,
-        slackBotToken: 'slack-token',
+        slackInstallations: [],
+        selectedSlackInstallation: '',
+        availableChannels: [],
+        selectedChannelId: '',
         slackChannels: 'channel1,channel2',
-        selectedSlackChannel: 'channel1',
         autoStart: false,
       });
     });
@@ -268,13 +270,14 @@ describe('DatabaseService', () => {
 
       expect(settings).toEqual({
         assemblyaiKey: '',
-        customPrompt: '',
         summaryPrompt: '',
         prompts: [],
         selectedPromptIndex: 0,
-        slackBotToken: '',
+        slackInstallations: [],
+        selectedSlackInstallation: null,
+        availableChannels: [],
+        selectedChannelId: null,
         slackChannels: '',
-        selectedSlackChannel: '',
         autoStart: false,
       });
     });
@@ -309,13 +312,14 @@ describe('DatabaseService', () => {
 
       expect(settings).toEqual({
         assemblyaiKey: '',
-        customPrompt: '',
         summaryPrompt: '',
         prompts: [],
         selectedPromptIndex: 0,
-        slackBotToken: '',
+        slackInstallations: [],
+        selectedSlackInstallation: null,
+        availableChannels: [],
+        selectedChannelId: null,
         slackChannels: '',
-        selectedSlackChannel: '',
         autoStart: false,
       });
     });

@@ -9,6 +9,7 @@ import '@testing-library/jest-dom';
 
 import { SettingsModal } from '../../../src/renderer/components/SettingsModal';
 import { setStatus } from '../../../src/renderer/store';
+import { createMockInstallation } from '../../utils/testHelpers.js';
 
 // Mock electron API
 const mockElectronAPI = {
@@ -17,6 +18,12 @@ const mockElectronAPI = {
     assemblyaiKey: 'test-key',
     autoStart: false,
   }),
+  // OAuth-related methods
+  onSlackOAuthSuccess: jest.fn(),
+  onSlackOAuthError: jest.fn(),
+  slackOAuthInitiate: jest.fn().mockResolvedValue(undefined),
+  slackOAuthRemoveInstallation: jest.fn().mockResolvedValue(undefined),
+  slackOAuthRefreshChannels: jest.fn().mockResolvedValue(undefined),
 };
 
 Object.defineProperty(window, 'electronAPI', {
@@ -35,16 +42,24 @@ const createMockStore = (initialState: any = {}) => {
       settings: (
         state = {
           assemblyaiKey: '',
-          slackBotToken: '',
           autoStart: false,
+          slackInstallations: [],
+          selectedSlackInstallation: '',
+          availableChannels: [],
+          selectedChannelId: '',
+          slackChannels: '',
         }
       ) => state,
     },
     preloadedState: {
       settings: {
         assemblyaiKey: '',
-        slackBotToken: '',
         autoStart: false,
+        slackInstallations: [],
+        selectedSlackInstallation: '',
+        availableChannels: [],
+        selectedChannelId: '',
+        slackChannels: '',
         ...(initialState.settings || {}),
       },
     },
@@ -75,9 +90,8 @@ describe('SettingsModal', () => {
     expect(
       screen.getByLabelText('AssemblyAI API Key (required):')
     ).toBeInTheDocument();
-    expect(
-      screen.getByLabelText('Slack Bot Token (optional):')
-    ).toBeInTheDocument();
+    // OAuth section should be present instead of bot token
+    expect(screen.getByText('Connect to Slack')).toBeInTheDocument();
     expect(screen.getByText('Save')).toBeInTheDocument();
     expect(screen.getByText('Cancel')).toBeInTheDocument();
   });
@@ -86,20 +100,27 @@ describe('SettingsModal', () => {
     const customStore = createMockStore({
       settings: {
         assemblyaiKey: 'stored-api-key',
-        slackBotToken: 'stored-slack-token',
         autoStart: true,
+        slackInstallations: [
+          createMockInstallation({
+            teamId: 'T123',
+            botToken: 'xoxb-test',
+            botUserId: 'U123',
+            scope: 'chat:write',
+          }),
+        ],
+        selectedSlackInstallation: 'T123',
       },
     });
 
     renderModal(customStore);
 
     const apiKeyInput = screen.getByTestId('assemblyai-key-input');
-    const slackTokenInput = screen.getByTestId('slack-token-input');
 
     expect((apiKeyInput as HTMLInputElement).value).toBe('stored-api-key');
-    expect((slackTokenInput as HTMLInputElement).value).toBe(
-      'stored-slack-token'
-    );
+    // Should show connected state for Slack (text is split across elements)
+    expect(screen.getByText(/✅ Connected to/)).toBeInTheDocument();
+    expect(screen.getByText('Test Team')).toBeInTheDocument();
   });
 
   it('should update assemblyai key on input', () => {
@@ -111,13 +132,13 @@ describe('SettingsModal', () => {
     expect(apiKeyInput).toHaveValue('new-api-key');
   });
 
-  it('should update slack token on input', () => {
+  it('should handle slack oauth connection', () => {
     renderModal();
 
-    const slackTokenInput = screen.getByTestId('slack-token-input');
-    fireEvent.change(slackTokenInput, { target: { value: 'new-slack-token' } });
+    const connectButton = screen.getByText('Connect to Slack');
+    fireEvent.click(connectButton);
 
-    expect(slackTokenInput).toHaveValue('new-slack-token');
+    expect(mockElectronAPI.slackOAuthInitiate).toHaveBeenCalled();
   });
 
   it('should disable save and cancel when API key is empty', () => {
@@ -147,10 +168,8 @@ describe('SettingsModal', () => {
 
     // Update fields
     const apiKeyInput = screen.getByTestId('assemblyai-key-input');
-    const slackTokenInput = screen.getByTestId('slack-token-input');
 
     fireEvent.change(apiKeyInput, { target: { value: 'new-api-key' } });
-    fireEvent.change(slackTokenInput, { target: { value: 'new-slack-token' } });
 
     // Click save
     const saveButton = screen.getByText('Save');
@@ -160,7 +179,6 @@ describe('SettingsModal', () => {
       expect(mockElectronAPI.saveSettings).toHaveBeenCalledWith(
         expect.objectContaining({
           assemblyaiKey: 'new-api-key',
-          slackBotToken: 'new-slack-token',
         })
       );
     });

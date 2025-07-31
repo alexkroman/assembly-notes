@@ -66,6 +66,15 @@ declare global {
         channel: string
       ) => Promise<{ success: boolean; error?: string }>;
 
+      // Slack OAuth
+      slackOAuthInitiate: () => Promise<void>;
+      slackOAuthRemoveInstallation: (teamId: string) => Promise<void>;
+      slackOAuthRefreshChannels: (teamId: string) => Promise<void>;
+      onSlackOAuthSuccess: (
+        callback: (installation: SlackInstallation) => void
+      ) => void;
+      onSlackOAuthError: (callback: (error: string) => void) => void;
+
       // Auto-updater
       installUpdate: () => Promise<void>;
       quitAndInstall: () => Promise<void>;

@@ -10,6 +10,7 @@ import type { AutoUpdaterService } from './auto-updater.js';
 import { DI_TOKENS, container } from './container.js';
 import { PromptTemplate, SettingsSchema } from '../types/common.js';
 import type { RecordingManager } from './services/recordingManager.js';
+import type { SlackOAuthService } from './services/slackOAuthService.js';
 import type { SlackService } from './services/slackService.js';
 import {
   deleteRecording,
@@ -23,7 +24,6 @@ import {
   fetchSettings,
   savePrompt,
   savePrompts,
-  saveSelectedChannel,
   saveSettings,
   selectPrompt,
 } from './store/slices/settingsSlice.js';
@@ -44,6 +44,9 @@ function setupIpcHandlers(
     DI_TOKENS.RecordingManager
   );
   const slackService = container.resolve<SlackService>(DI_TOKENS.SlackService);
+  const slackOAuthService = container.resolve<SlackOAuthService>(
+    DI_TOKENS.SlackOAuthService
+  );
   const autoUpdaterService = container.resolve<AutoUpdaterService>(
     DI_TOKENS.AutoUpdaterService
   );
@@ -209,21 +212,41 @@ function setupIpcHandlers(
   );
 
   ipcMain.handle(
-    'save-selected-channel',
-    async (_event: IpcMainInvokeEvent, channel: string): Promise<boolean> => {
-      await store.dispatch(saveSelectedChannel(channel)).unwrap();
-      return true;
-    }
-  );
-
-  ipcMain.handle(
     'post-to-slack',
     async (
       _event: IpcMainInvokeEvent,
       message: string,
-      channel: string
+      channelId?: string
     ): Promise<{ success: boolean; error?: string }> => {
-      return await slackService.postMessage(message, channel);
+      return await slackService.postMessage(message, channelId);
+    }
+  );
+
+  // Slack OAuth handlers
+  ipcMain.handle('slack-oauth-initiate', async (): Promise<void> => {
+    const slackOAuthService = container.resolve<SlackOAuthService>(
+      DI_TOKENS.SlackOAuthService
+    );
+    await slackOAuthService.initiateOAuth();
+  });
+
+  ipcMain.handle(
+    'slack-oauth-remove-installation',
+    (_event: IpcMainInvokeEvent, teamId: string): void => {
+      const slackOAuthService = container.resolve<SlackOAuthService>(
+        DI_TOKENS.SlackOAuthService
+      );
+      slackOAuthService.removeInstallation(teamId);
+    }
+  );
+
+  ipcMain.handle(
+    'slack-oauth-refresh-channels',
+    async (_event: IpcMainInvokeEvent, teamId: string): Promise<void> => {
+      const slackOAuthService = container.resolve<SlackOAuthService>(
+        DI_TOKENS.SlackOAuthService
+      );
+      await slackOAuthService.refreshChannels(teamId);
     }
   );
 
@@ -271,6 +294,10 @@ function setupIpcHandlers(
       return true;
     }
   );
+
+  ipcMain.handle('slack-oauth-get-current', () => {
+    return slackOAuthService.getCurrentInstallation();
+  });
 }
 
 export { setupIpcHandlers };

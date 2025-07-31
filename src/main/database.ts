@@ -7,7 +7,13 @@ import { inject, injectable } from 'tsyringe';
 
 import { DI_TOKENS } from './di-tokens.js';
 import { DEFAULT_PROMPTS } from '../constants/defaultPrompts.js';
-import { PromptTemplate, Recording, SettingsSchema } from '../types/common.js';
+import {
+  PromptTemplate,
+  Recording,
+  SettingsSchema,
+  SlackInstallation,
+  SlackChannel,
+} from '../types/common.js';
 @injectable()
 class DatabaseService {
   private db: Database.Database;
@@ -138,9 +144,11 @@ class DatabaseService {
       summaryPrompt: '',
       prompts: JSON.stringify(DEFAULT_PROMPTS),
       selectedPromptIndex: 0,
-      slackBotToken: '',
-      slackChannels: '',
-      selectedSlackChannel: '',
+      // Slack OAuth fields
+      slackInstallations: JSON.stringify([]),
+      selectedSlackInstallation: '',
+      availableChannels: JSON.stringify([]),
+      selectedChannelId: '',
       autoStart: false,
     };
 
@@ -202,15 +210,22 @@ class DatabaseService {
 
       return {
         assemblyaiKey: (settingsMap.get('assemblyaiKey') ?? '') as string,
-        customPrompt: (settingsMap.get('customPrompt') ?? '') as string,
         summaryPrompt: (settingsMap.get('summaryPrompt') ?? '') as string,
         prompts: (settingsMap.get('prompts') ?? []) as PromptTemplate[],
         selectedPromptIndex: (settingsMap.get('selectedPromptIndex') ??
           0) as number,
-        slackBotToken: (settingsMap.get('slackBotToken') ?? '') as string,
+        // Slack OAuth fields
+        slackInstallations: (settingsMap.get('slackInstallations') ??
+          []) as SlackInstallation[],
+        selectedSlackInstallation: (settingsMap.get(
+          'selectedSlackInstallation'
+        ) ?? null) as string | null,
+        availableChannels: (settingsMap.get('availableChannels') ??
+          []) as SlackChannel[],
+        selectedChannelId: (settingsMap.get('selectedChannelId') ?? null) as
+          | string
+          | null,
         slackChannels: (settingsMap.get('slackChannels') ?? '') as string,
-        selectedSlackChannel: (settingsMap.get('selectedSlackChannel') ??
-          '') as string,
         autoStart: (settingsMap.get('autoStart') ?? false) as boolean,
       };
     } catch (error) {
@@ -218,13 +233,15 @@ class DatabaseService {
       // Return default settings if bulk query fails
       return {
         assemblyaiKey: '',
-        customPrompt: '',
         summaryPrompt: '',
         prompts: [],
         selectedPromptIndex: 0,
-        slackBotToken: '',
+        // Slack OAuth fields
+        slackInstallations: [],
+        selectedSlackInstallation: null,
+        availableChannels: [],
+        selectedChannelId: null,
         slackChannels: '',
-        selectedSlackChannel: '',
         autoStart: false,
       };
     }

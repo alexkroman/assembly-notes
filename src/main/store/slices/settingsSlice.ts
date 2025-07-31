@@ -5,8 +5,9 @@ import type {
   FullSettingsState,
   PromptTemplate,
   SettingsState,
+  SlackInstallation,
+  SlackChannel,
 } from '../../../types/index.js';
-import type { DatabaseService } from '../../database.js';
 import { DI_TOKENS } from '../../di-tokens.js';
 import type { SettingsService } from '../../services/settingsService.js';
 
@@ -16,30 +17,20 @@ const updateComputedProperties = (
   payload: FullSettingsState
 ) => {
   state.hasAssemblyAIKey = Boolean((payload.assemblyaiKey || '').trim());
-  state.hasSlackBotToken = Boolean((payload.slackBotToken || '').trim());
-  state.hasSlackChannels = Boolean((payload.slackChannels || '').trim());
+  state.hasSlackConfigured = Boolean(
+    payload.selectedSlackInstallation &&
+      payload.selectedChannelId &&
+      payload.slackInstallations.length > 0
+  );
 };
 
 // Async thunks for settings operations
 export const fetchSettings = createAsyncThunk('settings/fetchSettings', () => {
-  const databaseService = container.resolve<DatabaseService>(
-    DI_TOKENS.DatabaseService
+  const settingsService = container.resolve<SettingsService>(
+    DI_TOKENS.SettingsService
   );
 
-  const settings = databaseService.getSettings();
-
-  return {
-    assemblyaiKey: settings.assemblyaiKey,
-    slackBotToken: settings.slackBotToken,
-    slackChannels: settings.slackChannels,
-    selectedSlackChannel: settings.selectedSlackChannel,
-    summaryPrompt:
-      settings.summaryPrompt ||
-      'Summarize the key points from this meeting transcript:',
-    selectedPromptIndex: settings.selectedPromptIndex,
-    prompts: settings.prompts,
-    autoStart: settings.autoStart,
-  };
+  return settingsService.getSettings();
 });
 
 export const saveSettings = createAsyncThunk(
@@ -86,22 +77,14 @@ export const selectPrompt = createAsyncThunk(
   }
 );
 
-export const saveSelectedChannel = createAsyncThunk(
-  'settings/saveSelectedChannel',
-  (channel: string) => {
-    const settingsService = container.resolve<SettingsService>(
-      DI_TOKENS.SettingsService
-    );
-    settingsService.updateSettings({ selectedSlackChannel: channel });
-    return settingsService.getSettings();
-  }
-);
-
 const initialState: SettingsState = {
   assemblyaiKey: '',
-  slackBotToken: '',
   slackChannels: '',
-  selectedSlackChannel: '',
+  // Slack OAuth fields
+  slackInstallations: [],
+  selectedSlackInstallation: '',
+  availableChannels: [],
+  selectedChannelId: '',
   summaryPrompt: 'Summarize the key points from this meeting transcript:',
   selectedPromptIndex: 0,
   prompts: [],
@@ -111,8 +94,7 @@ const initialState: SettingsState = {
   theme: 'dark',
   // Add computed properties for safe trim operations
   hasAssemblyAIKey: false,
-  hasSlackBotToken: false,
-  hasSlackChannels: false,
+  hasSlackConfigured: false,
 };
 
 const settingsSlice = createSlice({
@@ -124,8 +106,8 @@ const settingsSlice = createSlice({
       // Update computed properties if we have the required fields
       if (
         'assemblyaiKey' in action.payload ||
-        'slackBotToken' in action.payload ||
-        'slackChannels' in action.payload
+        'slackInstallations' in action.payload ||
+        'selectedSlackInstallation' in action.payload
       ) {
         updateComputedProperties(newState, newState);
       }
@@ -135,16 +117,25 @@ const settingsSlice = createSlice({
       state.assemblyaiKey = action.payload;
       updateComputedProperties(state, state);
     },
-    setSlackBotToken: (state, action: PayloadAction<string>) => {
-      state.slackBotToken = action.payload;
-      updateComputedProperties(state, state);
-    },
     setSlackChannels: (state, action: PayloadAction<string>) => {
       state.slackChannels = action.payload;
+    },
+    setSlackInstallations: (
+      state,
+      action: PayloadAction<SlackInstallation[]>
+    ) => {
+      state.slackInstallations = action.payload;
       updateComputedProperties(state, state);
     },
-    setSelectedSlackChannel: (state, action: PayloadAction<string>) => {
-      state.selectedSlackChannel = action.payload;
+    setSelectedSlackInstallation: (state, action: PayloadAction<string>) => {
+      state.selectedSlackInstallation = action.payload;
+      updateComputedProperties(state, state);
+    },
+    setAvailableChannels: (state, action: PayloadAction<SlackChannel[]>) => {
+      state.availableChannels = action.payload;
+    },
+    setSelectedChannelId: (state, action: PayloadAction<string>) => {
+      state.selectedChannelId = action.payload;
     },
     setSummaryPrompt: (state, action: PayloadAction<string>) => {
       state.summaryPrompt = action.payload;
@@ -214,22 +205,17 @@ const settingsSlice = createSlice({
       // Update computed properties
       updateComputedProperties(state, action.payload);
     });
-
-    // Save selected channel
-    builder.addCase(saveSelectedChannel.fulfilled, (state, action) => {
-      Object.assign(state, action.payload);
-      // Update computed properties
-      updateComputedProperties(state, action.payload);
-    });
   },
 });
 
 export const {
   updateSettings,
   setAssemblyAIKey,
-  setSlackBotToken,
   setSlackChannels,
-  setSelectedSlackChannel,
+  setSlackInstallations,
+  setSelectedSlackInstallation,
+  setAvailableChannels,
+  setSelectedChannelId,
   setSummaryPrompt,
   setAutoStart,
   setTheme,
