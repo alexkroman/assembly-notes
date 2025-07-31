@@ -25,7 +25,7 @@ export async function startAudioProcessing(
   };
 
   micSource.connect(microphoneWorkletNode);
-  microphoneWorkletNode.connect(microphoneAudioContext.destination);
+  // Audio worklet processes and sends data via postMessage - no need to connect to destination
 
   if (systemStream) {
     systemAudioContext = new AudioContext({ sampleRate: 16000 });
@@ -47,7 +47,7 @@ export async function startAudioProcessing(
     };
 
     systemSource.connect(systemAudioWorkletNode);
-    systemAudioWorkletNode.connect(systemAudioContext.destination);
+    // Audio worklet processes and sends data via postMessage - no need to connect to destination
   }
 }
 
