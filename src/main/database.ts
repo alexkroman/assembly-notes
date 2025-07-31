@@ -6,7 +6,7 @@ import { app } from 'electron';
 import { inject, injectable } from 'tsyringe';
 
 import { DI_TOKENS } from './di-tokens.js';
-import { DEFAULT_PROMPTS } from '../constants/defaultPrompts.js';
+import { DEFAULT_PROMPTS } from '../constants/prompts.js';
 import { PromptTemplate, Recording, SettingsSchema } from '../types/common.js';
 @injectable()
 class DatabaseService {

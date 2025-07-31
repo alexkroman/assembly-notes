@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 
-import { DEFAULT_PROMPTS } from '../../constants/defaultPrompts.js';
+import { DEFAULT_PROMPTS } from '../../constants/prompts.js';
 import type { PromptModalProps } from '../../types/components.js';
 import type { PromptTemplate } from '../../types/index.js';
 import { useAppDispatch } from '../hooks/redux';
