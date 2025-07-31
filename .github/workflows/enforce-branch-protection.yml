@@ -8,7 +8,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: write
+  contents: read
 
 jobs:
   enforce-protection:
@@ -20,9 +20,9 @@ jobs:
       - name: Apply Branch Protection
         uses: actions/github-script@v7
         with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          # Alternative: use a PAT if GITHUB_TOKEN doesn't work
-          # github-token: ${{ secrets.PAT_TOKEN }}
+          # Use PAT token for branch protection operations
+          # GITHUB_TOKEN doesn't have sufficient permissions for branch protection
+          github-token: ${{ secrets.PAT_TOKEN }}
           script: |
             const fs = require('fs');
             const protection = JSON.parse(fs.readFileSync('.github/branch-protection.json', 'utf8'));
