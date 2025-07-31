@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useCallback } from 'react';
 
 import type { RecordingViewProps } from '../../types/components.js';
 import { useAppSelector } from '../hooks/redux';
@@ -53,6 +53,9 @@ export const RecordingView: React.FC<RecordingViewProps> = ({
 
   const summaryRef = useRef<HTMLTextAreaElement>(null);
   const hasAutoStarted = useRef(false);
+  const transcriptRef = useRef<HTMLPreElement>(null);
+  const isUserScrolled = useRef(false);
+  const lastTranscriptLength = useRef(0);
 
   useEffect(() => {
     if (summaryRef.current) {
@@ -84,6 +87,39 @@ export const RecordingView: React.FC<RecordingViewProps> = ({
   const handleSummaryChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     setSummary(e.target.value);
   };
+
+  const checkIfAtBottom = useCallback((element: HTMLElement) => {
+    const threshold = 50; // Allow 50px from bottom to be considered "at bottom"
+    return element.scrollHeight - element.scrollTop - element.clientHeight <= threshold;
+  }, []);
+
+  const scrollToBottom = useCallback((element: HTMLElement) => {
+    element.scrollTop = element.scrollHeight;
+  }, []);
+
+  const handleTranscriptScroll = useCallback(() => {
+    if (!transcriptRef.current) return;
+    
+    const atBottom = checkIfAtBottom(transcriptRef.current);
+    isUserScrolled.current = !atBottom;
+  }, [checkIfAtBottom]);
+
+  // Auto-scroll when transcript updates
+  useEffect(() => {
+    const currentTranscript = isNewRecording 
+      ? (transcript || '') + (partialTranscript || '')
+      : (currentRecording?.transcript ?? '');
+    
+    const currentLength = currentTranscript.length;
+    
+    if (transcriptRef.current && currentLength > lastTranscriptLength.current) {
+      if (!isUserScrolled.current) {
+        scrollToBottom(transcriptRef.current);
+      }
+    }
+    
+    lastTranscriptLength.current = currentLength;
+  }, [transcript, partialTranscript, currentRecording?.transcript, isNewRecording, scrollToBottom]);
 
   const getButtonText = () => {
     if (isStopping || isStoppingForNavigation) {
@@ -254,7 +290,12 @@ export const RecordingView: React.FC<RecordingViewProps> = ({
       <div className="content-section">
         <div className="content-panel">
           <h3>Transcript</h3>
-          <pre className="panel-content" data-testid="transcript-area">
+          <pre 
+            ref={transcriptRef}
+            className="panel-content" 
+            data-testid="transcript-area"
+            onScroll={handleTranscriptScroll}
+          >
             {isNewRecording ? (
               <>
                 {(transcript || '').trim() || (
