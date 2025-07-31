@@ -19,10 +19,9 @@ class AudioProcessor extends AudioWorkletProcessor {
     };
   }
 
-  process(
+  override process(
     inputs: Float32Array[][],
-    outputs: Float32Array[][],
-    parameters: Record<string, Float32Array>
+    outputs: Float32Array[][]
   ): boolean {
     // Get the first input (mono audio)
     const input = inputs[0];
@@ -59,7 +58,7 @@ class AudioProcessor extends AudioWorkletProcessor {
         const pcm16 = new Int16Array(concatenated.length);
         for (let i = 0; i < concatenated.length; i++) {
           // Convert float32 (-1 to 1) to int16 (-32768 to 32767)
-          const sample = Math.max(-1, Math.min(1, concatenated[i]));
+          const sample = Math.max(-1, Math.min(1, concatenated[i] ?? 0));
           pcm16[i] = sample < 0 ? sample * 0x8000 : sample * 0x7fff;
         }
 

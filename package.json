@@ -36,6 +36,7 @@
     "test:coverage": "jest --coverage",
     "test:e2e": "playwright test",
     "test:all": "concurrently \"npm run test:watch\" \"npm run test:e2e\"",
+    "test:staged": "jest --bail --findRelatedTests",
     "release:patch": "npm version patch && git push origin main --tags",
     "release:minor": "npm version minor && git push origin main --tags",
     "release:major": "npm version major && git push origin main --tags",
@@ -172,10 +173,14 @@
   "lint-staged": {
     "*.{ts,tsx,js,jsx}": [
       "eslint --fix",
-      "prettier --write"
+      "prettier --write",
+      "npm run typecheck"
     ],
     "*.{json,md,html,css}": [
       "prettier --write"
+    ],
+    "*.{ts,tsx}": [
+      "npm run test:staged"
     ]
   }
 }
