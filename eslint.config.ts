@@ -20,7 +20,17 @@ export default tseslint.config(
   // 2. Base JavaScript configuration for all files
   js.configs.recommended,
 
-  // 3. TypeScript files with strict type checking
+  // 3. Configuration for Vite config files (Node.js environment)
+  {
+    files: ['vite.audio-processor.config.js'],
+    languageOptions: {
+      globals: {
+        ...globals.node,
+      },
+    },
+  },
+
+  // 4. TypeScript files with strict type checking
   ...tseslint.configs.strictTypeChecked.map((config) => ({
     ...config,
     files: [
