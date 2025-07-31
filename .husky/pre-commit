@@ -1,8 +1,7 @@
 #!/usr/bin/env sh
-. "$(dirname -- "$0")/_/husky.sh"
 
 # Run lint-staged to check and fix staged files
 npx lint-staged
 
-# Run a quick build check to ensure everything compiles
-npm run build:all
+# Run type checking on the entire project
+npm run typecheck

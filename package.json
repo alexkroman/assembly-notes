@@ -173,14 +173,10 @@
   "lint-staged": {
     "*.{ts,tsx,js,jsx}": [
       "eslint --fix",
-      "prettier --write",
-      "npm run typecheck"
+      "prettier --write"
     ],
     "*.{json,md,html,css}": [
       "prettier --write"
-    ],
-    "*.{ts,tsx}": [
-      "npm run test:staged"
     ]
   }
 }

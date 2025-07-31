@@ -26,7 +26,7 @@ npm run format         # Format code with Prettier
 npm run fix            # Run both lint:fix and format
 
 # Git Hooks (Husky)
-# Pre-commit: Automatically runs lint-staged (ESLint + Prettier + TypeScript check on staged files) + build check
+# Pre-commit: Automatically runs lint-staged (ESLint + Prettier on staged files) + TypeScript check
 # Commit-msg: Validates commit messages follow conventional commit format
 # Pre-push: Runs all tests before pushing to ensure code quality
 
