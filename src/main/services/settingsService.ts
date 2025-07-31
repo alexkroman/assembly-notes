@@ -35,17 +35,15 @@ export class SettingsService {
 
     return {
       assemblyaiKey: dbSettings.assemblyaiKey,
-      slackChannels: dbSettings.slackChannels || '',
-      summaryPrompt:
-        dbSettings.summaryPrompt ||
-        'Summarize the key points from this meeting transcript:',
+      slackChannels: dbSettings.slackChannels,
+      summaryPrompt: dbSettings.summaryPrompt,
       selectedPromptIndex: dbSettings.selectedPromptIndex,
       prompts: dbSettings.prompts,
       autoStart: dbSettings.autoStart,
       slackInstallations: dbSettings.slackInstallations,
-      selectedSlackInstallation: dbSettings.selectedSlackInstallation,
+      selectedSlackInstallation: dbSettings.selectedSlackInstallation ?? '',
       availableChannels: dbSettings.availableChannels,
-      selectedChannelId: dbSettings.selectedChannelId,
+      selectedChannelId: dbSettings.selectedChannelId ?? '',
     };
   }
 

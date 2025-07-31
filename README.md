@@ -130,7 +130,7 @@ After creating the app:
    - `chat:write` - Send messages as @assembly-notes
    - `chat:write.public` - Send messages to channels the app hasn't been added to
    - `users:read` - View basic user information (for DM functionality)
-3. **Note the Redirect URL**: `assemblyai://auth/slack/callback` (already configured in the manifest)
+3. **Note the Redirect URL**: `http://localhost:3000/auth/slack/callback` (already configured in the manifest)
 
 ### Step 3: Install the App to Your Workspace
 
@@ -144,17 +144,22 @@ After creating the app:
 1. **Open Assembly Notes** and go to **Settings**
 2. **In the Slack Integration section**, click **"Connect to Slack"**
 3. **This will open a browser window** to authorize the connection
-4. **Grant permissions** and you'll be redirected back to Assembly Notes
-5. **Select your preferred channels** where meeting summaries should be posted
+4. **Grant permissions** and you'll see a success page
+5. **Close the browser window** and return to Assembly Notes
+6. **Select your preferred channels** where meeting summaries should be posted
+
+> **Technical Note**: Assembly Notes creates a temporary local server (`localhost:3000`) to securely handle the OAuth callback. This is automatically managed and requires no additional setup.
 
 ### Step 5: Using Private Channels & Direct Messages (Optional)
 
 **For Private Channels:**
+
 1. **Invite the bot** to your private channel: `/invite @assembly-notes`
 2. **Refresh channels** in Assembly Notes settings to see the private channel
 3. **Select the private channel** as your preferred posting destination
 
 **For Direct Messages:**
+
 1. **The bot can send DMs** to any user in your workspace automatically
 2. **Select a user** as your posting destination to receive private meeting summaries
 3. **Meeting summaries** will be sent directly to that user's DMs

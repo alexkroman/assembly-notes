@@ -12,9 +12,7 @@
     }
   },
   "oauth_config": {
-    "redirect_urls": [
-      "assemblyai://auth/slack/callback"
-    ],
+    "redirect_urls": ["http://localhost:3000/auth/slack/callback"],
     "scopes": {
       "bot": [
         "channels:read",
@@ -30,9 +28,6 @@
     }
   },
   "settings": {
-    "event_subscriptions": {
-      "bot_events": []
-    },
     "interactivity": {
       "is_enabled": false
     },

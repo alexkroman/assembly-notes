@@ -1,3 +1,6 @@
+import { createServer, Server } from 'http';
+import { parse } from 'url';
+
 import { BrowserWindow } from 'electron';
 import { inject, injectable } from 'tsyringe';
 
@@ -21,7 +24,7 @@ const SLACK_CLIENT_ID =
   process.env['SLACK_CLIENT_ID'] ?? 'YOUR_SLACK_CLIENT_ID_HERE';
 const SLACK_CLIENT_SECRET =
   process.env['SLACK_CLIENT_SECRET'] ?? 'YOUR_SLACK_CLIENT_SECRET_HERE';
-const SLACK_REDIRECT_URI = 'assemblyai://auth/slack/callback';
+const SLACK_REDIRECT_URI = 'http://localhost:3000/auth/slack/callback';
 
 interface SlackOAuthResponse {
   ok: boolean;
@@ -49,6 +52,7 @@ interface SlackChannelsResponse {
 @injectable()
 export class SlackOAuthService {
   private oauthWindow: BrowserWindow | null = null;
+  private oauthServer: Server | null = null;
 
   constructor(
     @inject(DI_TOKENS.DatabaseService) private database: DatabaseService,
@@ -57,7 +61,7 @@ export class SlackOAuthService {
   ) {}
 
   /**
-   * Initiates the Slack OAuth flow using Electron BrowserWindow
+   * Initiates the Slack OAuth flow using a temporary HTTP server
    */
   async initiateOAuth(): Promise<void> {
     // Check if OAuth credentials are configured
@@ -81,10 +85,13 @@ export class SlackOAuthService {
       return;
     }
 
+    // Start temporary HTTP server to handle OAuth callback
+    await this.startOAuthServer();
+
     const authUrl =
       `https://slack.com/oauth/v2/authorize?` +
       `client_id=${SLACK_CLIENT_ID}&` +
-      `scope=channels:read,chat:write&` +
+      `scope=channels:read,groups:read,im:read,im:write,mpim:read,mpim:write,chat:write,chat:write.public,users:read&` +
       `redirect_uri=${encodeURIComponent(SLACK_REDIRECT_URI)}`;
 
     // Create OAuth window
@@ -105,18 +112,7 @@ export class SlackOAuthService {
     // Handle window closed
     this.oauthWindow.on('closed', () => {
       this.oauthWindow = null;
-    });
-
-    // Handle navigation to capture the callback
-    this.oauthWindow.webContents.on(
-      'will-redirect',
-      (_event, navigationUrl) => {
-        void this.handleOAuthCallback(navigationUrl);
-      }
-    );
-
-    this.oauthWindow.webContents.on('did-navigate', (_event, navigationUrl) => {
-      void this.handleOAuthCallback(navigationUrl);
+      this.stopOAuthServer();
     });
 
     // Load the OAuth URL
@@ -125,17 +121,67 @@ export class SlackOAuthService {
   }
 
   /**
-   * Handles the OAuth callback URL
+   * Starts a temporary HTTP server to handle OAuth callback
    */
-  private async handleOAuthCallback(url: string): Promise<void> {
-    if (!url.startsWith(SLACK_REDIRECT_URI)) {
-      return;
-    }
+  private async startOAuthServer(): Promise<void> {
+    return new Promise((resolve, reject) => {
+      this.oauthServer = createServer((req, res) => {
+        const url = req.url;
+        if (!url) return;
 
+        const parsedUrl = parse(url, true);
+
+        if (parsedUrl.pathname === '/auth/slack/callback') {
+          // Send success page
+          res.writeHead(200, { 'Content-Type': 'text/html' });
+          res.end(`
+            <html>
+              <body style="font-family: Arial, sans-serif; text-align: center; padding: 50px;">
+                <h1>✅ Successfully connected to Slack!</h1>
+                <p>You can close this window and return to Assembly Notes.</p>
+                <script>window.close();</script>
+              </body>
+            </html>
+          `);
+
+          // Process the OAuth callback
+          void this.handleOAuthCallback(parsedUrl.query);
+        } else {
+          res.writeHead(404, { 'Content-Type': 'text/plain' });
+          res.end('Not Found');
+        }
+      });
+
+      this.oauthServer.listen(3000, 'localhost', () => {
+        this.logger.info('OAuth server started on http://localhost:3000');
+        resolve();
+      });
+
+      this.oauthServer.on('error', (error) => {
+        this.logger.error('OAuth server error:', error);
+        reject(error);
+      });
+    });
+  }
+
+  /**
+   * Stops the temporary HTTP server
+   */
+  private stopOAuthServer(): void {
+    if (this.oauthServer) {
+      this.oauthServer.close();
+      this.oauthServer = null;
+      this.logger.info('OAuth server stopped');
+    }
+  }
+
+  /**
+   * Handles the OAuth callback parameters
+   */
+  private async handleOAuthCallback(query: Record<string, string | string[] | undefined>): Promise<void> {
     try {
-      const urlObj = new URL(url);
-      const code = urlObj.searchParams.get('code');
-      const error = urlObj.searchParams.get('error');
+      const code = Array.isArray(query['code']) ? query['code'][0] : query['code'];
+      const error = Array.isArray(query['error']) ? query['error'][0] : query['error'];
 
       if (error) {
         this.logger.error('OAuth error:', error);
@@ -164,13 +210,14 @@ export class SlackOAuthService {
   }
 
   /**
-   * Closes the OAuth window
+   * Closes the OAuth window and stops the server
    */
   private closeOAuthWindow(): void {
     if (this.oauthWindow) {
       this.oauthWindow.close();
       this.oauthWindow = null;
     }
+    this.stopOAuthServer();
   }
 
   /**
@@ -325,14 +372,5 @@ export class SlackOAuthService {
         (inst: SlackInstallation) => inst.teamId === selectedTeamId
       ) ?? null
     );
-  }
-
-  /**
-   * Handles protocol URL (called from main process)
-   */
-  async handleProtocolUrl(url: string): Promise<void> {
-    if (url.startsWith('assemblyai://auth/slack/callback')) {
-      await this.handleOAuthCallback(url);
-    }
   }
 }

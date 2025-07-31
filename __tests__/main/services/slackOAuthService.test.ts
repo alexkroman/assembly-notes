@@ -15,6 +15,17 @@ jest.mock('electron', () => ({
   },
 }));
 
+// Mock Node.js http module
+const mockServerInstance = {
+  listen: jest.fn(),
+  close: jest.fn(),
+  on: jest.fn(),
+};
+
+jest.mock('http', () => ({
+  createServer: jest.fn(() => mockServerInstance),
+}));
+
 // Mock global fetch
 const mockFetch = jest.fn();
 global.fetch = mockFetch;
@@ -72,6 +83,16 @@ describe('SlackOAuthService', () => {
     mockFetch.mockClear();
     mockFetch.mockReset();
 
+    // Reset server mocks
+    mockServerInstance.listen.mockClear();
+    mockServerInstance.close.mockClear();
+    mockServerInstance.on.mockClear();
+
+    // Setup server listen mock to call callback immediately
+    mockServerInstance.listen.mockImplementation((_port, _host, callback) => {
+      if (callback) callback();
+    });
+
     // Setup mock BrowserWindow FIRST
     mockBrowserWindow = {
       loadURL: jest.fn().mockResolvedValue(undefined),
@@ -118,8 +139,18 @@ describe('SlackOAuthService', () => {
   });
 
   describe('initiateOAuth', () => {
-    it('should create OAuth window and load authorization URL', async () => {
+    it('should create HTTP server, OAuth window and load authorization URL', async () => {
+      const { createServer } = await import('http');
+
       await slackOAuthService.initiateOAuth();
+
+      // Verify HTTP server was created and started
+      expect(createServer).toHaveBeenCalledWith(expect.any(Function));
+      expect(mockServerInstance.listen).toHaveBeenCalledWith(
+        3000,
+        'localhost',
+        expect.any(Function)
+      );
 
       // Get the mocked BrowserWindow constructor from the imported module
       const { BrowserWindow: MockedBrowserWindow } = await import('electron');
@@ -138,21 +169,62 @@ describe('SlackOAuthService', () => {
         title: 'Connect to Slack',
       });
 
+      // Verify the authorization URL includes the new redirect URI
       expect(mockBrowserWindow.loadURL).toHaveBeenCalledWith(
         expect.stringContaining('https://slack.com/oauth/v2/authorize')
+      );
+      expect(mockBrowserWindow.loadURL).toHaveBeenCalledWith(
+        expect.stringContaining(
+          'redirect_uri=http%3A%2F%2Flocalhost%3A3000%2Fauth%2Fslack%2Fcallback'
+        )
+      );
+      expect(mockBrowserWindow.loadURL).toHaveBeenCalledWith(
+        expect.stringContaining(
+          'scope=channels:read,groups:read,im:read,im:write,mpim:read,mpim:write,chat:write,chat:write.public,users:read'
+        )
       );
 
       expect(mockBrowserWindow.on).toHaveBeenCalledWith(
         'closed',
         expect.any(Function)
       );
-      expect(mockBrowserWindow.webContents.on).toHaveBeenCalledWith(
-        'will-redirect',
-        expect.any(Function)
-      );
-      expect(mockBrowserWindow.webContents.on).toHaveBeenCalledWith(
-        'did-navigate',
-        expect.any(Function)
+    });
+
+    it('should stop server when OAuth window is closed', async () => {
+      await slackOAuthService.initiateOAuth();
+
+      // Simulate window closed event
+      const closeHandler = mockBrowserWindow.on.mock.calls.find(
+        (call: any) => call[0] === 'closed'
+      )[1];
+
+      closeHandler();
+
+      // Verify server was stopped
+      expect(mockServerInstance.close).toHaveBeenCalled();
+    });
+
+    it('should handle server startup failure', async () => {
+      // Mock server listen to call error callback instead
+      mockServerInstance.listen.mockImplementation(() => {
+        // Simulate server error
+        const errorHandler = mockServerInstance.on.mock.calls.find(
+          (call: any) => call[0] === 'error'
+        )?.[1];
+        if (errorHandler) {
+          errorHandler(new Error('Port already in use'));
+        }
+      });
+
+      mockServerInstance.on.mockImplementation((event, handler) => {
+        if (event === 'error') {
+          // Call error handler immediately with mock error
+          setTimeout(() => handler(new Error('Port already in use')), 0);
+        }
+      });
+
+      await expect(slackOAuthService.initiateOAuth()).rejects.toThrow(
+        'Port already in use'
       );
     });
 
@@ -220,7 +292,9 @@ describe('SlackOAuthService', () => {
   });
 
   describe('OAuth callback handling', () => {
-    beforeEach(() => {
+    let requestHandler: any;
+
+    beforeEach(async () => {
       const mockSettings = createMockSettings({
         slackInstallations: [], // Start with empty installations
       });
@@ -241,9 +315,16 @@ describe('SlackOAuthService', () => {
           mockSettings.availableChannels = updates.availableChannels;
         }
       });
+
+      // Get the request handler from createServer mock
+      const { createServer } = await import('http');
+      await slackOAuthService.initiateOAuth();
+
+      const createServerCall = (createServer as jest.Mock).mock.calls[0];
+      requestHandler = createServerCall[0]; // The request handler function
     });
 
-    it('should handle successful OAuth callback', async () => {
+    it('should handle successful OAuth callback via HTTP server', async () => {
       const mockOAuthResponse = {
         ok: true,
         access_token: 'xoxb-test-token',
@@ -271,31 +352,29 @@ describe('SlackOAuthService', () => {
           json: jest.fn().mockResolvedValue(mockChannelsResponse),
         } as any);
 
-      await slackOAuthService.initiateOAuth();
+      // Create mock request and response objects
+      const mockReq = {
+        url: '/auth/slack/callback?code=test-code',
+      };
 
-      // Simulate OAuth callback
-      const redirectHandler = mockBrowserWindow.webContents.on.mock.calls.find(
-        (call: any) => call[0] === 'will-redirect'
-      )[1];
+      const mockRes = {
+        writeHead: jest.fn(),
+        end: jest.fn(),
+      };
 
-      // Wait for the handler to complete
-      await redirectHandler(
-        null,
-        'assemblyai://auth/slack/callback?code=test-code'
+      // Simulate HTTP request to callback endpoint
+      await requestHandler(mockReq, mockRes);
+
+      // Verify success HTML response was sent
+      expect(mockRes.writeHead).toHaveBeenCalledWith(200, {
+        'Content-Type': 'text/html',
+      });
+      expect(mockRes.end).toHaveBeenCalledWith(
+        expect.stringContaining('Successfully connected to Slack')
       );
 
-      // Verify OAuth token exchange was called
-      expect(mockFetch).toHaveBeenNthCalledWith(
-        1,
-        'https://slack.com/api/oauth.v2.access',
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/x-www-form-urlencoded',
-          },
-          body: expect.any(URLSearchParams),
-        }
-      );
+      // Wait for async operations to complete
+      await new Promise((resolve) => setTimeout(resolve, 0));
 
       // Verify OAuth token exchange was called
       expect(mockFetch).toHaveBeenNthCalledWith(
@@ -360,16 +439,19 @@ describe('SlackOAuthService', () => {
         json: () => Promise.resolve(mockErrorResponse),
       });
 
-      await slackOAuthService.initiateOAuth();
+      const mockReq = {
+        url: '/auth/slack/callback?code=test-code',
+      };
 
-      const redirectHandler = mockBrowserWindow.webContents.on.mock.calls.find(
-        (call: any) => call[0] === 'will-redirect'
-      )[1];
+      const mockRes = {
+        writeHead: jest.fn(),
+        end: jest.fn(),
+      };
 
-      await redirectHandler(
-        null,
-        'assemblyai://auth/slack/callback?code=test-code'
-      );
+      await requestHandler(mockReq, mockRes);
+
+      // Wait for async operations to complete
+      await new Promise((resolve) => setTimeout(resolve, 0));
 
       expect(mockMainWindow.webContents.send).toHaveBeenCalledWith(
         'slack-oauth-error',
@@ -385,16 +467,19 @@ describe('SlackOAuthService', () => {
     it('should handle network errors during OAuth', async () => {
       mockFetch.mockRejectedValueOnce(new Error('Network error'));
 
-      await slackOAuthService.initiateOAuth();
+      const mockReq = {
+        url: '/auth/slack/callback?code=test-code',
+      };
 
-      const redirectHandler = mockBrowserWindow.webContents.on.mock.calls.find(
-        (call: any) => call[0] === 'will-redirect'
-      )[1];
+      const mockRes = {
+        writeHead: jest.fn(),
+        end: jest.fn(),
+      };
 
-      await redirectHandler(
-        null,
-        'assemblyai://auth/slack/callback?code=test-code'
-      );
+      await requestHandler(mockReq, mockRes);
+
+      // Wait for async operations to complete
+      await new Promise((resolve) => setTimeout(resolve, 0));
 
       expect(mockMainWindow.webContents.send).toHaveBeenCalledWith(
         'slack-oauth-error',
@@ -408,16 +493,19 @@ describe('SlackOAuthService', () => {
     });
 
     it('should handle OAuth denial', async () => {
-      await slackOAuthService.initiateOAuth();
+      const mockReq = {
+        url: '/auth/slack/callback?error=access_denied',
+      };
 
-      const redirectHandler = mockBrowserWindow.webContents.on.mock.calls.find(
-        (call: any) => call[0] === 'will-redirect'
-      )[1];
+      const mockRes = {
+        writeHead: jest.fn(),
+        end: jest.fn(),
+      };
 
-      await redirectHandler(
-        null,
-        'assemblyai://auth/slack/callback?error=access_denied'
-      );
+      await requestHandler(mockReq, mockRes);
+
+      // Wait for async operations to complete
+      await new Promise((resolve) => setTimeout(resolve, 0));
 
       expect(mockMainWindow.webContents.send).toHaveBeenCalledWith(
         'slack-oauth-error',
@@ -428,6 +516,24 @@ describe('SlackOAuthService', () => {
         'OAuth error:',
         'access_denied'
       );
+    });
+
+    it('should handle 404 for non-callback paths', async () => {
+      const mockReq = {
+        url: '/some/other/path',
+      };
+
+      const mockRes = {
+        writeHead: jest.fn(),
+        end: jest.fn(),
+      };
+
+      await requestHandler(mockReq, mockRes);
+
+      expect(mockRes.writeHead).toHaveBeenCalledWith(404, {
+        'Content-Type': 'text/plain',
+      });
+      expect(mockRes.end).toHaveBeenCalledWith('Not Found');
     });
   });
 
@@ -548,7 +654,7 @@ describe('SlackOAuthService', () => {
         ],
         selectedSlackInstallation: 'T789012',
         availableChannels: [],
-        selectedChannelId: null,
+        selectedChannelId: '',
       });
 
       expect(mockLogger.info).toHaveBeenCalledWith(
@@ -573,9 +679,9 @@ describe('SlackOAuthService', () => {
 
       expect(mockDatabase.updateSettings).toHaveBeenCalledWith({
         slackInstallations: [],
-        selectedSlackInstallation: null,
+        selectedSlackInstallation: '',
         availableChannels: [],
-        selectedChannelId: null,
+        selectedChannelId: '',
       });
     });
 
@@ -631,19 +737,6 @@ describe('SlackOAuthService', () => {
   });
 
   describe('window cleanup', () => {
-    it('should cleanup OAuth window on close', async () => {
-      await slackOAuthService.initiateOAuth();
-
-      const closeHandler = mockBrowserWindow.on.mock.calls.find(
-        (call: any) => call[0] === 'closed'
-      )[1];
-
-      closeHandler();
-
-      // The cleanup sets oauthWindow to null, which is handled internally
-      // No external method calls are expected in this case
-    });
-
     it('should handle multiple OAuth attempts', async () => {
       // Get the mocked BrowserWindow constructor
       const { BrowserWindow: MockedBrowserWindow } = await import('electron');
