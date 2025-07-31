@@ -11,7 +11,7 @@ test.describe('App Startup', () => {
     // Ensure TypeScript is built before running tests
     const { spawn } = await import('child_process');
 
-    console.log('Building TypeScript before e2e tests...');
+    // Removed verbose build log
     try {
       await new Promise((resolve, reject) => {
         const buildProcess = spawn('npm', ['run', 'build:main'], {
@@ -20,7 +20,7 @@ test.describe('App Startup', () => {
         });
         buildProcess.on('close', (code) => {
           if (code === 0) {
-            console.log('TypeScript build completed successfully');
+            // Build completed successfully – log suppressed
             resolve(code);
           } else {
             reject(
@@ -38,7 +38,7 @@ test.describe('App Startup', () => {
     try {
       // Skip e2e tests on Ubuntu CI environment where they consistently fail
       if (process.platform === 'linux' && process.env['CI']) {
-        console.log('Skipping e2e tests on Ubuntu CI environment');
+        // Skipping e2e tests on Ubuntu CI environment – log suppressed
         test.skip(
           true,
           'E2E tests disabled on Ubuntu CI due to xvfb/display issues'
