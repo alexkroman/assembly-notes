@@ -54,9 +54,15 @@ function createWindow(): void {
     return originalDispatch(action as any);
   };
 
+  console.log('🎯 About to resolve AutoUpdaterService from container');
+  console.log('🎯 Environment vars:', {
+    USE_LOCAL_UPDATE_SERVER: process.env['USE_LOCAL_UPDATE_SERVER'],
+    UPDATE_FEED_URL: process.env['UPDATE_FEED_URL'],
+  });
   const autoUpdaterService = container.resolve<AutoUpdaterService>(
     DI_TOKENS.AutoUpdaterService
   );
+  console.log('🎯 Calling autoUpdaterService.init()');
   autoUpdaterService.init();
 
   const settingsService = container.resolve<SettingsService>(
@@ -120,6 +126,7 @@ void app.whenReady().then(() => {
   const menu = Menu.buildFromTemplate(template);
   Menu.setApplicationMenu(menu);
 
+  console.log('🎯 About to start update check');
   const autoUpdaterService = container.resolve<AutoUpdaterService>(
     DI_TOKENS.AutoUpdaterService
   );

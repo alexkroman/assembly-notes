@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 import { createServer } from 'http';
-import { readFileSync, existsSync, statSync } from 'fs';
+import { readFileSync, existsSync, statSync, readdirSync } from 'fs';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
 import { createHash } from 'crypto';
@@ -18,17 +18,12 @@ const packageJson = JSON.parse(
 );
 const currentVersion = packageJson.version;
 
-// Simple version bumping for testing
-function getNextVersion(version) {
-  const parts = version.split('.');
-  const patch = parseInt(parts[2]) + 1;
-  return `${parts[0]}.${parts[1]}.${patch}`;
-}
-
-const testVersion = getNextVersion(currentVersion);
+// Use a fake high version for testing to always trigger updates
+const testVersion = '99.99.99';
 
 const server = createServer((req, res) => {
   console.log(`${new Date().toISOString()} - ${req.method} ${req.url}`);
+  console.log(`Headers:`, req.headers);
 
   // Enable CORS
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -43,49 +38,50 @@ const server = createServer((req, res) => {
 
   // Serve update info (latest.yml, latest-mac.yml, etc.)
   if (req.url.includes('latest') && req.url.includes('.yml')) {
-    // Look for macOS build artifacts
-    const dmgPath = join(__dirname, '../dist', `Assembly-Notes-${testVersion}-arm64.dmg`);
-    const dmgPathX64 = join(__dirname, '../dist', `Assembly-Notes-${testVersion}-x64.dmg`);
-    const zipPath = join(__dirname, '../dist', `Assembly-Notes-${testVersion}-arm64-mac.zip`);
-    const zipPathX64 = join(__dirname, '../dist', `Assembly-Notes-${testVersion}-x64-mac.zip`);
-
+    // Look for any existing macOS build artifacts (any version)
+    const distDir = join(__dirname, '../dist');
     let usePath = '';
     let fileExt = '';
+    let actualFileName = '';
 
-    // Check which file exists
-    if (existsSync(dmgPath)) {
-      usePath = dmgPath;
-      fileExt = 'dmg';
-    } else if (existsSync(dmgPathX64)) {
-      usePath = dmgPathX64;
-      fileExt = 'dmg';
-    } else if (existsSync(zipPath)) {
-      usePath = zipPath;
-      fileExt = 'zip';
-    } else if (existsSync(zipPathX64)) {
-      usePath = zipPathX64;
-      fileExt = 'zip';
+    if (existsSync(distDir)) {
+      const files = readdirSync(distDir);
+      // Look for any DMG or ZIP file
+      const dmgFile = files.find(f => f.endsWith('.dmg') && f.includes('Assembly-Notes'));
+      const zipFile = files.find(f => f.endsWith('.zip') && f.includes('Assembly-Notes'));
+      
+      if (dmgFile) {
+        usePath = join(distDir, dmgFile);
+        fileExt = 'dmg';
+        actualFileName = dmgFile;
+      } else if (zipFile) {
+        usePath = join(distDir, zipFile);
+        fileExt = 'zip';
+        actualFileName = zipFile;
+      }
     }
 
     let updateInfo;
     if (usePath) {
       const stats = statSync(usePath);
       const sha512 = createHash('sha512').update(readFileSync(usePath)).digest('base64');
-      const arch = usePath.includes('arm64') ? 'arm64' : 'x64';
-
+      
+      console.log(`Found existing build: ${actualFileName}, serving as version ${testVersion}`);
+      
+      // Serve the existing file but with our fake version number
       updateInfo = `version: ${testVersion}
 files:
-  - url: Assembly-Notes-${testVersion}-${arch}.${fileExt}
+  - url: ${actualFileName}
     sha512: ${sha512}
     size: ${stats.size}
-path: Assembly-Notes-${testVersion}-${arch}.${fileExt}
+path: ${actualFileName}
 sha512: ${sha512}
 releaseDate: ${new Date().toISOString()}`;
     } else {
-      console.log('No macOS build artifacts found. Run npm run build:mac first.');
+      console.log('No macOS build artifacts found. Run npm run build:mac:dev first to create a build file for testing.');
       updateInfo = `version: ${currentVersion}
 releaseDate: ${new Date().toISOString()}
-note: No update available`;
+note: No update available - no build files found`;
     }
 
     res.writeHead(200, { 'Content-Type': 'text/yaml' });
@@ -120,10 +116,11 @@ note: No update available`;
 
 server.listen(PORT, HOST, () => {
   console.log(`Update server running at http://${HOST}:${PORT}`);
-  console.log(`Current version: ${currentVersion}`);
-  console.log(`Test version: ${testVersion}`);
+  console.log(`Current app version: ${currentVersion}`);
+  console.log(`Fake test version: ${testVersion}`);
   console.log('\nTo test auto-update:');
-  console.log('1. Build a new version: npm run build:mac');
-  console.log('2. The server will serve update info pointing to the new version');
-  console.log('3. Run the app with update URL override (see test-autoupdate.js)');
+  console.log('1. Build once: npm run build:mac:dev (only needed once)');
+  console.log('2. The server will serve any existing build as version 99.99.99');
+  console.log('3. Run the test: npm run test:autoupdate');
+  console.log('4. No need to rebuild - reuse the same build file for all tests!');
 });

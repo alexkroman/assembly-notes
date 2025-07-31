@@ -13,7 +13,8 @@
     "dev": "concurrently \"npm run dev:main\" \"npm run dev:renderer\" \"cross-env DEV_MODE=true electron .\"",
     "dev:main": "tsc --watch",
     "dev:renderer": "cross-env BUILD_TARGET=renderer vite",
-    "build:all": "npm run build:main && npm run build:preload && npm run build:renderer && npm run build:audio-processor",
+    "clean": "rimraf dist",
+    "build:all": "npm run clean && npm run build:main && npm run build:preload && npm run build:renderer && npm run build:audio-processor",
     "build:main": "tsc",
     "build:preload": "cross-env BUILD_TARGET=preload vite build",
     "build:renderer": "cross-env BUILD_TARGET=renderer vite build",
@@ -21,6 +22,7 @@
     "build": "npm run build:all && npm run build-icons && electron-builder --mac --win --linux",
     "build:mac": "npm run build:all && npm run build-icons && electron-builder --mac",
     "build:mac:notarized": "./scripts/build-mac-notarized.sh",
+    "build:mac:dev": "./scripts/build-mac-dev.sh",
     "build:win": "npm run build:all && npm run build-icons && electron-builder --win",
     "build:linux": "npm run build:all && npm run build-icons && electron-builder --linux",
     "build-icons": "icon-gen -i ./assets/icons/icon.png -o ./build --ico --icns",
@@ -44,7 +46,8 @@
     "update-deps": "ncu -u",
     "setup": "./scripts/setup-env.sh",
     "prepare": "husky",
-    "dev:update-server": "node scripts/update-server.js"
+    "dev:update-server": "node scripts/update-server.js",
+    "test:autoupdate": "npm run build:all && node scripts/test-autoupdate.js"
   },
   "dependencies": {
     "@reduxjs/toolkit": "^2.8.2",
@@ -123,9 +126,7 @@
       "buildResources": "build"
     },
     "files": [
-      "src/**/*",
-      "dist/**/*",
-      "node_modules/**/*"
+      "dist/**/*"
     ],
     "asarUnpack": [
       "node_modules/electron-audio-loopback/**/*",
@@ -142,7 +143,16 @@
     "asar": true,
     "mac": {
       "category": "public.app-category.productivity",
-      "target": "dmg",
+      "target": [
+        {
+          "target": "dmg",
+          "arch": ["arm64", "x64"]
+        },
+        {
+          "target": "zip",
+          "arch": ["arm64", "x64"]
+        }
+      ],
       "icon": "build/icons/mac/icon.icns",
       "hardenedRuntime": true,
       "gatekeeperAssess": false,

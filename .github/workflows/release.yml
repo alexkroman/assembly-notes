@@ -99,16 +99,6 @@ jobs:
           CSC_LINK: ${{ secrets.CSC_LINK }}
           CSC_KEY_PASSWORD: ${{ secrets.CSC_KEY_PASSWORD }}
 
-      - name: Create ZIP file of DMG (macOS)
-        if: matrix.os == 'macos-latest'
-        run: |
-          cd dist
-          if ls *.dmg 1> /dev/null 2>&1; then
-            for dmg in *.dmg; do
-              zip "${dmg%.dmg}.zip" "$dmg"
-              echo "Created ${dmg%.dmg}.zip from $dmg"
-            done
-          fi
 
       - name: Build Electron app (Windows)
         if: matrix.os == 'windows-latest'
@@ -234,6 +224,7 @@ jobs:
         with:
           body: ${{ needs.release-notes.outputs.release-notes }}
           files: |
+            artifacts/dist-macos-latest/*.dmg
             artifacts/dist-macos-latest/*.zip
             artifacts/dist-macos-latest/latest-mac.yml
             artifacts/dist-windows-latest/*.zip

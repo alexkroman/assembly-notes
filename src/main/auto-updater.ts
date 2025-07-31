@@ -28,15 +28,34 @@ export class AutoUpdaterService {
   ) {}
 
   init(): void {
+    console.log('🚀 AutoUpdater.init() called!');
     autoUpdater.logger = this.logger;
+
+    const initInfo = {
+      platform: process.platform,
+      arch: process.arch,
+      isPackaged: process.resourcesPath !== process.cwd(),
+      useLocalServer: process.env['USE_LOCAL_UPDATE_SERVER'],
+    };
+    
+    console.log('AutoUpdater initializing...', initInfo);
+    this.logger.info('AutoUpdater initializing...', initInfo);
 
     // Configure for local testing if environment variable is set
     if (process.env['USE_LOCAL_UPDATE_SERVER'] === 'true') {
+      console.log('🔧 Configuring for local update server');
       this.logger.info('Using local update server for testing');
+      const feedUrl = process.env['UPDATE_FEED_URL'] ?? 'http://localhost:8000';
+      
       autoUpdater.setFeedURL({
         provider: 'generic',
-        url: process.env['UPDATE_FEED_URL'] ?? 'http://localhost:8000',
+        url: feedUrl,
       });
+
+      this.logger.info('Feed URL set to:', feedUrl);
+
+      // Force dev update config to work with unpacked app
+      autoUpdater.forceDevUpdateConfig = true;
 
       // Disable certificate verification for local testing
       autoUpdater.requestHeaders = {
@@ -51,6 +70,12 @@ export class AutoUpdaterService {
 
       // Don't check for staged rollout
       autoUpdater.disableWebInstaller = true;
+
+      this.logger.info('AutoUpdater configured for local testing', {
+        forceDevUpdateConfig: autoUpdater.forceDevUpdateConfig,
+        allowDowngrade: autoUpdater.allowDowngrade,
+        autoDownload: autoUpdater.autoDownload,
+      });
     }
 
     this.setupEventHandlers();
@@ -59,6 +84,11 @@ export class AutoUpdaterService {
   private setupEventHandlers(): void {
     autoUpdater.on('checking-for-update', () => {
       this.logger.info('Checking for update...');
+      this.logger.debug('AutoUpdater config:', {
+        feedURL: autoUpdater.getFeedURL(),
+        forceDevUpdateConfig: autoUpdater.forceDevUpdateConfig,
+        allowDowngrade: autoUpdater.allowDowngrade,
+      });
       this.store.dispatch(startChecking());
     });
 
@@ -109,6 +139,19 @@ export class AutoUpdaterService {
   }
 
   checkForUpdatesAndNotify(): void {
+    console.log('🔍 checkForUpdatesAndNotify called');
+    this.logger.debug('checkForUpdatesAndNotify called, downloadPromise is null');
+    
+    const state = {
+      isUpdaterActive: autoUpdater.isUpdaterActive(),
+      feedURL: autoUpdater.getFeedURL(),
+      forceDevUpdateConfig: autoUpdater.forceDevUpdateConfig,
+    };
+    
+    console.log('Current autoUpdater state:', state);
+    this.logger.debug('Current autoUpdater state:', state);
+    
+    console.log('🚀 Calling autoUpdater.checkForUpdatesAndNotify()...');
     void autoUpdater.checkForUpdatesAndNotify();
   }
 
@@ -143,7 +186,9 @@ export class AutoUpdaterService {
   }
 
   startUpdateCheck(delay = 3000): void {
+    console.log(`📅 Starting update check in ${delay}ms`);
     setTimeout(() => {
+      console.log('⏰ Timeout expired, calling checkForUpdatesAndNotify()');
       this.checkForUpdatesAndNotify();
     }, delay);
   }

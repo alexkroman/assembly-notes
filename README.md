@@ -49,6 +49,26 @@ npm install
 npm start
 ```
 
+### Build Environment Setup
+
+For creating distributable builds (especially notarized macOS builds), create a `.env` file in the project root with the following variables:
+
+```bash
+# Apple Developer Account (required for macOS notarization)
+APPLE_ID=your-apple-id@example.com
+APPLE_APP_SPECIFIC_PASSWORD=your-app-specific-password
+APPLE_TEAM_ID=YOUR_TEAM_ID
+
+# Code Signing Certificate (required for macOS signing)
+CSC_LINK=path/to/your/certificate.p12
+CSC_KEY_PASSWORD=your-certificate-password
+
+# GitHub Token (optional, for releases)
+GITHUB_TOKEN=your-github-token
+```
+
+> **Note**: These environment variables are required for the `npm run build:mac:notarized` command and match the variables used in GitHub Actions workflows. The `.env` file is automatically ignored by Git for security.
+
 ### Available Scripts
 
 ```bash
@@ -78,12 +98,13 @@ npm run test:all       # Run Jest watch and Playwright tests concurrently
 
 # Auto-Update Testing
 npm run dev:update-server    # Start local update server for testing auto-updates
-node scripts/test-autoupdate.js     # Run app with local update server config
+npm run test:autoupdate      # Run app with local update server config
 
 # Building
 npm run build          # Build for all platforms (macOS, Windows, Linux)
 npm run build:mac      # Build DMG for macOS
 npm run build:mac:notarized  # Build notarized macOS app (requires env vars)
+npm run build:mac:dev  # Build non-notarized macOS app (for development/testing)
 npm run build:win      # Build NSIS installer for Windows
 npm run build:linux    # Build AppImage for Linux
 npm run pack           # Package without distributing
@@ -180,6 +201,7 @@ npm run build
 
 # Or build for specific platforms
 npm run build:mac     # macOS DMG
+npm run build:mac:dev # macOS DMG (non-notarized, for development/testing)
 npm run build:win     # Windows installer
 npm run build:linux  # Linux AppImage
 ```
@@ -222,22 +244,20 @@ The application includes a local testing system for Electron auto-updates:
 # Terminal 1: Start the local update server
 npm run dev:update-server
 
-# Terminal 2: Manually increment version in package.json (e.g., 1.0.50 → 1.0.51)
-# Then build the new version
-npm run build:mac
-
-# Terminal 2: Revert to old version to simulate outdated app
-git checkout package.json
+# Terminal 2: Build once (only needed the first time)
+npm run build:mac:dev
 
 # Terminal 2: Run app with auto-update testing enabled
-node scripts/test-autoupdate.js
+npm run test:autoupdate
 ```
 
 The app will automatically:
 1. Check for updates after 3 seconds
-2. Find the newer version on localhost:8000
+2. Find version 99.99.99 available on localhost:8000 (using any existing build file)
 3. Download the update with progress logging
 4. Notify when ready to install
+
+> **Note**: The update server serves any existing build file as version 99.99.99, so you only need to build once. No need to manually increment versions or rebuild for each test!
 
 #### **System Components**
 
