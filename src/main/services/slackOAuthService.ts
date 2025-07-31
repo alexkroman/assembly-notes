@@ -4,7 +4,7 @@ import { parse } from 'url';
 import { BrowserWindow } from 'electron';
 import { inject, injectable } from 'tsyringe';
 
-import { SlackInstallation, SettingsSchema } from '../../types/common.js';
+import { SlackInstallation } from '../../types/common.js';
 import type { DatabaseService } from '../database.js';
 import { DI_TOKENS } from '../di-tokens.js';
 import type Logger from '../logger.js';
@@ -313,21 +313,9 @@ export class SlackOAuthService {
    * Saves Slack installation to database and updates Redux store
    */
   private saveInstallation(installation: SlackInstallation): void {
-    const settings = this.database.getSettings();
-    const existingInstallations = settings.slackInstallations;
-
-    // Remove existing installation for this team if it exists
-    const filteredInstallations = existingInstallations.filter(
-      (inst: SlackInstallation) => inst.teamId !== installation.teamId
-    );
-
-    // Add new installation
-    const updatedInstallations = [...filteredInstallations, installation];
-
     // Update settings using SettingsService, which will update both database and Redux
     this.settingsService.updateSettings({
-      slackInstallations: updatedInstallations,
-      selectedSlackInstallation: installation.teamId,
+      slackInstallation: installation,
     });
 
     this.logger.info(
@@ -336,29 +324,13 @@ export class SlackOAuthService {
   }
 
   /**
-   * Removes a Slack installation
+   * Removes the current Slack installation
    */
-  removeInstallation(teamId: string): void {
-    const settings = this.database.getSettings();
-    const installations = settings.slackInstallations;
-    const filteredInstallations = installations.filter(
-      (inst: SlackInstallation) => inst.teamId !== teamId
-    );
-
-    const updateData: Partial<SettingsSchema> = {
-      slackInstallations: filteredInstallations,
-    };
-
-    // If we're removing the selected installation, clear selection
-    if (settings.selectedSlackInstallation === teamId) {
-      updateData.selectedSlackInstallation =
-        filteredInstallations.length > 0
-          ? (filteredInstallations[0]?.teamId ?? '')
-          : '';
-    }
-
-    this.settingsService.updateSettings(updateData);
-    this.logger.info(`Removed Slack installation for team: ${teamId}`);
+  removeInstallation(): void {
+    this.settingsService.updateSettings({
+      slackInstallation: null,
+    });
+    this.logger.info('Removed current Slack installation');
   }
 
   /**
@@ -366,17 +338,6 @@ export class SlackOAuthService {
    */
   getCurrentInstallation(): SlackInstallation | null {
     const settings = this.database.getSettings();
-    const installations = settings.slackInstallations;
-    const selectedTeamId = settings.selectedSlackInstallation;
-
-    if (!selectedTeamId) {
-      return null;
-    }
-
-    return (
-      installations.find(
-        (inst: SlackInstallation) => inst.teamId === selectedTeamId
-      ) ?? null
-    );
+    return settings.slackInstallation;
   }
 }

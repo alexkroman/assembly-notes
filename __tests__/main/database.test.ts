@@ -223,8 +223,7 @@ describe('DatabaseService', () => {
         { key: 'assemblyaiKey', value: 'test-key' },
         { key: 'summaryPrompt', value: 'summary prompt' },
         { key: 'prompts', value: '[]' },
-        { key: 'slackInstallations', value: '[]' },
-        { key: 'selectedSlackInstallation', value: '' },
+        { key: 'slackInstallation', value: 'null' },
         { key: 'slackChannels', value: 'channel1,channel2' },
         { key: 'autoStart', value: 'false' },
       ]);
@@ -241,8 +240,7 @@ describe('DatabaseService', () => {
         assemblyaiKey: 'test-key',
         summaryPrompt: 'summary prompt',
         prompts: [],
-        slackInstallations: [],
-        selectedSlackInstallation: '',
+        slackInstallation: null,
         slackChannels: 'channel1,channel2',
         autoStart: false,
       });
@@ -266,8 +264,7 @@ describe('DatabaseService', () => {
         assemblyaiKey: '',
         summaryPrompt: '',
         prompts: [],
-        slackInstallations: [],
-        selectedSlackInstallation: null,
+        slackInstallation: null,
         slackChannels: '',
         autoStart: false,
       });
@@ -305,8 +302,7 @@ describe('DatabaseService', () => {
         assemblyaiKey: '',
         summaryPrompt: '',
         prompts: [],
-        slackInstallations: [],
-        selectedSlackInstallation: null,
+        slackInstallation: null,
         slackChannels: '',
         autoStart: false,
       });

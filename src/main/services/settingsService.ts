@@ -1,10 +1,7 @@
 import type { Store } from '@reduxjs/toolkit';
 import { inject, injectable } from 'tsyringe';
 
-import type {
-  SlackInstallation,
-  SettingsSchema,
-} from '../../types/common.js';
+import type { SlackInstallation, SettingsSchema } from '../../types/common.js';
 import type { DatabaseService } from '../database.js';
 import { DI_TOKENS } from '../di-tokens.js';
 import type Logger from '../logger.js';
@@ -38,8 +35,7 @@ export class SettingsService {
       summaryPrompt: dbSettings.summaryPrompt,
       prompts: dbSettings.prompts,
       autoStart: dbSettings.autoStart,
-      slackInstallations: dbSettings.slackInstallations,
-      selectedSlackInstallation: dbSettings.selectedSlackInstallation ?? '',
+      slackInstallation: dbSettings.slackInstallation,
     };
   }
 
@@ -55,8 +51,7 @@ export class SettingsService {
     // Update Redux store with the new settings
     const updatedSettings = this.getSettings();
     this.logger.info('Dispatching updated settings to Redux:', {
-      slackInstallations: updatedSettings.slackInstallations,
-      selectedSlackInstallation: updatedSettings.selectedSlackInstallation,
+      slackInstallation: updatedSettings.slackInstallation,
     });
     this.store.dispatch(updateSettings(updatedSettings));
   }
@@ -71,14 +66,9 @@ export class SettingsService {
     return settings.slackChannels;
   }
 
-  getSlackInstallations(): SlackInstallation[] {
+  getSlackInstallation(): SlackInstallation | null {
     const settings = this.databaseService.getSettings();
-    return settings.slackInstallations;
-  }
-
-  getSelectedSlackInstallation(): string {
-    const settings = this.databaseService.getSettings();
-    return settings.selectedSlackInstallation ?? '';
+    return settings.slackInstallation;
   }
 
   getSummaryPrompt(): string {
@@ -117,7 +107,7 @@ export class SettingsService {
 
   // Helper method to check if Slack is configured
   hasSlackConfigured(): boolean {
-    const installations = this.getSlackInstallations();
-    return installations.length > 0;
+    const installation = this.getSlackInstallation();
+    return installation !== null;
   }
 }

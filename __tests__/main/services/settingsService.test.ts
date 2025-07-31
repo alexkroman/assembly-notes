@@ -87,17 +87,14 @@ describe('SettingsService', () => {
       const mockSettings = createMockSettings({
         assemblyaiKey: 'test-key',
         slackChannels: 'general,random',
-        slackInstallations: [
-          {
-            teamId: 'T123',
-            teamName: 'Test Team',
-            botToken: 'xoxb-123',
-            botUserId: 'U123',
-            scope: 'chat:write',
-            installedAt: Date.now(),
-          },
-        ],
-        selectedSlackInstallation: 'T123',
+        slackInstallation: {
+          teamId: 'T123',
+          teamName: 'Test Team',
+          botToken: 'xoxb-123',
+          botUserId: 'U123',
+          scope: 'chat:write',
+          installedAt: Date.now(),
+        },
       });
 
       mockDatabase.getSettings.mockReturnValue(mockSettings);
@@ -161,19 +158,14 @@ describe('SettingsService', () => {
       };
 
       const updates = {
-        slackInstallations: [installation],
-        selectedSlackInstallation: 'T123',
+        slackInstallation: installation,
       };
 
       settingsService.updateSettings(updates);
 
       expect(mockDatabase.setSetting).toHaveBeenCalledWith(
-        'slackInstallations',
-        [installation]
-      );
-      expect(mockDatabase.setSetting).toHaveBeenCalledWith(
-        'selectedSlackInstallation',
-        'T123'
+        'slackInstallation',
+        installation
       );
     });
 
@@ -216,27 +208,25 @@ describe('SettingsService', () => {
       expect(result).toBe('test-api-key');
     });
 
-    it('should get Slack installations', () => {
-      const installations = [
-        {
-          teamId: 'T123',
-          teamName: 'Test Team',
-          botToken: 'xoxb-123',
-          botUserId: 'U123',
-          scope: 'chat:write',
-          installedAt: Date.now(),
-        },
-      ];
+    it('should get Slack installation', () => {
+      const installation = {
+        teamId: 'T123',
+        teamName: 'Test Team',
+        botToken: 'xoxb-123',
+        botUserId: 'U123',
+        scope: 'chat:write',
+        installedAt: Date.now(),
+      };
       mockDatabase.getSettings.mockReturnValue(
         createMockSettings({
-          slackInstallations: installations,
+          slackInstallation: installation,
         })
       );
 
-      const result = settingsService.getSlackInstallations();
+      const result = settingsService.getSlackInstallation();
 
       expect(mockDatabase.getSettings).toHaveBeenCalled();
-      expect(result).toEqual(installations);
+      expect(result).toEqual(installation);
     });
 
     it('should get Slack channels', () => {
@@ -250,19 +240,6 @@ describe('SettingsService', () => {
 
       expect(mockDatabase.getSettings).toHaveBeenCalled();
       expect(result).toBe('channel1,channel2');
-    });
-
-    it('should get selected Slack installation', () => {
-      mockDatabase.getSettings.mockReturnValue(
-        createMockSettings({
-          selectedSlackInstallation: 'T123',
-        })
-      );
-
-      const result = settingsService.getSelectedSlackInstallation();
-
-      expect(mockDatabase.getSettings).toHaveBeenCalled();
-      expect(result).toBe('T123');
     });
 
     it('should get summary prompt', () => {
@@ -386,20 +363,18 @@ describe('SettingsService', () => {
   });
 
   describe('hasSlackConfigured', () => {
-    it('should return true when Slack installations exist', () => {
-      const installations = [
-        {
-          teamId: 'T123',
-          teamName: 'Test Team',
-          botToken: 'xoxb-123',
-          botUserId: 'U123',
-          scope: 'chat:write',
-          installedAt: Date.now(),
-        },
-      ];
+    it('should return true when Slack installation exists', () => {
+      const installation = {
+        teamId: 'T123',
+        teamName: 'Test Team',
+        botToken: 'xoxb-123',
+        botUserId: 'U123',
+        scope: 'chat:write',
+        installedAt: Date.now(),
+      };
       mockDatabase.getSettings.mockReturnValue(
         createMockSettings({
-          slackInstallations: installations,
+          slackInstallation: installation,
         })
       );
 
@@ -408,10 +383,10 @@ describe('SettingsService', () => {
       expect(result).toBe(true);
     });
 
-    it('should return false when no Slack installations exist', () => {
+    it('should return false when no Slack installation exists', () => {
       mockDatabase.getSettings.mockReturnValue(
         createMockSettings({
-          slackInstallations: [],
+          slackInstallation: null,
         })
       );
 

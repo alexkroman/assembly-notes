@@ -2,24 +2,12 @@ import React, { useEffect, useState } from 'react';
 
 import { useAppSelector } from '../hooks/redux.js';
 
-interface SlackInstallation {
-  teamId: string;
-  teamName: string;
-  botToken: string;
-  botUserId: string;
-  scope: string;
-  installedAt: number;
-}
-
 export const SlackOAuthConnectionOnly: React.FC = () => {
   const settings = useAppSelector((state) => state.settings);
   const [isConnecting, setIsConnecting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const currentInstallation = settings.slackInstallations.find(
-    (inst: SlackInstallation) =>
-      inst.teamId === settings.selectedSlackInstallation
-  );
+  const currentInstallation = settings.slackInstallation;
 
   useEffect(() => {
     // Listen for OAuth success/error events
@@ -54,9 +42,7 @@ export const SlackOAuthConnectionOnly: React.FC = () => {
   const handleDisconnect = async () => {
     if (!currentInstallation) return;
     try {
-      await window.electronAPI.slackOAuthRemoveInstallation(
-        currentInstallation.teamId
-      );
+      await window.electronAPI.slackOAuthRemoveInstallation();
       setError(null);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to disconnect');

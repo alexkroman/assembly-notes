@@ -14,7 +14,15 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ onClose }) => {
   const dispatch = useAppDispatch();
 
   useEffect(() => {
-    setSettings(reduxSettings);
+    setSettings((prevSettings) => ({
+      ...reduxSettings,
+      // Preserve local assemblyaiKey if it's been modified but not saved
+      assemblyaiKey:
+        prevSettings.assemblyaiKey !== reduxSettings.assemblyaiKey &&
+        prevSettings.assemblyaiKey.trim() !== ''
+          ? prevSettings.assemblyaiKey
+          : reduxSettings.assemblyaiKey,
+    }));
   }, [reduxSettings]);
 
   useEffect(() => {

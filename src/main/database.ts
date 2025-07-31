@@ -137,8 +137,7 @@ class DatabaseService {
       summaryPrompt: '',
       prompts: JSON.stringify(DEFAULT_PROMPTS),
       // Slack OAuth fields
-      slackInstallations: JSON.stringify([]),
-      selectedSlackInstallation: '',
+      slackInstallation: JSON.stringify(null),
       autoStart: false,
     };
 
@@ -203,11 +202,8 @@ class DatabaseService {
         summaryPrompt: (settingsMap.get('summaryPrompt') ?? '') as string,
         prompts: (settingsMap.get('prompts') ?? []) as PromptTemplate[],
         // Slack OAuth fields
-        slackInstallations: (settingsMap.get('slackInstallations') ??
-          []) as SlackInstallation[],
-        selectedSlackInstallation: (settingsMap.get(
-          'selectedSlackInstallation'
-        ) ?? null) as string | null,
+        slackInstallation: (settingsMap.get('slackInstallation') ??
+          null) as SlackInstallation | null,
         slackChannels: (settingsMap.get('slackChannels') ?? '') as string,
         autoStart: (settingsMap.get('autoStart') ?? false) as boolean,
       };
@@ -219,8 +215,7 @@ class DatabaseService {
         summaryPrompt: '',
         prompts: [],
         // Slack OAuth fields
-        slackInstallations: [],
-        selectedSlackInstallation: null,
+        slackInstallation: null,
         slackChannels: '',
         autoStart: false,
       };

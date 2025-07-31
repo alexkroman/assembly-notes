@@ -305,8 +305,7 @@ export function createRendererStore() {
       settings: createSyncReducer<SettingsState>({
         assemblyaiKey: '',
         slackChannels: '',
-        slackInstallations: [],
-        selectedSlackInstallation: '',
+        slackInstallation: null,
         summaryPrompt: '',
         prompts: [],
         autoStart: false,

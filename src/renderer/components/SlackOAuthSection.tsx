@@ -2,15 +2,6 @@ import React, { useEffect, useState, useRef } from 'react';
 
 import { useAppSelector } from '../hooks/redux.js';
 
-interface SlackInstallation {
-  teamId: string;
-  teamName: string;
-  botToken: string;
-  botUserId: string;
-  scope: string;
-  installedAt: number;
-}
-
 interface SlackOAuthSectionProps {
   onValidationChange?: (isValid: boolean, hasUnsavedChanges: boolean) => void;
 }
@@ -25,10 +16,7 @@ export const SlackOAuthSection: React.FC<SlackOAuthSectionProps> = ({
   const [isValidating, setIsValidating] = useState(false);
   const validationTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
-  const currentInstallation = settings.slackInstallations.find(
-    (inst: SlackInstallation) =>
-      inst.teamId === settings.selectedSlackInstallation
-  );
+  const currentInstallation = settings.slackInstallation;
 
   // Initialize local channel value from settings and trigger validation if needed
   useEffect(() => {
@@ -115,9 +103,7 @@ export const SlackOAuthSection: React.FC<SlackOAuthSectionProps> = ({
   const handleDisconnect = async () => {
     if (!currentInstallation) return;
     try {
-      await window.electronAPI.slackOAuthRemoveInstallation(
-        currentInstallation.teamId
-      );
+      await window.electronAPI.slackOAuthRemoveInstallation();
       setError(null);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to disconnect');

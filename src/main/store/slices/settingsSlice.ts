@@ -18,16 +18,8 @@ const updateComputedProperties = (
   if ('assemblyaiKey' in payload) {
     state.hasAssemblyAIKey = Boolean((payload.assemblyaiKey || '').trim());
   }
-
-  // Only update if we have the required fields to compute it
-  if (
-    'selectedSlackInstallation' in payload ||
-    'slackInstallations' in payload
-  ) {
-    state.hasSlackConfigured = Boolean(
-      (payload.selectedSlackInstallation ?? state.selectedSlackInstallation) &&
-        (payload.slackInstallations ?? state.slackInstallations).length > 0
-    );
+  if ('slackInstallation' in payload) {
+    state.hasSlackConfigured = Boolean(payload.slackInstallation);
   }
 };
 
@@ -77,8 +69,7 @@ const initialState: SettingsState = {
   assemblyaiKey: '',
   slackChannels: '',
   // Slack OAuth fields
-  slackInstallations: [],
-  selectedSlackInstallation: '',
+  slackInstallation: null,
   summaryPrompt: 'Summarize the key points from this meeting transcript:',
   prompts: [],
   autoStart: false,
@@ -99,8 +90,7 @@ const settingsSlice = createSlice({
       // Update computed properties if we have the required fields
       if (
         'assemblyaiKey' in action.payload ||
-        'slackInstallations' in action.payload ||
-        'selectedSlackInstallation' in action.payload
+        'slackInstallation' in action.payload
       ) {
         updateComputedProperties(newState, newState);
       }
@@ -113,15 +103,11 @@ const settingsSlice = createSlice({
     setSlackChannels: (state, action: PayloadAction<string>) => {
       state.slackChannels = action.payload;
     },
-    setSlackInstallations: (
+    setSlackInstallation: (
       state,
-      action: PayloadAction<SlackInstallation[]>
+      action: PayloadAction<SlackInstallation | null>
     ) => {
-      state.slackInstallations = action.payload;
-      updateComputedProperties(state, state);
-    },
-    setSelectedSlackInstallation: (state, action: PayloadAction<string>) => {
-      state.selectedSlackInstallation = action.payload;
+      state.slackInstallation = action.payload;
       updateComputedProperties(state, state);
     },
     setSummaryPrompt: (state, action: PayloadAction<string>) => {
@@ -192,8 +178,7 @@ export const {
   updateSettings,
   setAssemblyAIKey,
   setSlackChannels,
-  setSlackInstallations,
-  setSelectedSlackInstallation,
+  setSlackInstallation,
   setSummaryPrompt,
   setAutoStart,
   setTheme,

@@ -43,8 +43,7 @@ const createMockStore = (initialState: any = {}) => {
         state = {
           assemblyaiKey: '',
           autoStart: false,
-          slackInstallations: [],
-          selectedSlackInstallation: '',
+          slackInstallation: null,
           selectedChannelId: '',
           slackChannels: '',
         }
@@ -54,8 +53,7 @@ const createMockStore = (initialState: any = {}) => {
       settings: {
         assemblyaiKey: '',
         autoStart: false,
-        slackInstallations: [],
-        selectedSlackInstallation: '',
+        slackInstallation: null,
         selectedChannelId: '',
         slackChannels: '',
         ...(initialState.settings || {}),
@@ -99,15 +97,12 @@ describe('SettingsModal', () => {
       settings: {
         assemblyaiKey: 'stored-api-key',
         autoStart: true,
-        slackInstallations: [
-          createMockInstallation({
-            teamId: 'T123',
-            botToken: 'xoxb-test',
-            botUserId: 'U123',
-            scope: 'chat:write',
-          }),
-        ],
-        selectedSlackInstallation: 'T123',
+        slackInstallation: createMockInstallation({
+          teamId: 'T123',
+          botToken: 'xoxb-test',
+          botUserId: 'U123',
+          scope: 'chat:write',
+        }),
       },
     });
 

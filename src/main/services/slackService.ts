@@ -54,13 +54,7 @@ export class SlackService {
   private getCurrentInstallation(): SlackInstallation | null {
     const state = this.store.getState();
     const settings = state.settings;
-    const selectedTeamId = settings.selectedSlackInstallation;
-    const installations = settings.slackInstallations;
-    return (
-      installations.find(
-        (inst: SlackInstallation) => inst.teamId === selectedTeamId
-      ) ?? null
-    );
+    return settings.slackInstallation;
   }
 
   async postMessage(

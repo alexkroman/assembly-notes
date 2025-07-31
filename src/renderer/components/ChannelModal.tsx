@@ -5,24 +5,12 @@ import { useAppDispatch, useAppSelector } from '../hooks/redux';
 import { setStatus } from '../store';
 import { Modal } from './Modal.js';
 
-interface SlackInstallation {
-  teamId: string;
-  teamName: string;
-  botToken: string;
-  botUserId: string;
-  scope: string;
-  installedAt: number;
-}
-
 export const ChannelModal: React.FC<ChannelModalProps> = ({ onClose }) => {
   const settings = useAppSelector((state) => state.settings);
   const dispatch = useAppDispatch();
   const [localChannelValue, setLocalChannelValue] = useState<string>('');
 
-  const currentInstallation = settings.slackInstallations.find(
-    (inst: SlackInstallation) =>
-      inst.teamId === settings.selectedSlackInstallation
-  );
+  const currentInstallation = settings.slackInstallation;
 
   // Initialize local channel value from settings
   useEffect(() => {

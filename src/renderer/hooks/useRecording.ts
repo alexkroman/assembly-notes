@@ -75,6 +75,16 @@ export const useRecording = (recordingId: string | null) => {
     .join(' ');
 
   useEffect(() => {
+    // Clear any pending debounced updates when recording changes
+    if (titleDebounceRef.current) {
+      clearTimeout(titleDebounceRef.current);
+      titleDebounceRef.current = null;
+    }
+    if (summaryDebounceRef.current) {
+      clearTimeout(summaryDebounceRef.current);
+      summaryDebounceRef.current = null;
+    }
+
     if (recordingId) {
       void loadRecording(recordingId);
     }
@@ -97,6 +107,13 @@ export const useRecording = (recordingId: string | null) => {
 
   useEffect(() => {
     const handleSummary = (data: { text: string; recordingId?: string }) => {
+      // Only apply summary if it's for the current recording
+      if (data.recordingId && data.recordingId !== recordingId) {
+        console.warn(
+          `Ignoring summary for different recording: ${data.recordingId} !== ${recordingId ?? 'undefined'}`
+        );
+        return;
+      }
       // Update local state immediately and trigger same debounced flow as user typing
       handleSummaryChange(data.text);
     };
@@ -123,7 +140,7 @@ export const useRecording = (recordingId: string | null) => {
       window.electronAPI.removeAllListeners('summarization-completed');
       // Don't remove audio capture listeners - they're global
     };
-  }, [dispatch]);
+  }, [dispatch, recordingId]);
 
   const handleToggleRecording = async () => {
     try {
@@ -199,9 +216,14 @@ export const useRecording = (recordingId: string | null) => {
         clearTimeout(titleDebounceRef.current);
       }
 
+      // Capture current recording ID for closure
+      const currentRecordingId = recordingId;
+
       // Debounce database update
       titleDebounceRef.current = setTimeout(() => {
-        void window.electronAPI.updateRecordingTitle(recordingId, title);
+        // Always send with the captured recording ID
+        // The Redux middleware will validate if it's still current
+        void window.electronAPI.updateRecordingTitle(currentRecordingId, title);
       }, 500); // Wait 500ms after user stops typing
     },
     [recordingId]
@@ -219,10 +241,15 @@ export const useRecording = (recordingId: string | null) => {
         clearTimeout(summaryDebounceRef.current);
       }
 
+      // Capture current recording ID for closure
+      const currentRecordingId = recordingId;
+
       // Debounce database update
       summaryDebounceRef.current = setTimeout(() => {
+        // Always send with the captured recording ID
+        // The Redux middleware will validate if it's still current
         void window.electronAPI.updateRecordingSummary(
-          recordingId,
+          currentRecordingId,
           summaryText
         );
       }, 500); // Wait 500ms after user stops typing

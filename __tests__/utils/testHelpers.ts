@@ -13,8 +13,7 @@ export const createMockSettings = (
   summaryPrompt: 'Summarize the key points from this meeting transcript:',
   prompts: [],
   autoStart: false,
-  slackInstallations: [],
-  selectedSlackInstallation: '',
+  slackInstallation: null,
   ...overrides,
 });
 

@@ -6,9 +6,7 @@ import {
   IHttpClient,
   SlackService,
 } from '../../../src/main/services/slackService';
-import {
-  createMockInstallation,
-} from '../../utils/testHelpers.js';
+import { createMockInstallation } from '../../utils/testHelpers.js';
 
 // Mock HTTP client
 const mockHttpClient = {
@@ -27,8 +25,7 @@ describe('SlackService', () => {
     mockStore = {
       getState: jest.fn(() => ({
         settings: {
-          slackInstallations: [createMockInstallation()],
-          selectedSlackInstallation: 'T123456',
+          slackInstallation: createMockInstallation(),
           slackChannels: '#general,#dev',
         },
       })),
@@ -109,8 +106,7 @@ describe('SlackService', () => {
     it('should fail when no installation is available', async () => {
       mockStore.getState.mockReturnValue({
         settings: {
-          slackInstallations: [],
-          selectedSlackInstallation: '',
+          slackInstallation: null,
         },
       });
 
@@ -126,8 +122,7 @@ describe('SlackService', () => {
     it('should fail when no channel ID is provided', async () => {
       mockStore.getState.mockReturnValue({
         settings: {
-          slackInstallations: [createMockInstallation()],
-          selectedSlackInstallation: 'T123456',
+          slackInstallation: createMockInstallation(),
         },
       });
 
@@ -272,10 +267,9 @@ describe('SlackService', () => {
     it('should validate token format', async () => {
       mockStore.getState.mockReturnValue({
         settings: {
-          slackInstallations: [
-            createMockInstallation({ botToken: 'invalid-token' }),
-          ],
-          selectedSlackInstallation: 'T123456',
+          slackInstallation: createMockInstallation({
+            botToken: 'invalid-token',
+          }),
         },
       });
 
@@ -301,8 +295,7 @@ describe('SlackService', () => {
       // Reset mock store state to use proper test token
       mockStore.getState.mockReturnValue({
         settings: {
-          slackInstallations: [createMockInstallation()],
-          selectedSlackInstallation: 'T123456',
+          slackInstallation: createMockInstallation(),
           slackChannels: '#general,#dev',
         },
       });
@@ -342,8 +335,7 @@ describe('SlackService', () => {
     it('should return false when no installation is selected', () => {
       mockStore.getState.mockReturnValue({
         settings: {
-          slackInstallations: [],
-          selectedSlackInstallation: '',
+          slackInstallation: null,
         },
       });
 
@@ -355,8 +347,7 @@ describe('SlackService', () => {
     it('should return true when installation is present', () => {
       mockStore.getState.mockReturnValue({
         settings: {
-          slackInstallations: [createMockInstallation()],
-          selectedSlackInstallation: 'T123456',
+          slackInstallation: createMockInstallation(),
         },
       });
 
@@ -378,8 +369,7 @@ describe('SlackService', () => {
     it('should return null when no installation is selected', () => {
       mockStore.getState.mockReturnValue({
         settings: {
-          slackInstallations: [],
-          selectedSlackInstallation: '',
+          slackInstallation: null,
         },
       });
 

@@ -312,7 +312,7 @@ describe('SlackOAuthService', () => {
 
     beforeEach(async () => {
       const mockSettings = createMockSettings({
-        slackInstallations: [], // Start with empty installations
+        slackInstallation: null, // Start with no installation
       });
 
       // Mock database to return empty initially, then updated after saveInstallation
@@ -320,12 +320,8 @@ describe('SlackOAuthService', () => {
 
       // Mock updateSettings to actually update the mock data for subsequent calls
       mockDatabase.updateSettings.mockImplementation((updates: any) => {
-        if (updates.slackInstallations) {
-          mockSettings.slackInstallations = updates.slackInstallations;
-        }
-        if (updates.selectedSlackInstallation) {
-          mockSettings.selectedSlackInstallation =
-            updates.selectedSlackInstallation;
+        if (updates.slackInstallation !== undefined) {
+          mockSettings.slackInstallation = updates.slackInstallation;
         }
       });
 
@@ -407,17 +403,14 @@ describe('SlackOAuthService', () => {
 
       // Verify installation was saved (first call)
       expect(mockSettingsService.updateSettings).toHaveBeenNthCalledWith(1, {
-        slackInstallations: [
-          {
-            teamId: 'T123456',
-            teamName: 'Test Team',
-            botToken: 'xoxb-test-token',
-            botUserId: 'U123456',
-            scope: 'chat:write,channels:read',
-            installedAt: expect.any(Number),
-          },
-        ],
-        selectedSlackInstallation: 'T123456',
+        slackInstallation: {
+          teamId: 'T123456',
+          teamName: 'Test Team',
+          botToken: 'xoxb-test-token',
+          botUserId: 'U123456',
+          scope: 'chat:write,channels:read',
+          installedAt: expect.any(Number),
+        },
       });
 
       // Verify success event was sent
@@ -538,74 +531,49 @@ describe('SlackOAuthService', () => {
 
   describe('removeInstallation', () => {
     beforeEach(() => {
-      const installations = [
-        createMockInstallation({ botToken: 'xoxb-test-token' }),
-        createMockInstallation({
-          teamId: 'T789012',
-          teamName: 'Another Team',
-          botToken: 'xoxb-another-token',
-          botUserId: 'U789012',
-          scope: 'chat:write',
-        }),
-      ];
+      const installation = createMockInstallation({
+        botToken: 'xoxb-test-token',
+      });
 
       mockDatabase.getSettings.mockReturnValue(
         createMockSettings({
-          slackInstallations: installations,
-          selectedSlackInstallation: 'T123456',
+          slackInstallation: installation,
         })
       );
     });
 
-    it('should remove an installation and update selection', async () => {
-      await slackOAuthService.removeInstallation('T123456');
+    it('should remove an installation', async () => {
+      await slackOAuthService.removeInstallation();
 
       expect(mockSettingsService.updateSettings).toHaveBeenCalledWith({
-        slackInstallations: [
-          {
-            teamId: 'T789012',
-            teamName: 'Another Team',
-            botToken: 'xoxb-another-token',
-            botUserId: 'U789012',
-            scope: 'chat:write',
-            installedAt: expect.any(Number),
-          },
-        ],
-        selectedSlackInstallation: 'T789012',
+        slackInstallation: null,
       });
 
       expect(mockLogger.info).toHaveBeenCalledWith(
-        'Removed Slack installation for team: T123456'
+        'Removed current Slack installation'
       );
     });
 
-    it('should clear selection when removing last installation', async () => {
+    it('should handle removing when no installation exists', async () => {
       mockDatabase.getSettings.mockReturnValue(
         createMockSettings({
-          slackInstallations: [
-            createMockInstallation({
-              botToken: 'xoxb-test-token',
-              scope: 'chat:write',
-            }),
-          ],
-          selectedSlackInstallation: 'T123456',
+          slackInstallation: null,
         })
       );
 
-      await slackOAuthService.removeInstallation('T123456');
+      await slackOAuthService.removeInstallation();
 
       expect(mockSettingsService.updateSettings).toHaveBeenCalledWith({
-        slackInstallations: [],
-        selectedSlackInstallation: '',
+        slackInstallation: null,
       });
     });
 
-    it('should handle removing non-existent installation', async () => {
-      await slackOAuthService.removeInstallation('T999999');
+    it('should log removal attempt', async () => {
+      await slackOAuthService.removeInstallation();
 
-      // Should still update settings (no-op, but logs the attempt)
+      // Should still update settings and log the attempt
       expect(mockLogger.info).toHaveBeenCalledWith(
-        'Removed Slack installation for team: T999999'
+        'Removed current Slack installation'
       );
     });
   });
@@ -619,8 +587,7 @@ describe('SlackOAuthService', () => {
 
       mockDatabase.getSettings.mockReturnValue(
         createMockSettings({
-          slackInstallations: [installation],
-          selectedSlackInstallation: 'T123456',
+          slackInstallation: installation,
         })
       );
 
@@ -629,21 +596,8 @@ describe('SlackOAuthService', () => {
       expect(result).toEqual(installation);
     });
 
-    it('should return null when no installation selected', async () => {
+    it('should return null when no installation exists', async () => {
       mockDatabase.getSettings.mockReturnValue(createMockSettings());
-
-      const result = await slackOAuthService.getCurrentInstallation();
-
-      expect(result).toBeNull();
-    });
-
-    it('should return null when selected installation not found', async () => {
-      mockDatabase.getSettings.mockReturnValue(
-        createMockSettings({
-          selectedSlackInstallation: 'T999999',
-          slackInstallations: [],
-        })
-      );
 
       const result = await slackOAuthService.getCurrentInstallation();
 

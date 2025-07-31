@@ -31,9 +31,8 @@ export interface SettingsSchema {
   summaryPrompt: string;
   prompts: PromptTemplate[];
   // Slack OAuth fields
-  slackInstallations: SlackInstallation[];
-  selectedSlackInstallation: string | null; // teamId
-  slackChannels: string; // Comma-separated favorite channel names for backwards compatibility
+  slackInstallation: SlackInstallation | null;
+  slackChannels: string; // Comma-separated favorite channel names
   autoStart: boolean;
 }
 

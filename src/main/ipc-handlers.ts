@@ -112,6 +112,17 @@ function setupIpcHandlers(
       recordingId: string,
       title: string
     ): Promise<void> => {
+      // Validate that this update is for the current recording
+      const state = store.getState();
+      const currentRecordingId = state.recordings.currentRecording?.id;
+
+      if (currentRecordingId && recordingId !== currentRecordingId) {
+        logger.warn(
+          `Ignoring title update for non-current recording: ${recordingId} !== ${currentRecordingId}`
+        );
+        return;
+      }
+
       await store
         .dispatch(updateRecordingTitle({ id: recordingId, title }))
         .unwrap();
@@ -125,6 +136,17 @@ function setupIpcHandlers(
       recordingId: string,
       summary: string
     ): Promise<void> => {
+      // Validate that this update is for the current recording
+      const state = store.getState();
+      const currentRecordingId = state.recordings.currentRecording?.id;
+
+      if (currentRecordingId && recordingId !== currentRecordingId) {
+        logger.warn(
+          `Ignoring summary update for non-current recording: ${recordingId} !== ${currentRecordingId}`
+        );
+        return;
+      }
+
       await store
         .dispatch(updateRecordingSummary({ id: recordingId, summary }))
         .unwrap();
@@ -213,11 +235,11 @@ function setupIpcHandlers(
 
   ipcMain.handle(
     'slack-oauth-remove-installation',
-    (_event: IpcMainInvokeEvent, teamId: string): void => {
+    (_event: IpcMainInvokeEvent): void => {
       const slackOAuthService = container.resolve<SlackOAuthService>(
         DI_TOKENS.SlackOAuthService
       );
-      slackOAuthService.removeInstallation(teamId);
+      slackOAuthService.removeInstallation();
     }
   );
 

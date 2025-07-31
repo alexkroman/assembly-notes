@@ -75,8 +75,7 @@ export interface UpdateState {
 export interface FullSettingsState {
   assemblyaiKey: string;
   // Slack OAuth fields
-  slackInstallations: SlackInstallation[];
-  selectedSlackInstallation: string | null;
+  slackInstallation: SlackInstallation | null;
   slackChannels: string; // Comma-separated favorite channel names
   summaryPrompt: string;
   prompts: PromptTemplate[];
