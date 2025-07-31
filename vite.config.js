@@ -62,6 +62,7 @@ export default defineConfig(({ command, mode }) => {
         input: {
           main: path.resolve(__dirname, 'src/renderer/index.html'),
         },
+        external: ['audio-processor'],
       },
     },
     publicDir: 'public',
