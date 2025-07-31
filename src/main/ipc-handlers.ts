@@ -166,16 +166,6 @@ function setupIpcHandlers(
       }
 
       await store.dispatch(saveSettings(mappedSettings)).unwrap();
-
-      // Clear any existing transcription errors
-      const { clearTranscription } = await import(
-        './store/slices/transcriptionSlice.js'
-      );
-      store.dispatch(clearTranscription());
-
-      // Stop any active recording and reset connections
-      await recordingManager.stopTranscription();
-      _mainWindow.webContents.send('reset-audio-processing');
       return true;
     }
   );

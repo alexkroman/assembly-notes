@@ -42,21 +42,6 @@ function createWindow(): void {
 
   setupContainer(mainWindow);
   setupIpcHandlers(mainWindow, store);
-  let actionCount = 0;
-  store.subscribe(() => {
-    const state = store.getState();
-    actionCount++;
-    log.info(
-      `Main store state change #${String(actionCount)} - status: ${state.recording.status}, isTranscribing: ${String(state.transcription.isTranscribing)}`
-    );
-  });
-
-  const originalDispatch = store.dispatch;
-  store.dispatch = (action: unknown) => {
-    log.info(`Main store action dispatched:`, JSON.stringify(action, null, 2));
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-return
-    return originalDispatch(action as any);
-  };
 
   const autoUpdaterService = container.resolve<AutoUpdaterService>(
     DI_TOKENS.AutoUpdaterService

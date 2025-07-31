@@ -90,9 +90,6 @@ export const SlackOAuthConnectionOnly: React.FC = () => {
 
   return (
     <div className="slack-oauth-section">
-      <div style={{ marginBottom: '8px' }}>
-        <strong>Connected to: {currentInstallation.teamName}</strong>
-      </div>
       <div style={{ marginBottom: '12px' }}>
         <button
           type="button"
@@ -103,9 +100,6 @@ export const SlackOAuthConnectionOnly: React.FC = () => {
         >
           Disconnect from Slack
         </button>
-      </div>
-      <div style={{ fontSize: '12px', color: 'rgba(255, 255, 255, 0.7)' }}>
-        Channel favorites can be managed from the recording page.
       </div>
       {error && (
         <div

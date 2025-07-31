@@ -150,11 +150,19 @@ export const RecordingsList: React.FC<RecordingsListProps> = ({
             </button>
             <button
               type="button"
-              className="settings-btn"
+              className={`settings-btn ${isRecordingActive ? 'disabled' : ''}`}
               data-testid="settings-button"
               onClick={() => {
-                dispatch(setShowSettingsModal(true));
+                if (!isRecordingActive) {
+                  dispatch(setShowSettingsModal(true));
+                }
               }}
+              disabled={isRecordingActive}
+              title={
+                isRecordingActive
+                  ? 'Please wait for the current recording to finish'
+                  : undefined
+              }
             >
               ⚙️
             </button>
