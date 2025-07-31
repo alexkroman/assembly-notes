@@ -207,6 +207,8 @@ Then edit `.env` and add your Slack credentials:
 
 ```env
 # Slack Integration (required for OAuth functionality)
+# WARNING: Never commit these values to the repository!
+# For public distribution, consider using a proxy server or having users create their own Slack app
 SLACK_CLIENT_ID=your_slack_client_id_here
 SLACK_CLIENT_SECRET=your_slack_client_secret_here
 

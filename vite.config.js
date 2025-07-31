@@ -36,6 +36,7 @@ export default defineConfig(({ command, mode }) => {
       build: {
         outDir: '../../dist/preload',
         emptyOutDir: false,
+        sourcemap: process.env.NODE_ENV === 'development',
         lib: {
           entry: path.resolve(__dirname, 'src/preload/preload.ts'),
           name: 'preload',
@@ -58,6 +59,7 @@ export default defineConfig(({ command, mode }) => {
     build: {
       outDir: '../../dist/renderer',
       emptyOutDir: false,
+      sourcemap: process.env.NODE_ENV === 'development',
       rollupOptions: {
         input: {
           main: path.resolve(__dirname, 'src/renderer/index.html'),

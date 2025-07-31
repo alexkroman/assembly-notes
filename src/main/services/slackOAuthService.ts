@@ -44,10 +44,8 @@ export class SlackOAuthService {
     @inject(DI_TOKENS.SettingsService) private settingsService: SettingsService
   ) {
     // Read environment variables at runtime (after dotenv.config())
-    this.SLACK_CLIENT_ID =
-      process.env['SLACK_CLIENT_ID'] ?? 'YOUR_SLACK_CLIENT_ID_HERE';
-    this.SLACK_CLIENT_SECRET =
-      process.env['SLACK_CLIENT_SECRET'] ?? 'YOUR_SLACK_CLIENT_SECRET_HERE';
+    this.SLACK_CLIENT_ID = process.env['SLACK_CLIENT_ID'] ?? '';
+    this.SLACK_CLIENT_SECRET = process.env['SLACK_CLIENT_SECRET'] ?? '';
 
     // Debug logging for environment variables
     this.logger.info('SlackOAuthService initialized');
@@ -63,17 +61,14 @@ export class SlackOAuthService {
    */
   async initiateOAuth(): Promise<void> {
     // Check if OAuth credentials are configured
-    if (
-      this.SLACK_CLIENT_ID === 'YOUR_SLACK_CLIENT_ID_HERE' ||
-      this.SLACK_CLIENT_SECRET === 'YOUR_SLACK_CLIENT_SECRET_HERE'
-    ) {
+    if (!this.SLACK_CLIENT_ID || !this.SLACK_CLIENT_SECRET) {
       const error = new Error(
-        'Slack OAuth is not configured. Please build the app with SLACK_CLIENT_ID and SLACK_CLIENT_SECRET environment variables.'
+        'Slack OAuth is not configured. Please set SLACK_CLIENT_ID and SLACK_CLIENT_SECRET environment variables.'
       );
       this.logger.error('OAuth configuration missing:', error.message);
       this.mainWindow.webContents.send(
         'slack-oauth-error',
-        'Slack integration is not configured in this build.'
+        'Slack integration is not configured. Please see the documentation for setup instructions.'
       );
       return;
     }
