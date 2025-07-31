@@ -86,17 +86,16 @@ const electronAPI = {
     ipcRenderer.invoke('save-prompt', promptSettings),
   savePrompts: (prompts: PromptTemplate[]) =>
     ipcRenderer.invoke('save-prompts', prompts),
-  selectPrompt: (index: number) => ipcRenderer.invoke('select-prompt', index),
   postToSlack: (message: string, channelId?: string) =>
     ipcRenderer.invoke('post-to-slack', message, channelId),
 
   // Slack OAuth methods
   slackOAuthInitiate: () => ipcRenderer.invoke('slack-oauth-initiate'),
-  slackOAuthRefreshChannels: (teamId: string) =>
-    ipcRenderer.invoke('slack-oauth-refresh-channels', teamId),
   slackOAuthRemoveInstallation: (teamId: string) =>
     ipcRenderer.invoke('slack-oauth-remove-installation', teamId),
   slackOAuthGetCurrent: () => ipcRenderer.invoke('slack-oauth-get-current'),
+  slackOAuthValidateChannels: (teamId: string, channelList: string) =>
+    ipcRenderer.invoke('slack-oauth-validate-channels', teamId, channelList),
 
   installUpdate: () => ipcRenderer.invoke('install-update'),
   quitAndInstall: () => ipcRenderer.invoke('quit-and-install'),

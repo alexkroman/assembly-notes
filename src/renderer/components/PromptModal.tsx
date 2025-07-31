@@ -31,9 +31,7 @@ export const PromptModal: React.FC<PromptModalProps> = ({ onClose }) => {
       }
 
       setPrompts(finalPrompts);
-      setSelectedIndex(
-        (settings as { selectedPromptIndex?: number }).selectedPromptIndex ?? 0
-      );
+      setSelectedIndex(0);
     } catch (error) {
       console.error('Error loading prompts:', error);
     }

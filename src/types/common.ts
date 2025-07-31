@@ -30,12 +30,10 @@ export interface SettingsSchema {
   assemblyaiKey: string;
   summaryPrompt: string;
   prompts: PromptTemplate[];
-  selectedPromptIndex: number;
   // Slack OAuth fields
   slackInstallations: SlackInstallation[];
   selectedSlackInstallation: string | null; // teamId
   availableChannels: SlackChannel[];
-  selectedChannelId: string | null;
   slackChannels: string; // Comma-separated favorite channel names for backwards compatibility
   autoStart: boolean;
 }

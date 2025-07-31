@@ -163,7 +163,6 @@ describe('SettingsService', () => {
       const updates = {
         slackInstallations: [installation],
         selectedSlackInstallation: 'T123',
-        selectedChannelId: 'C123456',
       };
 
       settingsService.updateSettings(updates);
@@ -175,10 +174,6 @@ describe('SettingsService', () => {
       expect(mockDatabase.setSetting).toHaveBeenCalledWith(
         'selectedSlackInstallation',
         'T123'
-      );
-      expect(mockDatabase.setSetting).toHaveBeenCalledWith(
-        'selectedChannelId',
-        'C123456'
       );
     });
 
@@ -257,19 +252,6 @@ describe('SettingsService', () => {
       expect(result).toBe('channel1,channel2');
     });
 
-    it('should get selected channel ID', () => {
-      mockDatabase.getSettings.mockReturnValue(
-        createMockSettings({
-          selectedChannelId: 'C123456',
-        })
-      );
-
-      const result = settingsService.getSelectedChannelId();
-
-      expect(mockDatabase.getSettings).toHaveBeenCalled();
-      expect(result).toBe('C123456');
-    });
-
     it('should get selected Slack installation', () => {
       mockDatabase.getSettings.mockReturnValue(
         createMockSettings({
@@ -338,19 +320,6 @@ describe('SettingsService', () => {
 
       expect(mockDatabase.getSettings).toHaveBeenCalled();
       expect(result).toBe(true);
-    });
-
-    it('should get selected prompt index', () => {
-      mockDatabase.getSettings.mockReturnValue(
-        createMockSettings({
-          selectedPromptIndex: 2,
-        })
-      );
-
-      const result = settingsService.getSelectedPromptIndex();
-
-      expect(mockDatabase.getSettings).toHaveBeenCalled();
-      expect(result).toBe(2);
     });
 
     it('should get prompts with proper format', () => {

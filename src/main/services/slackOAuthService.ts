@@ -4,14 +4,11 @@ import { parse } from 'url';
 import { BrowserWindow } from 'electron';
 import { inject, injectable } from 'tsyringe';
 
-import {
-  SlackInstallation,
-  SlackChannel,
-  SettingsSchema,
-} from '../../types/common.js';
+import { SlackInstallation, SettingsSchema } from '../../types/common.js';
 import type { DatabaseService } from '../database.js';
 import { DI_TOKENS } from '../di-tokens.js';
 import type Logger from '../logger.js';
+import type { SettingsService } from './settingsService.js';
 
 // Slack OAuth configuration
 // For open source Electron apps, there are a few approaches:
@@ -19,11 +16,6 @@ import type Logger from '../logger.js';
 // 2. Use a proxy server to handle OAuth flow
 // 3. Have users create their own Slack app and enter credentials
 //
-// This app uses approach #1 - credentials are injected at build time
-const SLACK_CLIENT_ID =
-  process.env['SLACK_CLIENT_ID'] ?? 'YOUR_SLACK_CLIENT_ID_HERE';
-const SLACK_CLIENT_SECRET =
-  process.env['SLACK_CLIENT_SECRET'] ?? 'YOUR_SLACK_CLIENT_SECRET_HERE';
 const SLACK_REDIRECT_URI = 'http://localhost:3000/auth/slack/callback';
 
 interface SlackOAuthResponse {
@@ -38,27 +30,33 @@ interface SlackOAuthResponse {
   error?: string;
 }
 
-interface SlackChannelsResponse {
-  ok: boolean;
-  channels: {
-    id: string;
-    name: string;
-    is_private: boolean;
-    is_member: boolean;
-  }[];
-  error?: string;
-}
-
 @injectable()
 export class SlackOAuthService {
   private oauthWindow: BrowserWindow | null = null;
   private oauthServer: Server | null = null;
+  private readonly SLACK_CLIENT_ID: string;
+  private readonly SLACK_CLIENT_SECRET: string;
 
   constructor(
     @inject(DI_TOKENS.DatabaseService) private database: DatabaseService,
     @inject(DI_TOKENS.Logger) private logger: typeof Logger,
-    @inject(DI_TOKENS.MainWindow) private mainWindow: BrowserWindow
-  ) {}
+    @inject(DI_TOKENS.MainWindow) private mainWindow: BrowserWindow,
+    @inject(DI_TOKENS.SettingsService) private settingsService: SettingsService
+  ) {
+    // Read environment variables at runtime (after dotenv.config())
+    this.SLACK_CLIENT_ID =
+      process.env['SLACK_CLIENT_ID'] ?? 'YOUR_SLACK_CLIENT_ID_HERE';
+    this.SLACK_CLIENT_SECRET =
+      process.env['SLACK_CLIENT_SECRET'] ?? 'YOUR_SLACK_CLIENT_SECRET_HERE';
+
+    // Debug logging for environment variables
+    this.logger.info('SlackOAuthService initialized');
+    this.logger.info('SLACK_CLIENT_ID:', this.SLACK_CLIENT_ID);
+    this.logger.info(
+      'SLACK_CLIENT_SECRET:',
+      this.SLACK_CLIENT_SECRET ? '[REDACTED]' : 'NOT_SET'
+    );
+  }
 
   /**
    * Initiates the Slack OAuth flow using a temporary HTTP server
@@ -66,8 +64,8 @@ export class SlackOAuthService {
   async initiateOAuth(): Promise<void> {
     // Check if OAuth credentials are configured
     if (
-      SLACK_CLIENT_ID === 'YOUR_SLACK_CLIENT_ID_HERE' ||
-      SLACK_CLIENT_SECRET === 'YOUR_SLACK_CLIENT_SECRET_HERE'
+      this.SLACK_CLIENT_ID === 'YOUR_SLACK_CLIENT_ID_HERE' ||
+      this.SLACK_CLIENT_SECRET === 'YOUR_SLACK_CLIENT_SECRET_HERE'
     ) {
       const error = new Error(
         'Slack OAuth is not configured. Please build the app with SLACK_CLIENT_ID and SLACK_CLIENT_SECRET environment variables.'
@@ -90,23 +88,30 @@ export class SlackOAuthService {
 
     const authUrl =
       `https://slack.com/oauth/v2/authorize?` +
-      `client_id=${SLACK_CLIENT_ID}&` +
+      `client_id=${this.SLACK_CLIENT_ID}&` +
       `scope=channels:read,groups:read,im:read,im:write,mpim:read,mpim:write,chat:write,chat:write.public,users:read&` +
       `redirect_uri=${encodeURIComponent(SLACK_REDIRECT_URI)}`;
 
     // Create OAuth window
     this.oauthWindow = new BrowserWindow({
-      width: 500,
-      height: 600,
+      width: 800,
+      height: 700,
       webPreferences: {
         nodeIntegration: false,
         contextIsolation: true,
-        webSecurity: true,
+        webSecurity: false, // Temporarily disable for OAuth
+        allowRunningInsecureContent: true,
+        experimentalFeatures: true,
       },
       parent: this.mainWindow,
-      modal: true,
+      modal: false, // Don't make it modal so it's easier to see
       show: false,
-      title: 'Connect to Slack',
+      title: 'Connect to Slack - Assembly Notes',
+      autoHideMenuBar: true,
+      alwaysOnTop: true, // Keep it on top
+      resizable: true,
+      minimizable: false,
+      maximizable: false,
     });
 
     // Handle window closed
@@ -115,9 +120,55 @@ export class SlackOAuthService {
       this.stopOAuthServer();
     });
 
+    // Add error handling for URL loading
+    this.oauthWindow.webContents.on(
+      'did-fail-load',
+      (_event, errorCode, errorDescription, validatedURL) => {
+        this.logger.error('OAuth window failed to load:', {
+          errorCode,
+          errorDescription,
+          validatedURL,
+        });
+      }
+    );
+
+    this.oauthWindow.webContents.on('did-finish-load', () => {
+      this.logger.info('OAuth window loaded successfully');
+    });
+
+    // Handle navigation events
+    this.oauthWindow.webContents.on(
+      'will-navigate',
+      (_event, navigationUrl) => {
+        this.logger.info('OAuth window navigating to:', navigationUrl);
+      }
+    );
+
+    this.oauthWindow.webContents.on('did-navigate', (_event, url) => {
+      this.logger.info('OAuth window navigated to:', url);
+    });
+
     // Load the OAuth URL
-    await this.oauthWindow.loadURL(authUrl);
+    this.logger.info('Loading OAuth URL:', authUrl);
+
+    // Show the window immediately and then load the URL
     this.oauthWindow.show();
+    this.oauthWindow.focus();
+    this.oauthWindow.center();
+
+    try {
+      await this.oauthWindow.loadURL(authUrl);
+      this.logger.info('OAuth window should now be visible');
+    } catch (error: unknown) {
+      this.logger.error('Failed to load OAuth URL:', error);
+      // Don't throw the error if it's just the redirect abort
+      if (error instanceof Error && !error.message.includes('ERR_ABORTED')) {
+        throw error;
+      }
+      this.logger.info(
+        'Ignoring ERR_ABORTED error - this is normal for OAuth redirects'
+      );
+    }
   }
 
   /**
@@ -178,10 +229,16 @@ export class SlackOAuthService {
   /**
    * Handles the OAuth callback parameters
    */
-  private async handleOAuthCallback(query: Record<string, string | string[] | undefined>): Promise<void> {
+  private async handleOAuthCallback(
+    query: Record<string, string | string[] | undefined>
+  ): Promise<void> {
     try {
-      const code = Array.isArray(query['code']) ? query['code'][0] : query['code'];
-      const error = Array.isArray(query['error']) ? query['error'][0] : query['error'];
+      const code = Array.isArray(query['code'])
+        ? query['code'][0]
+        : query['code'];
+      const error = Array.isArray(query['error'])
+        ? query['error'][0]
+        : query['error'];
 
       if (error) {
         this.logger.error('OAuth error:', error);
@@ -193,7 +250,6 @@ export class SlackOAuthService {
       if (code) {
         const installation = await this.exchangeCodeForToken(code);
         this.saveInstallation(installation);
-        await this.refreshChannels(installation.teamId);
 
         // Notify the main window that OAuth is complete
         this.mainWindow.webContents.send('slack-oauth-success', installation);
@@ -230,8 +286,8 @@ export class SlackOAuthService {
         'Content-Type': 'application/x-www-form-urlencoded',
       },
       body: new URLSearchParams({
-        client_id: SLACK_CLIENT_ID,
-        client_secret: SLACK_CLIENT_SECRET,
+        client_id: this.SLACK_CLIENT_ID,
+        client_secret: this.SLACK_CLIENT_SECRET,
         code: code,
         redirect_uri: SLACK_REDIRECT_URI,
       }),
@@ -254,7 +310,7 @@ export class SlackOAuthService {
   }
 
   /**
-   * Saves Slack installation to database
+   * Saves Slack installation to database and updates Redux store
    */
   private saveInstallation(installation: SlackInstallation): void {
     const settings = this.database.getSettings();
@@ -268,7 +324,8 @@ export class SlackOAuthService {
     // Add new installation
     const updatedInstallations = [...filteredInstallations, installation];
 
-    this.database.updateSettings({
+    // Update settings using SettingsService, which will update both database and Redux
+    this.settingsService.updateSettings({
       slackInstallations: updatedInstallations,
       selectedSlackInstallation: installation.teamId,
     });
@@ -276,55 +333,6 @@ export class SlackOAuthService {
     this.logger.info(
       `Slack installation saved for team: ${installation.teamName}`
     );
-  }
-
-  /**
-   * Refreshes available channels for a Slack installation
-   */
-  async refreshChannels(teamId: string): Promise<void> {
-    const settings = this.database.getSettings();
-    const installations = settings.slackInstallations;
-    const installation = installations.find(
-      (inst: SlackInstallation) => inst.teamId === teamId
-    );
-
-    if (!installation) {
-      throw new Error('Installation not found');
-    }
-
-    try {
-      const response = await fetch('https://slack.com/api/conversations.list', {
-        headers: {
-          Authorization: `Bearer ${installation.botToken}`,
-          'Content-Type': 'application/json',
-        },
-      });
-
-      const data = (await response.json()) as SlackChannelsResponse;
-
-      if (!data.ok || data.error) {
-        throw new Error(`Slack API error: ${data.error ?? 'Unknown error'}`);
-      }
-
-      const channels: SlackChannel[] = data.channels
-        .filter((channel) => channel.is_member) // Only show channels the bot has access to
-        .map((channel) => ({
-          id: channel.id,
-          name: channel.name,
-          isPrivate: channel.is_private,
-        }));
-
-      this.database.updateSettings({
-        availableChannels: channels,
-      });
-
-      this.logger.info(
-        `Refreshed ${String(channels.length)} channels for team: ${installation.teamName}`
-      );
-    } catch (error) {
-      this.logger.error('Error refreshing channels:', error);
-      throw error;
-    }
   }
 
   /**
@@ -347,11 +355,9 @@ export class SlackOAuthService {
         filteredInstallations.length > 0
           ? (filteredInstallations[0]?.teamId ?? '')
           : '';
-      updateData.availableChannels = [];
-      updateData.selectedChannelId = '';
     }
 
-    this.database.updateSettings(updateData);
+    this.settingsService.updateSettings(updateData);
     this.logger.info(`Removed Slack installation for team: ${teamId}`);
   }
 

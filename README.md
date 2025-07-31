@@ -192,6 +192,81 @@ After creating the app:
 
 For more technical details about the Slack integration, see the [SlackOAuthService](./src/main/services/slackOAuthService.ts) implementation.
 
+## Environment Variables & Build Configuration
+
+### Local Development
+
+For local development with Slack integration, create a `.env` file in the project root:
+
+```bash
+# Copy the sample file
+cp .env.sample .env
+```
+
+Then edit `.env` and add your Slack credentials:
+
+```env
+# Slack Integration (required for OAuth functionality)
+SLACK_CLIENT_ID=your_slack_client_id_here
+SLACK_CLIENT_SECRET=your_slack_client_secret_here
+
+# Development options
+DEV_MODE=true
+NODE_ENV=development
+```
+
+Get your Slack credentials from:
+
+1. Go to [Slack API Apps](https://api.slack.com/apps)
+2. Select your app
+3. Go to "Basic Information"
+4. Copy the Client ID and Client Secret
+
+### GitHub Actions & CI/CD
+
+**For maintainers and forks**: To enable Slack integration in GitHub Actions builds, you need to set up repository secrets:
+
+#### Required Repository Secrets
+
+Go to your repository **Settings → Secrets and variables → Actions** and add:
+
+| Secret Name           | Description             | How to Get                                     |
+| --------------------- | ----------------------- | ---------------------------------------------- |
+| `SLACK_CLIENT_ID`     | Slack app Client ID     | From your Slack app's "Basic Information" page |
+| `SLACK_CLIENT_SECRET` | Slack app Client Secret | From your Slack app's "Basic Information" page |
+
+#### Optional Repository Secrets (for macOS notarization)
+
+| Secret Name                   | Description                                |
+| ----------------------------- | ------------------------------------------ |
+| `APPLE_ID`                    | Apple Developer account email              |
+| `APPLE_APP_SPECIFIC_PASSWORD` | App-specific password for notarization     |
+| `APPLE_TEAM_ID`               | 10-character Team ID from Apple Developer  |
+| `CSC_LINK`                    | Base64-encoded .p12 certificate (optional) |
+| `CSC_KEY_PASSWORD`            | Certificate password (optional)            |
+
+#### Why These Secrets Are Needed
+
+- **Without Slack secrets**: Builds will succeed but Slack integration will be disabled (shows "not configured" message)
+- **With Slack secrets**: Builds include full Slack OAuth functionality for end users
+- **Production releases**: Should always include Slack secrets for complete functionality
+
+#### Setting Up Secrets for Forks
+
+If you fork this repository and want to maintain Slack integration:
+
+1. **Create your own Slack app** following the setup guide above
+2. **Add the secrets** to your forked repository
+3. **GitHub Actions will automatically** use these secrets during builds
+4. **Your builds will have** working Slack integration
+
+#### Security Notes
+
+- Repository secrets are **encrypted** and only accessible to GitHub Actions
+- Secrets are **not exposed** in build logs or to pull requests from forks
+- Each fork needs **its own Slack app** and secrets for security isolation
+- The app uses **OAuth 2.0 flow** with localhost callback for secure authentication
+
 ## Architecture
 
 ### Core Technologies

@@ -143,12 +143,10 @@ class DatabaseService {
       customPrompt: '',
       summaryPrompt: '',
       prompts: JSON.stringify(DEFAULT_PROMPTS),
-      selectedPromptIndex: 0,
       // Slack OAuth fields
       slackInstallations: JSON.stringify([]),
       selectedSlackInstallation: '',
       availableChannels: JSON.stringify([]),
-      selectedChannelId: '',
       autoStart: false,
     };
 
@@ -212,8 +210,6 @@ class DatabaseService {
         assemblyaiKey: (settingsMap.get('assemblyaiKey') ?? '') as string,
         summaryPrompt: (settingsMap.get('summaryPrompt') ?? '') as string,
         prompts: (settingsMap.get('prompts') ?? []) as PromptTemplate[],
-        selectedPromptIndex: (settingsMap.get('selectedPromptIndex') ??
-          0) as number,
         // Slack OAuth fields
         slackInstallations: (settingsMap.get('slackInstallations') ??
           []) as SlackInstallation[],
@@ -222,9 +218,6 @@ class DatabaseService {
         ) ?? null) as string | null,
         availableChannels: (settingsMap.get('availableChannels') ??
           []) as SlackChannel[],
-        selectedChannelId: (settingsMap.get('selectedChannelId') ?? null) as
-          | string
-          | null,
         slackChannels: (settingsMap.get('slackChannels') ?? '') as string,
         autoStart: (settingsMap.get('autoStart') ?? false) as boolean,
       };
@@ -235,12 +228,10 @@ class DatabaseService {
         assemblyaiKey: '',
         summaryPrompt: '',
         prompts: [],
-        selectedPromptIndex: 0,
         // Slack OAuth fields
         slackInstallations: [],
         selectedSlackInstallation: null,
         availableChannels: [],
-        selectedChannelId: null,
         slackChannels: '',
         autoStart: false,
       };

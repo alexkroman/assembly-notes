@@ -11,13 +11,11 @@ export const createMockSettings = (
   assemblyaiKey: '',
   slackChannels: '',
   summaryPrompt: 'Summarize the key points from this meeting transcript:',
-  selectedPromptIndex: 0,
   prompts: [],
   autoStart: false,
   slackInstallations: [],
   selectedSlackInstallation: '',
   availableChannels: [],
-  selectedChannelId: '',
   ...overrides,
 });
 

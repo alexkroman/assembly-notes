@@ -67,14 +67,11 @@ export class SlackService {
     message: string,
     channelId?: string
   ): Promise<{ success: boolean; error?: string }> {
-    const state = this.store.getState();
-    const settings = state.settings;
-
     // Get current OAuth installation
     const installation = this.getCurrentInstallation();
 
-    // Use provided channelId or fall back to selected channel
-    const targetChannelId = channelId ?? settings.selectedChannelId;
+    // Use provided channelId
+    const targetChannelId = channelId;
 
     if (!installation) {
       const error =
@@ -126,9 +123,8 @@ export class SlackService {
    */
   isConfigured(): boolean {
     const installation = this.getCurrentInstallation();
-    const settings = this.store.getState().settings;
 
-    return !!(installation && settings.selectedChannelId);
+    return !!installation;
   }
 
   /**
@@ -136,25 +132,15 @@ export class SlackService {
    */
   getCurrentInstallationInfo(): {
     teamName: string;
-    channelName: string;
   } | null {
     const installation = this.getCurrentInstallation();
-    const settings = this.store.getState().settings;
 
-    if (!installation || !settings.selectedChannelId) {
+    if (!installation) {
       return null;
     }
 
-    const availableChannels = settings.availableChannels;
-    const selectedChannel = availableChannels.find(
-      (ch) => ch.id === settings.selectedChannelId
-    );
-
     return {
       teamName: installation.teamName,
-      channelName: selectedChannel
-        ? `#${selectedChannel.name}`
-        : 'Unknown channel',
     };
   }
 }

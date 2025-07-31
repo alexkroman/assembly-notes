@@ -25,7 +25,6 @@ import {
   savePrompt,
   savePrompts,
   saveSettings,
-  selectPrompt,
 } from './store/slices/settingsSlice.js';
 import type { AppDispatch, RootState } from './store/store.js';
 
@@ -204,14 +203,6 @@ function setupIpcHandlers(
   );
 
   ipcMain.handle(
-    'select-prompt',
-    async (_event: IpcMainInvokeEvent, index: number): Promise<boolean> => {
-      await store.dispatch(selectPrompt(index)).unwrap();
-      return true;
-    }
-  );
-
-  ipcMain.handle(
     'post-to-slack',
     async (
       _event: IpcMainInvokeEvent,
@@ -237,16 +228,6 @@ function setupIpcHandlers(
         DI_TOKENS.SlackOAuthService
       );
       slackOAuthService.removeInstallation(teamId);
-    }
-  );
-
-  ipcMain.handle(
-    'slack-oauth-refresh-channels',
-    async (_event: IpcMainInvokeEvent, teamId: string): Promise<void> => {
-      const slackOAuthService = container.resolve<SlackOAuthService>(
-        DI_TOKENS.SlackOAuthService
-      );
-      await slackOAuthService.refreshChannels(teamId);
     }
   );
 
@@ -297,6 +278,11 @@ function setupIpcHandlers(
 
   ipcMain.handle('slack-oauth-get-current', () => {
     return slackOAuthService.getCurrentInstallation();
+  });
+
+  ipcMain.handle('slack-oauth-validate-channels', (): void => {
+    // No validation needed - we assume all channels exist
+    return;
   });
 }
 

@@ -34,7 +34,6 @@ describe('SlackService', () => {
             createMockChannel(),
             createMockChannel({ id: 'C789012', name: 'dev' }),
           ],
-          selectedChannelId: 'C123456',
           slackChannels: '#general,#dev',
         },
       })),
@@ -70,7 +69,7 @@ describe('SlackService', () => {
       };
       mockHttpClient.post.mockResolvedValue(mockResponse);
 
-      const result = await slackService.postMessage('Test message');
+      const result = await slackService.postMessage('Test message', 'C123456');
 
       expect(result.success).toBe(true);
       expect(mockHttpClient.post).toHaveBeenCalledWith(
@@ -118,11 +117,10 @@ describe('SlackService', () => {
           slackInstallations: [],
           selectedSlackInstallation: '',
           availableChannels: [],
-          selectedChannelId: '',
         },
       });
 
-      const result = await slackService.postMessage('Test message');
+      const result = await slackService.postMessage('Test message', 'C123456');
 
       expect(result.success).toBe(false);
       expect(mockLogger.warn).toHaveBeenCalledWith(
@@ -131,13 +129,12 @@ describe('SlackService', () => {
       expect(mockHttpClient.post).not.toHaveBeenCalled();
     });
 
-    it('should fail when no channel is selected', async () => {
+    it('should fail when no channel ID is provided', async () => {
       mockStore.getState.mockReturnValue({
         settings: {
           slackInstallations: [createMockInstallation()],
           selectedSlackInstallation: 'T123456',
           availableChannels: [createMockChannel()],
-          selectedChannelId: '',
         },
       });
 
@@ -160,7 +157,7 @@ describe('SlackService', () => {
       };
       mockHttpClient.post.mockResolvedValue(mockResponse);
 
-      const result = await slackService.postMessage('Test message');
+      const result = await slackService.postMessage('Test message', 'C123456');
 
       expect(result.success).toBe(false);
       expect(mockLogger.error).toHaveBeenCalledWith(
@@ -176,7 +173,7 @@ describe('SlackService', () => {
       };
       mockHttpClient.post.mockResolvedValue(mockResponse);
 
-      const result = await slackService.postMessage('Test message');
+      const result = await slackService.postMessage('Test message', 'C123456');
 
       expect(result.success).toBe(false);
       expect(mockLogger.error).toHaveBeenCalledWith(
@@ -188,7 +185,7 @@ describe('SlackService', () => {
     it('should handle network errors', async () => {
       mockHttpClient.post.mockRejectedValue(new Error('Network error'));
 
-      const result = await slackService.postMessage('Test message');
+      const result = await slackService.postMessage('Test message', 'C123456');
 
       expect(result.success).toBe(false);
       expect(mockLogger.error).toHaveBeenCalledWith(
@@ -204,7 +201,7 @@ describe('SlackService', () => {
       };
       mockHttpClient.post.mockResolvedValue(mockResponse);
 
-      const result = await slackService.postMessage('Test message');
+      const result = await slackService.postMessage('Test message', 'C123456');
 
       expect(result.success).toBe(false);
       expect(mockLogger.error).toHaveBeenCalledWith(
@@ -220,7 +217,7 @@ describe('SlackService', () => {
       };
       mockHttpClient.post.mockResolvedValue(mockResponse);
 
-      const result = await slackService.postMessage('');
+      const result = await slackService.postMessage('', 'C123456');
 
       expect(result.success).toBe(false);
       expect(mockLogger.error).toHaveBeenCalledWith(
@@ -237,7 +234,7 @@ describe('SlackService', () => {
       mockHttpClient.post.mockResolvedValue(mockResponse);
 
       const specialMessage = 'Test with 🚀 emojis and @mentions #hashtags';
-      const result = await slackService.postMessage(specialMessage);
+      const result = await slackService.postMessage(specialMessage, 'C123456');
 
       expect(result.success).toBe(true);
     });
@@ -251,7 +248,7 @@ describe('SlackService', () => {
       };
       mockHttpClient.post.mockResolvedValue(mockResponse);
 
-      const result = await slackService.postMessage('Test message');
+      const result = await slackService.postMessage('Test message', 'C123456');
 
       expect(result.success).toBe(false);
       expect(mockLogger.error).toHaveBeenCalledWith(
@@ -268,7 +265,7 @@ describe('SlackService', () => {
       };
       mockHttpClient.post.mockResolvedValue(mockResponse);
 
-      const result = await slackService.postMessage('Test message');
+      const result = await slackService.postMessage('Test message', 'C123456');
 
       expect(result.success).toBe(false);
       expect(mockLogger.error).toHaveBeenCalledWith(
@@ -287,7 +284,6 @@ describe('SlackService', () => {
           ],
           selectedSlackInstallation: 'T123456',
           availableChannels: [createMockChannel()],
-          selectedChannelId: 'C123456',
         },
       });
 
@@ -300,7 +296,7 @@ describe('SlackService', () => {
       };
       mockHttpClient.post.mockResolvedValue(mockResponse);
 
-      const result = await slackService.postMessage('Test message');
+      const result = await slackService.postMessage('Test message', 'C123456');
 
       expect(result.success).toBe(false);
       expect(mockLogger.error).toHaveBeenCalledWith(
@@ -319,7 +315,6 @@ describe('SlackService', () => {
             createMockChannel(),
             createMockChannel({ id: 'C1234567890', name: 'dev' }),
           ],
-          selectedChannelId: 'C123456',
           slackChannels: '#general,#dev',
         },
       });
@@ -362,7 +357,6 @@ describe('SlackService', () => {
           slackInstallations: [],
           selectedSlackInstallation: '',
           availableChannels: [],
-          selectedChannelId: 'C123456',
         },
       });
 
@@ -371,19 +365,18 @@ describe('SlackService', () => {
       expect(result).toBe(false);
     });
 
-    it('should return false when no channel is selected', () => {
+    it('should return true when installation is present', () => {
       mockStore.getState.mockReturnValue({
         settings: {
           slackInstallations: [createMockInstallation()],
           selectedSlackInstallation: 'T123456',
           availableChannels: [createMockChannel()],
-          selectedChannelId: '',
         },
       });
 
       const result = slackService.isConfigured();
 
-      expect(result).toBe(false);
+      expect(result).toBe(true);
     });
   });
 
@@ -393,7 +386,6 @@ describe('SlackService', () => {
 
       expect(result).toEqual({
         teamName: 'Test Team',
-        channelName: '#general',
       });
     });
 
@@ -403,46 +395,12 @@ describe('SlackService', () => {
           slackInstallations: [],
           selectedSlackInstallation: '',
           availableChannels: [],
-          selectedChannelId: '',
         },
       });
 
       const result = slackService.getCurrentInstallationInfo();
 
       expect(result).toBeNull();
-    });
-
-    it('should return null when no channel is selected', () => {
-      mockStore.getState.mockReturnValue({
-        settings: {
-          slackInstallations: [createMockInstallation()],
-          selectedSlackInstallation: 'T123456',
-          availableChannels: [],
-          selectedChannelId: '',
-        },
-      });
-
-      const result = slackService.getCurrentInstallationInfo();
-
-      expect(result).toBeNull();
-    });
-
-    it('should handle unknown channel gracefully', () => {
-      mockStore.getState.mockReturnValue({
-        settings: {
-          slackInstallations: [createMockInstallation()],
-          selectedSlackInstallation: 'T123456',
-          availableChannels: [],
-          selectedChannelId: 'C999999', // Channel not in available channels
-        },
-      });
-
-      const result = slackService.getCurrentInstallationInfo();
-
-      expect(result).toEqual({
-        teamName: 'Test Team',
-        channelName: 'Unknown channel',
-      });
     });
   });
 });

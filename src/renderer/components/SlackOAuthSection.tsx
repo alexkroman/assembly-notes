@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 
 import { useAppSelector } from '../hooks/redux.js';
 
@@ -11,25 +11,69 @@ interface SlackInstallation {
   installedAt: number;
 }
 
-interface SlackChannel {
-  id: string;
-  name: string;
-  isPrivate: boolean;
+interface SlackOAuthSectionProps {
+  onValidationChange?: (isValid: boolean, hasUnsavedChanges: boolean) => void;
 }
 
-export const SlackOAuthSection: React.FC = () => {
+export const SlackOAuthSection: React.FC<SlackOAuthSectionProps> = ({
+  onValidationChange,
+}) => {
   const settings = useAppSelector((state) => state.settings);
   const [isConnecting, setIsConnecting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [localChannelValue, setLocalChannelValue] = useState<string>('');
+  const [isValidating, setIsValidating] = useState(false);
+  const validationTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   const currentInstallation = settings.slackInstallations.find(
     (inst: SlackInstallation) =>
       inst.teamId === settings.selectedSlackInstallation
   );
 
-  const selectedChannel = settings.availableChannels.find(
-    (ch: SlackChannel) => ch.id === settings.selectedChannelId
-  );
+  // Initialize local channel value from settings and trigger validation if needed
+  useEffect(() => {
+    const channelValue = settings.slackChannels || '';
+    setLocalChannelValue(channelValue);
+
+    // If we have existing channel data, trigger validation on mount
+    if (currentInstallation && channelValue.trim()) {
+      setIsValidating(true);
+
+      const validateExistingChannels = async () => {
+        try {
+          await window.electronAPI.slackOAuthValidateChannels(
+            currentInstallation.teamId,
+            channelValue
+          );
+          setError(null);
+          setIsValidating(false);
+        } catch (validationErr) {
+          const errorMessage =
+            validationErr instanceof Error
+              ? validationErr.message
+              : 'Channel validation failed';
+          setError(errorMessage);
+          setIsValidating(false);
+        }
+      };
+
+      void validateExistingChannels();
+    }
+  }, [settings.slackChannels, currentInstallation]);
+
+  // Notify parent about validation status
+  useEffect(() => {
+    const hasUnsavedChanges =
+      localChannelValue !== (settings.slackChannels || '');
+    const isValid = !error && !isValidating;
+    onValidationChange?.(isValid, hasUnsavedChanges);
+  }, [
+    error,
+    isValidating,
+    localChannelValue,
+    settings.slackChannels,
+    onValidationChange,
+  ]);
 
   useEffect(() => {
     // Listen for OAuth success/error events
@@ -49,6 +93,10 @@ export const SlackOAuthSection: React.FC = () => {
 
     // Cleanup listeners on unmount
     return () => {
+      // Clear any pending validation timeout
+      if (validationTimeoutRef.current) {
+        clearTimeout(validationTimeoutRef.current);
+      }
       // Note: electronAPI doesn't expose removeListener, so we rely on component unmount
     };
   }, []);
@@ -76,38 +124,77 @@ export const SlackOAuthSection: React.FC = () => {
     }
   };
 
-  const handleRefreshChannels = async () => {
-    if (!currentInstallation) return;
-    try {
-      await window.electronAPI.slackOAuthRefreshChannels(
-        currentInstallation.teamId
-      );
-      setError(null);
-    } catch (err) {
-      setError(
-        err instanceof Error ? err.message : 'Failed to refresh channels'
-      );
-    }
-  };
+  const handleChannelListChange = (channelList: string) => {
+    // Update local state immediately for responsive UI
+    setLocalChannelValue(channelList);
 
-  const handleChannelChange = async (channelId: string) => {
-    try {
-      await window.electronAPI.saveSettings({
-        selectedChannelId: channelId,
-      });
-    } catch (err) {
-      setError(
-        err instanceof Error ? err.message : 'Failed to save channel selection'
-      );
+    // Clear any existing validation timeout
+    if (validationTimeoutRef.current) {
+      clearTimeout(validationTimeoutRef.current);
+    }
+
+    // Clear previous validation errors while typing
+    setError(null);
+    setIsValidating(false);
+
+    // Set up debounced validation and save (validate and save 1 second after user stops typing)
+    if (currentInstallation && channelList.trim()) {
+      setIsValidating(true);
+      validationTimeoutRef.current = setTimeout(() => {
+        // Wrap the async validation and save in a function that handles errors properly
+        const validateAndSaveChannels = async () => {
+          try {
+            // First validate the channels
+            await window.electronAPI.slackOAuthValidateChannels(
+              currentInstallation.teamId,
+              channelList
+            );
+
+            // If validation passes, then save
+            await window.electronAPI.saveSettings({
+              slackChannels: channelList,
+            });
+
+            // Success - validation passed and saved
+            setError(null);
+            setIsValidating(false);
+          } catch (validationErr) {
+            setError(
+              validationErr instanceof Error
+                ? validationErr.message
+                : 'Channel validation failed'
+            );
+            // Reset local value to last known good value from settings on validation failure
+            setLocalChannelValue(settings.slackChannels || '');
+            setIsValidating(false);
+          }
+        };
+
+        // Call the validation and save function
+        void validateAndSaveChannels();
+      }, 1000); // Wait 1 second after user stops typing
+    } else if (!channelList.trim()) {
+      // If empty, save immediately without validation
+      const saveEmptyChannels = async () => {
+        try {
+          await window.electronAPI.saveSettings({
+            slackChannels: channelList,
+          });
+        } catch (err) {
+          setError(
+            err instanceof Error ? err.message : 'Failed to save channels'
+          );
+          // Reset local value on save failure
+          setLocalChannelValue(settings.slackChannels || '');
+        }
+      };
+      void saveEmptyChannels();
     }
   };
 
   if (!currentInstallation) {
     return (
       <div className="slack-oauth-section">
-        <div className="oauth-status">
-          <span className="status-text">Not connected to Slack</span>
-        </div>
         <button
           type="button"
           className="btn-primary oauth-button"
@@ -126,78 +213,56 @@ export const SlackOAuthSection: React.FC = () => {
             {error}
           </div>
         )}
-        <div
-          className="oauth-help"
-          style={{ fontSize: '12px', color: '#888', marginTop: '8px' }}
-        >
-          This will open a Slack authorization window where you can connect
-          Assembly Notes to your workspace.
-        </div>
       </div>
     );
   }
 
   return (
     <div className="slack-oauth-section">
-      <div className="oauth-status">
-        <span className="status-text">
-          ✅ Connected to <strong>{currentInstallation.teamName}</strong>
-        </span>
-      </div>
-
-      <div className="channel-selection" style={{ marginTop: '12px' }}>
-        <label
-          htmlFor="slack-channel-select"
-          style={{ fontSize: '12px', display: 'block', marginBottom: '4px' }}
-        >
-          Default Channel:
-        </label>
-        <select
-          id="slack-channel-select"
-          value={settings.selectedChannelId ?? ''}
-          onChange={(e) => {
-            void handleChannelChange(e.target.value);
-          }}
-          style={{ width: '100%', padding: '4px' }}
-        >
-          <option value="">Choose a channel...</option>
-          {settings.availableChannels.map((channel: SlackChannel) => (
-            <option key={channel.id} value={channel.id}>
-              #{channel.name} {channel.isPrivate ? '🔒' : ''}
-            </option>
-          ))}
-        </select>
-        {selectedChannel && (
-          <div style={{ fontSize: '11px', color: '#666', marginTop: '4px' }}>
-            Selected: #{selectedChannel.name}
-          </div>
-        )}
-      </div>
-
       <div
         className="oauth-actions"
-        style={{ marginTop: '12px', display: 'flex', gap: '8px' }}
+        style={{ display: 'flex', gap: '8px', marginBottom: '12px' }}
       >
         <button
           type="button"
-          className="btn-secondary"
-          onClick={() => {
-            void handleRefreshChannels();
-          }}
-          style={{ fontSize: '12px', padding: '4px 8px' }}
-        >
-          Refresh Channels
-        </button>
-        <button
-          type="button"
-          className="btn-danger"
+          className="btn-small btn-danger"
           onClick={() => {
             void handleDisconnect();
           }}
-          style={{ fontSize: '12px', padding: '4px 8px' }}
         >
-          Disconnect
+          Disconnect from Slack
         </button>
+      </div>
+
+      <div className="form-group" style={{ marginBottom: '12px' }}>
+        <label
+          htmlFor="slack-channels-textarea"
+          style={{ fontSize: '12px', display: 'block', marginBottom: '4px' }}
+        >
+          Favorite Channels (comma-separated):
+        </label>
+        <textarea
+          id="slack-channels-textarea"
+          value={localChannelValue}
+          onChange={(e) => {
+            handleChannelListChange(e.target.value);
+          }}
+          placeholder="general, random, team-updates"
+          rows={3}
+          style={{
+            width: '100%',
+            padding: '4px 8px',
+            fontSize: '12px',
+            border: '1px solid #ccc',
+            borderRadius: '4px',
+            resize: 'vertical',
+            fontFamily: 'inherit',
+          }}
+        />
+        <div style={{ fontSize: '10px', color: '#666', marginTop: '2px' }}>
+          Enter channel names without # symbol. Bot must be invited to private
+          channels.
+        </div>
       </div>
 
       {error && (

@@ -79,10 +79,8 @@ export interface FullSettingsState {
   slackInstallations: SlackInstallation[];
   selectedSlackInstallation: string | null;
   availableChannels: SlackChannel[];
-  selectedChannelId: string | null;
   slackChannels: string; // Comma-separated favorite channel names
   summaryPrompt: string;
-  selectedPromptIndex: number;
   prompts: PromptTemplate[];
   autoStart: boolean;
 }

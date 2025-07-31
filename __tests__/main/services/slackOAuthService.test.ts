@@ -48,6 +48,11 @@ const mockMainWindow = {
   },
 };
 
+const mockSettingsService = {
+  getSettings: jest.fn(),
+  updateSettings: jest.fn(),
+};
+
 describe('SlackOAuthService', () => {
   let slackOAuthService: SlackOAuthService;
   let mockBrowserWindow: any;
@@ -106,6 +111,7 @@ describe('SlackOAuthService', () => {
       isDestroyed: jest.fn().mockReturnValue(false),
       show: jest.fn(),
       focus: jest.fn(),
+      center: jest.fn(),
     };
 
     // Reset container
@@ -134,7 +140,8 @@ describe('SlackOAuthService', () => {
     slackOAuthService = new SlackOAuthService(
       mockDatabase as any,
       mockLogger as any,
-      mockMainWindow as any
+      mockMainWindow as any,
+      mockSettingsService as any
     );
   });
 
@@ -156,17 +163,24 @@ describe('SlackOAuthService', () => {
       const { BrowserWindow: MockedBrowserWindow } = await import('electron');
 
       expect(MockedBrowserWindow).toHaveBeenCalledWith({
-        width: 500,
-        height: 600,
+        width: 800,
+        height: 700,
         webPreferences: {
           nodeIntegration: false,
           contextIsolation: true,
-          webSecurity: true,
+          webSecurity: false,
+          allowRunningInsecureContent: true,
+          experimentalFeatures: true,
         },
-        modal: true,
         parent: mockMainWindow,
+        modal: false,
         show: false,
-        title: 'Connect to Slack',
+        title: 'Connect to Slack - Assembly Notes',
+        autoHideMenuBar: true,
+        alwaysOnTop: true,
+        resizable: true,
+        minimizable: false,
+        maximizable: false,
       });
 
       // Verify the authorization URL includes the new redirect URI
@@ -249,7 +263,8 @@ describe('SlackOAuthService', () => {
       const testService = new SlackOAuthService(
         mockDatabase as any,
         mockLogger as any,
-        mockMainWindow as any
+        mockMainWindow as any,
+        mockSettingsService as any
       );
 
       await expect(testService.initiateOAuth()).rejects.toThrow(
@@ -271,7 +286,8 @@ describe('SlackOAuthService', () => {
       const testService = new TestSlackOAuthService(
         mockDatabase as any,
         mockLogger as any,
-        mockMainWindow as any
+        mockMainWindow as any,
+        mockSettingsService as any
       );
 
       await testService.initiateOAuth();
@@ -389,20 +405,11 @@ describe('SlackOAuthService', () => {
         }
       );
 
-      // Verify channels API was called
-      expect(mockFetch).toHaveBeenNthCalledWith(
-        2,
-        'https://slack.com/api/conversations.list',
-        {
-          headers: {
-            Authorization: 'Bearer xoxb-test-token',
-            'Content-Type': 'application/json',
-          },
-        }
-      );
+      // Verify fetch was only called once (for OAuth exchange)
+      expect(mockFetch).toHaveBeenCalledTimes(1);
 
       // Verify installation was saved (first call)
-      expect(mockDatabase.updateSettings).toHaveBeenNthCalledWith(1, {
+      expect(mockSettingsService.updateSettings).toHaveBeenNthCalledWith(1, {
         slackInstallations: [
           {
             teamId: 'T123456',
@@ -414,11 +421,6 @@ describe('SlackOAuthService', () => {
           },
         ],
         selectedSlackInstallation: 'T123456',
-      });
-
-      // Verify channels were updated (second call)
-      expect(mockDatabase.updateSettings).toHaveBeenNthCalledWith(2, {
-        availableChannels: [],
       });
 
       // Verify success event was sent
@@ -537,82 +539,6 @@ describe('SlackOAuthService', () => {
     });
   });
 
-  describe('refreshChannels', () => {
-    beforeEach(() => {
-      mockDatabase.getSettings.mockReturnValue(
-        createMockSettings({
-          slackInstallations: [
-            createMockInstallation({ botToken: 'xoxb-test-token' }),
-          ],
-          selectedSlackInstallation: 'T123456',
-        })
-      );
-    });
-
-    it('should refresh channels for a team', async () => {
-      const mockChannels = {
-        ok: true,
-        channels: [
-          { id: 'C123', name: 'general', is_private: false, is_member: true },
-          { id: 'C456', name: 'random', is_private: false, is_member: true },
-          {
-            id: 'C789',
-            name: 'private-channel',
-            is_private: true,
-            is_member: true,
-          },
-        ],
-      };
-
-      mockFetch.mockResolvedValueOnce({
-        ok: true,
-        json: () => Promise.resolve(mockChannels),
-      });
-
-      await slackOAuthService.refreshChannels('T123456');
-
-      expect(mockFetch).toHaveBeenCalledWith(
-        'https://slack.com/api/conversations.list',
-        {
-          headers: {
-            Authorization: 'Bearer xoxb-test-token',
-            'Content-Type': 'application/json',
-          },
-        }
-      );
-
-      expect(mockDatabase.updateSettings).toHaveBeenCalledWith({
-        availableChannels: [
-          { id: 'C123', name: 'general', isPrivate: false },
-          { id: 'C456', name: 'random', isPrivate: false },
-          { id: 'C789', name: 'private-channel', isPrivate: true },
-        ],
-      });
-
-      expect(mockLogger.info).toHaveBeenCalledWith(
-        'Refreshed 3 channels for team: Test Team'
-      );
-    });
-
-    it('should handle Slack API errors when refreshing channels', async () => {
-      mockFetch.mockRejectedValueOnce(new Error('API error'));
-
-      await expect(
-        slackOAuthService.refreshChannels('T123456')
-      ).rejects.toThrow('API error');
-      expect(mockLogger.error).toHaveBeenCalledWith(
-        'Error refreshing channels:',
-        expect.any(Error)
-      );
-    });
-
-    it('should throw error for non-existent team', async () => {
-      await expect(
-        slackOAuthService.refreshChannels('T999999')
-      ).rejects.toThrow('Installation not found');
-    });
-  });
-
   describe('removeInstallation', () => {
     beforeEach(() => {
       const installations = [
@@ -633,7 +559,6 @@ describe('SlackOAuthService', () => {
           availableChannels: [
             { id: 'C123', name: 'general', isPrivate: false },
           ],
-          selectedChannelId: 'C123',
         })
       );
     });
@@ -641,7 +566,7 @@ describe('SlackOAuthService', () => {
     it('should remove an installation and update selection', async () => {
       await slackOAuthService.removeInstallation('T123456');
 
-      expect(mockDatabase.updateSettings).toHaveBeenCalledWith({
+      expect(mockSettingsService.updateSettings).toHaveBeenCalledWith({
         slackInstallations: [
           {
             teamId: 'T789012',
@@ -653,8 +578,6 @@ describe('SlackOAuthService', () => {
           },
         ],
         selectedSlackInstallation: 'T789012',
-        availableChannels: [],
-        selectedChannelId: '',
       });
 
       expect(mockLogger.info).toHaveBeenCalledWith(
@@ -677,11 +600,9 @@ describe('SlackOAuthService', () => {
 
       await slackOAuthService.removeInstallation('T123456');
 
-      expect(mockDatabase.updateSettings).toHaveBeenCalledWith({
+      expect(mockSettingsService.updateSettings).toHaveBeenCalledWith({
         slackInstallations: [],
         selectedSlackInstallation: '',
-        availableChannels: [],
-        selectedChannelId: '',
       });
     });
 

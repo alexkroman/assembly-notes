@@ -57,7 +57,6 @@ declare global {
         summaryPrompt: string;
       }) => Promise<boolean>;
       savePrompts: (prompts: PromptTemplate[]) => Promise<boolean>;
-      selectPrompt: (index: number) => Promise<boolean>;
       saveSelectedChannel: (channel: string) => Promise<boolean>;
 
       // Slack integration
@@ -69,7 +68,10 @@ declare global {
       // Slack OAuth
       slackOAuthInitiate: () => Promise<void>;
       slackOAuthRemoveInstallation: (teamId: string) => Promise<void>;
-      slackOAuthRefreshChannels: (teamId: string) => Promise<void>;
+      slackOAuthValidateChannels: (
+        teamId: string,
+        channelList: string
+      ) => Promise<void>;
       onSlackOAuthSuccess: (
         callback: (installation: SlackInstallation) => void
       ) => void;

@@ -118,9 +118,8 @@ describe('SettingsModal', () => {
     const apiKeyInput = screen.getByTestId('assemblyai-key-input');
 
     expect((apiKeyInput as HTMLInputElement).value).toBe('stored-api-key');
-    // Should show connected state for Slack (text is split across elements)
-    expect(screen.getByText(/✅ Connected to/)).toBeInTheDocument();
-    expect(screen.getByText('Test Team')).toBeInTheDocument();
+    // Should show connected state for Slack
+    expect(screen.getByText(/Connected to: Test Team/)).toBeInTheDocument();
   });
 
   it('should update assemblyai key on input', () => {

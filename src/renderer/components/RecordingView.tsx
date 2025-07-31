@@ -212,7 +212,7 @@ export const RecordingView: React.FC<RecordingViewProps> = ({
               if (e.target.value === 'manage') {
                 onShowPromptModal();
               } else {
-                void handlePromptChange(parseInt(e.target.value));
+                handlePromptChange(parseInt(e.target.value));
               }
             }}
           >
@@ -264,7 +264,7 @@ export const RecordingView: React.FC<RecordingViewProps> = ({
                   if (e.target.value === 'manage') {
                     onShowChannelModal();
                   } else {
-                    void handleChannelChange(e.target.value);
+                    handleChannelChange(e.target.value);
                   }
                 }}
               >

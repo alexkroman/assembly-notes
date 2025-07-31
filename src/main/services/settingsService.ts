@@ -37,22 +37,31 @@ export class SettingsService {
       assemblyaiKey: dbSettings.assemblyaiKey,
       slackChannels: dbSettings.slackChannels,
       summaryPrompt: dbSettings.summaryPrompt,
-      selectedPromptIndex: dbSettings.selectedPromptIndex,
       prompts: dbSettings.prompts,
       autoStart: dbSettings.autoStart,
       slackInstallations: dbSettings.slackInstallations,
       selectedSlackInstallation: dbSettings.selectedSlackInstallation ?? '',
       availableChannels: dbSettings.availableChannels,
-      selectedChannelId: dbSettings.selectedChannelId ?? '',
     };
   }
 
   updateSettings(updates: Partial<SettingsSchema>): void {
+    this.logger.info('SettingsService.updateSettings called with:', updates);
+
     Object.entries(updates).forEach(([key, value]) => {
       if (value != null) {
         this.databaseService.setSetting(key, value);
       }
     });
+
+    // Update Redux store with the new settings
+    const updatedSettings = this.getSettings();
+    this.logger.info('Dispatching updated settings to Redux:', {
+      slackInstallations: updatedSettings.slackInstallations,
+      selectedSlackInstallation: updatedSettings.selectedSlackInstallation,
+      availableChannels: updatedSettings.availableChannels,
+    });
+    this.store.dispatch(updateSettings(updatedSettings));
   }
 
   getAssemblyAIKey(): string {
@@ -80,11 +89,6 @@ export class SettingsService {
     return settings.availableChannels;
   }
 
-  getSelectedChannelId(): string {
-    const settings = this.databaseService.getSettings();
-    return settings.selectedChannelId ?? '';
-  }
-
   getSummaryPrompt(): string {
     const settings = this.databaseService.getSettings();
     return (
@@ -96,11 +100,6 @@ export class SettingsService {
   isAutoStartEnabled(): boolean {
     const settings = this.databaseService.getSettings();
     return settings.autoStart;
-  }
-
-  getSelectedPromptIndex(): number {
-    const settings = this.databaseService.getSettings();
-    return settings.selectedPromptIndex;
   }
 
   getPrompts(): { label: string; content: string }[] {

@@ -61,11 +61,11 @@ type SettingsSyncAction =
   | { type: 'settings/saveSettings/fulfilled'; payload: Partial<SettingsState> }
   | { type: 'settings/savePrompt/fulfilled'; payload: Partial<SettingsState> }
   | { type: 'settings/savePrompts/fulfilled'; payload: Partial<SettingsState> }
-  | { type: 'settings/selectPrompt/fulfilled'; payload: Partial<SettingsState> }
   | {
       type: 'settings/saveSelectedChannel/fulfilled';
       payload: Partial<SettingsState>;
-    };
+    }
+  | { type: 'settings/updateSettings'; payload: Partial<SettingsState> };
 
 // Recordings slice action types
 type RecordingsSyncAction =
@@ -226,8 +226,8 @@ const createSyncReducer = <T extends SyncState>(initialState: T) => {
       case 'settings/saveSettings/fulfilled':
       case 'settings/savePrompt/fulfilled':
       case 'settings/savePrompts/fulfilled':
-      case 'settings/selectPrompt/fulfilled':
       case 'settings/saveSelectedChannel/fulfilled':
+      case 'settings/updateSettings':
         if ('assemblyaiKey' in state && action.payload) {
           return {
             ...state,
@@ -308,9 +308,7 @@ export function createRendererStore() {
         slackInstallations: [],
         selectedSlackInstallation: '',
         availableChannels: [],
-        selectedChannelId: '',
         summaryPrompt: '',
-        selectedPromptIndex: 0,
         prompts: [],
         autoStart: false,
         loading: false,

@@ -49,7 +49,7 @@ export const ConfirmModal: React.FC<ConfirmModalProps> = ({
         }
       }}
     >
-      <div className="modal-content">
+      <div className="modal-content large">
         <div className="modal-header">
           <h2>{title}</h2>
           <button

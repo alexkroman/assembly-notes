@@ -4,7 +4,7 @@ import type { SettingsModalProps } from '../../types/components.js';
 import type { SettingsState } from '../../types/redux.js';
 import { useAppDispatch, useAppSelector } from '../hooks/redux.js';
 import { setStatus } from '../store';
-import { SlackOAuthSection } from './SlackOAuthSection.js';
+import { SlackOAuthConnectionOnly } from './SlackOAuthConnectionOnly.js';
 import '../../types/global.d.ts';
 
 export const SettingsModal: React.FC<SettingsModalProps> = ({ onClose }) => {
@@ -77,7 +77,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ onClose }) => {
         }
       }}
     >
-      <div className="modal-content">
+      <div className="modal-content large">
         <div className="modal-header">
           <h2>Settings</h2>
           <button
@@ -110,7 +110,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ onClose }) => {
 
           <div className="form-group">
             <label>Slack Integration (optional):</label>
-            <SlackOAuthSection />
+            <SlackOAuthConnectionOnly />
           </div>
         </div>
 
