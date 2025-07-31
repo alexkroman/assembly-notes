@@ -5,8 +5,14 @@ function send(level: 'info' | 'warn' | 'error' | 'debug', ...args: unknown[]) {
     // @ts-expect-error logger is bridged in preload
     window.logger[level](...args);
   } else {
-    // eslint-disable-next-line no-console
-    console[level](...args);
+    // Fallback to browser console
+    const consoleMap: Record<'info' | 'warn' | 'error' | 'debug', (...a: unknown[]) => void> = {
+      info: console.info.bind(console),
+      warn: console.warn.bind(console),
+      error: console.error.bind(console),
+      debug: console.debug ? console.debug.bind(console) : console.log.bind(console),
+    };
+    consoleMap[level](...args);
   }
 }
 
