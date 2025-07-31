@@ -23,13 +23,14 @@ export const PromptModal: React.FC<PromptModalProps> = ({ onClose }) => {
         (settings as { prompts?: PromptTemplate[] }).prompts ?? [];
 
       // always 5 slots
-      const finalPrompts: PromptTemplate[] = Array.from({ length: 5 }, (_, i) =>
-        loadedPrompts[i] ?? DEFAULT_PROMPTS[i],
+      const finalPrompts: PromptTemplate[] = Array.from(
+        { length: 5 },
+        (_, i) => loadedPrompts[i] ?? DEFAULT_PROMPTS[i]
       ).filter(Boolean) as PromptTemplate[];
 
       setPrompts(finalPrompts);
       setSelectedIndex(
-        (settings as { selectedPromptIndex?: number }).selectedPromptIndex ?? 0,
+        (settings as { selectedPromptIndex?: number }).selectedPromptIndex ?? 0
       );
     } catch (error) {
       console.error('Error loading prompts:', error);
@@ -51,7 +52,7 @@ export const PromptModal: React.FC<PromptModalProps> = ({ onClose }) => {
   const handleUpdatePrompt = (
     index: number,
     field: 'name' | 'content',
-    value: string,
+    value: string
   ) => {
     setPrompts((prev) => {
       const next = [...prev];
@@ -135,7 +136,11 @@ export const PromptModal: React.FC<PromptModalProps> = ({ onClose }) => {
                   className="prompt-content-input-dense"
                   value={prompts[selectedIndex].content}
                   onChange={(e) => {
-                    handleUpdatePrompt(selectedIndex, 'content', e.target.value);
+                    handleUpdatePrompt(
+                      selectedIndex,
+                      'content',
+                      e.target.value
+                    );
                   }}
                   placeholder="Enter prompt content..."
                   rows={9}
@@ -150,7 +155,13 @@ export const PromptModal: React.FC<PromptModalProps> = ({ onClose }) => {
                       handleRevertToDefault();
                     }}
                     title="Revert to the default name and prompt for this slot"
-                    style={{ fontSize: '0.7em', color: '#888', textDecoration: 'none', marginTop: '4px', display: 'inline-block' }}
+                    style={{
+                      fontSize: '0.7em',
+                      color: '#888',
+                      textDecoration: 'none',
+                      marginTop: '4px',
+                      display: 'inline-block',
+                    }}
                     onMouseEnter={(e) => {
                       e.currentTarget.style.color = '#666';
                       e.currentTarget.style.textDecoration = 'underline';

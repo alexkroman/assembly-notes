@@ -52,4 +52,4 @@ Create a bulleted list of all concrete decisions made and actionable tasks assig
 Create a bulleted list of the most important topics discussed. This should capture the core ideas, proposals, and significant points of conversation.
 
 **Full Transcript:**
-Provide a clean, verbatim transcript of the meeting.`
+Provide a clean, verbatim transcript of the meeting.`;

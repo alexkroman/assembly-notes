@@ -1,7 +1,7 @@
 import { contextBridge, ipcRenderer } from 'electron';
-import { IPC_CHANNELS } from '../constants/ipc.js';
 import { preload as electronReduxPreload } from 'electron-redux/es/preload.js';
 
+import { IPC_CHANNELS } from '../constants/ipc.js';
 import type {
   TranscriptData,
   ConnectionStatusData,
@@ -13,15 +13,21 @@ import type {
 } from '../types/index.js';
 
 const electronAPI = {
-  enableLoopbackAudio: () => ipcRenderer.invoke(IPC_CHANNELS.ENABLE_LOOPBACK_AUDIO),
-  disableLoopbackAudio: () => ipcRenderer.invoke(IPC_CHANNELS.DISABLE_LOOPBACK_AUDIO),
+  enableLoopbackAudio: () =>
+    ipcRenderer.invoke(IPC_CHANNELS.ENABLE_LOOPBACK_AUDIO),
+  disableLoopbackAudio: () =>
+    ipcRenderer.invoke(IPC_CHANNELS.DISABLE_LOOPBACK_AUDIO),
 
   startRecording: () => ipcRenderer.invoke(IPC_CHANNELS.START_RECORDING),
   stopRecording: () => ipcRenderer.invoke(IPC_CHANNELS.STOP_RECORDING),
   newRecording: () =>
     ipcRenderer.invoke(IPC_CHANNELS.NEW_RECORDING) as Promise<string | null>,
   summarizeTranscript: (recordingId?: string, transcript?: string) =>
-    ipcRenderer.invoke(IPC_CHANNELS.SUMMARIZE_TRANSCRIPT, recordingId, transcript),
+    ipcRenderer.invoke(
+      IPC_CHANNELS.SUMMARIZE_TRANSCRIPT,
+      recordingId,
+      transcript
+    ),
   sendMicrophoneAudio: (data: ArrayBuffer) => {
     ipcRenderer.send(IPC_CHANNELS.MICROPHONE_AUDIO_DATA, data);
   },

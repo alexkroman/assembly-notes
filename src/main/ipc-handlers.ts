@@ -5,10 +5,10 @@ import {
   IpcMainInvokeEvent,
   ipcMain,
 } from 'electron';
-import { IPC_CHANNELS } from '../constants/ipc.js';
 
 import type { AutoUpdaterService } from './auto-updater.js';
 import { DI_TOKENS, container } from './container.js';
+import { IPC_CHANNELS } from '../constants/ipc.js';
 import { PromptTemplate, SettingsSchema } from '../types/common.js';
 import type { RecordingManager } from './services/recordingManager.js';
 import type { SlackService } from './services/slackService.js';
@@ -93,9 +93,12 @@ function setupIpcHandlers(
     return await recordingManager.stopTranscription();
   });
 
-  ipcMain.handle(IPC_CHANNELS.NEW_RECORDING, async (): Promise<string | null> => {
-    return await recordingManager.newRecording();
-  });
+  ipcMain.handle(
+    IPC_CHANNELS.NEW_RECORDING,
+    async (): Promise<string | null> => {
+      return await recordingManager.newRecording();
+    }
+  );
 
   ipcMain.handle(
     'load-recording',

@@ -9,10 +9,10 @@ import {
 } from './audio-processing';
 import { initAutoUpdaterUI } from './auto-updater-ui';
 import { App } from './components/App';
+import { logger } from './logger.js';
 import { acquireStreams, releaseStreams } from './media';
 import { createRendererStore, setStatus } from './store';
 import './assets/styles.css';
-import { logger } from './logger.js';
 
 // Initialize auto-updater UI
 initAutoUpdaterUI();
@@ -54,9 +54,7 @@ window.electronAPI.onStopAudioCapture(() => {
 // Set up reset handler for complete cleanup
 window.electronAPI.onResetAudioProcessing(() => {
   try {
-    logger.info(
-      'Resetting audio processing due to main process request'
-    );
+    logger.info('Resetting audio processing due to main process request');
     setRecordingState(false);
     stopAudioProcessing();
     releaseStreams();

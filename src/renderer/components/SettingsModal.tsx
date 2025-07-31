@@ -29,7 +29,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ onClose }) => {
 
   const handleInputChange = (
     field: keyof SettingsState,
-    value: string | boolean,
+    value: string | boolean
   ) => {
     setSettings((prev: SettingsState) => ({ ...prev, [field]: value }));
   };
