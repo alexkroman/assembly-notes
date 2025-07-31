@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 
+import { Modal } from './Modal.js';
 import { DEFAULT_PROMPTS } from '../../constants/prompts.js';
 import type { PromptModalProps } from '../../types/components.js';
 import type { PromptTemplate } from '../../types/index.js';
@@ -21,18 +22,14 @@ export const PromptModal: React.FC<PromptModalProps> = ({ onClose }) => {
       const loadedPrompts =
         (settings as { prompts?: PromptTemplate[] }).prompts ?? [];
 
-      // Ensure we always have exactly 5 prompts
-      const finalPrompts: PromptTemplate[] = [];
-      for (let i = 0; i < 5; i++) {
-        const prompt = loadedPrompts[i] ?? DEFAULT_PROMPTS[i];
-        if (prompt) {
-          finalPrompts.push(prompt);
-        }
-      }
+      // always 5 slots
+      const finalPrompts: PromptTemplate[] = Array.from({ length: 5 }, (_, i) =>
+        loadedPrompts[i] ?? DEFAULT_PROMPTS[i],
+      ).filter(Boolean) as PromptTemplate[];
 
       setPrompts(finalPrompts);
       setSelectedIndex(
-        (settings as { selectedPromptIndex?: number }).selectedPromptIndex ?? 0
+        (settings as { selectedPromptIndex?: number }).selectedPromptIndex ?? 0,
       );
     } catch (error) {
       console.error('Error loading prompts:', error);
@@ -54,144 +51,123 @@ export const PromptModal: React.FC<PromptModalProps> = ({ onClose }) => {
   const handleUpdatePrompt = (
     index: number,
     field: 'name' | 'content',
-    value: string
+    value: string,
   ) => {
-    const newPrompts = [...prompts];
-    const currentPrompt = newPrompts[index];
-    if (currentPrompt) {
-      newPrompts[index] = {
-        name: currentPrompt.name,
-        content: currentPrompt.content,
-        [field]: value,
-      };
-      setPrompts(newPrompts);
-    }
+    setPrompts((prev) => {
+      const next = [...prev];
+      const current = next[index];
+      if (!current) return prev;
+      next[index] = { ...current, [field]: value } as PromptTemplate;
+      return next;
+    });
   };
 
   const handleRevertToDefault = () => {
     const defaultPrompt = DEFAULT_PROMPTS[selectedIndex];
     if (defaultPrompt) {
-      const newPrompts = [...prompts];
-      newPrompts[selectedIndex] = {
-        name: defaultPrompt.name,
-        content: defaultPrompt.content,
-      };
-      setPrompts(newPrompts);
+      setPrompts((prev) => {
+        const next = [...prev];
+        next[selectedIndex] = { ...defaultPrompt };
+        return next;
+      });
     }
   };
 
+  const footer = (
+    <>
+      <button className="btn-secondary" onClick={onClose}>
+        Cancel
+      </button>
+      <button
+        className="btn-primary"
+        onClick={() => {
+          void handleSave();
+        }}
+      >
+        Save Changes
+      </button>
+    </>
+  );
+
   return (
-    <div className="modal-overlay" data-testid="prompt-modal">
-      <div className="modal-content large">
-        <div className="modal-header">
-          <h2>Manage Prompts</h2>
-          <button
-            className="modal-close"
-            data-testid="close-modal-btn"
-            onClick={onClose}
-          >
-            ×
-          </button>
+    <Modal
+      title="Manage Prompts"
+      onClose={onClose}
+      size="large"
+      footer={footer}
+      overlayTestId="prompt-modal"
+    >
+      <div className="prompt-editor-dense">
+        <div className="prompt-tabs">
+          {prompts.map((prompt, index) => (
+            <button
+              key={index}
+              className={`prompt-tab ${index === selectedIndex ? 'active' : ''}`}
+              onClick={() => {
+                setSelectedIndex(index);
+              }}
+              title={prompt.name}
+            >
+              {index + 1}
+            </button>
+          ))}
         </div>
 
-        <div className="modal-body">
-          <div className="prompt-editor-dense">
-            <div className="prompt-tabs">
-              {prompts.map((prompt, index) => (
-                <button
-                  key={index}
-                  className={`prompt-tab ${index === selectedIndex ? 'active' : ''}`}
-                  onClick={() => {
-                    setSelectedIndex(index);
-                  }}
-                  title={prompt.name}
-                >
-                  {index + 1}
-                </button>
-              ))}
+        {prompts[selectedIndex] && (
+          <div className="prompt-content-dense">
+            <div className="prompt-header-row">
+              <span className="prompt-label">Name:</span>
+              <input
+                type="text"
+                className="prompt-name-input-dense"
+                value={prompts[selectedIndex].name}
+                onChange={(e) => {
+                  handleUpdatePrompt(selectedIndex, 'name', e.target.value);
+                }}
+                placeholder="Prompt name"
+              />
             </div>
 
-            {prompts[selectedIndex] && (
-              <div className="prompt-content-dense">
-                <div className="prompt-header-row">
-                  <span className="prompt-label">Name:</span>
-                  <input
-                    type="text"
-                    className="prompt-name-input-dense"
-                    value={prompts[selectedIndex].name}
-                    onChange={(e) => {
-                      handleUpdatePrompt(selectedIndex, 'name', e.target.value);
+            <div className="prompt-content-row">
+              <span className="prompt-label">Content:</span>
+              <div className="prompt-content-wrapper">
+                <textarea
+                  className="prompt-content-input-dense"
+                  value={prompts[selectedIndex].content}
+                  onChange={(e) => {
+                    handleUpdatePrompt(selectedIndex, 'content', e.target.value);
+                  }}
+                  placeholder="Enter prompt content..."
+                  rows={9}
+                  style={{ width: '100%', boxSizing: 'border-box' }}
+                />
+                <div className="revert-link-wrapper">
+                  <a
+                    href="#"
+                    className="revert-to-default-link"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      handleRevertToDefault();
                     }}
-                    placeholder="Prompt name"
-                  />
-                </div>
-
-                <div className="prompt-content-row">
-                  <span className="prompt-label">Content:</span>
-                  <div className="prompt-content-wrapper">
-                    <textarea
-                      className="prompt-content-input-dense"
-                      value={prompts[selectedIndex].content}
-                      onChange={(e) => {
-                        handleUpdatePrompt(
-                          selectedIndex,
-                          'content',
-                          e.target.value
-                        );
-                      }}
-                      placeholder="Enter prompt content..."
-                      rows={9}
-                      style={{ width: '100%', boxSizing: 'border-box' }}
-                    />
-                    <div className="revert-link-wrapper">
-                      <a
-                        href="#"
-                        className="revert-to-default-link"
-                        onClick={(e) => {
-                          e.preventDefault();
-                          handleRevertToDefault();
-                        }}
-                        title="Revert to the default name and prompt for this slot"
-                        style={{
-                          fontSize: '0.7em',
-                          color: '#888',
-                          textDecoration: 'none',
-                          marginTop: '4px',
-                          display: 'inline-block',
-                        }}
-                        onMouseEnter={(e) => {
-                          e.currentTarget.style.color = '#666';
-                          e.currentTarget.style.textDecoration = 'underline';
-                        }}
-                        onMouseLeave={(e) => {
-                          e.currentTarget.style.color = '#888';
-                          e.currentTarget.style.textDecoration = 'none';
-                        }}
-                      >
-                        Revert to default
-                      </a>
-                    </div>
-                  </div>
+                    title="Revert to the default name and prompt for this slot"
+                    style={{ fontSize: '0.7em', color: '#888', textDecoration: 'none', marginTop: '4px', display: 'inline-block' }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.color = '#666';
+                      e.currentTarget.style.textDecoration = 'underline';
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.color = '#888';
+                      e.currentTarget.style.textDecoration = 'none';
+                    }}
+                  >
+                    Revert to default
+                  </a>
                 </div>
               </div>
-            )}
+            </div>
           </div>
-        </div>
-
-        <div className="modal-footer">
-          <button className="btn-secondary" onClick={onClose}>
-            Cancel
-          </button>
-          <button
-            className="btn-primary"
-            onClick={() => {
-              void handleSave();
-            }}
-          >
-            Save Changes
-          </button>
-        </div>
+        )}
       </div>
-    </div>
+    </Modal>
   );
 };

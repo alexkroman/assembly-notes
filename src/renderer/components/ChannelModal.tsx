@@ -55,7 +55,12 @@ export const ChannelModal: React.FC<ChannelModalProps> = ({ onClose }) => {
   );
 
   return (
-    <Modal title="Manage Slack Channels" onClose={onClose} footer={footer}>
+    <Modal
+      title="Manage Slack Channels"
+      onClose={onClose}
+      footer={footer}
+      overlayTestId="channel-modal"
+    >
       <div className="form-group">
         <label htmlFor="slackChannels">Slack Channels (comma-separated):</label>
         <textarea

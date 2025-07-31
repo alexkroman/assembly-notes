@@ -13,6 +13,8 @@ export interface ModalProps {
   children: React.ReactNode;
   /** Disable overlay / ESC closing behaviour (e.g. settings modal requiring key) */
   disableClose?: boolean;
+  /** Optional data-testid to put on overlay for tests */
+  overlayTestId?: string;
 }
 
 export const Modal: React.FC<ModalProps> = ({
@@ -22,6 +24,7 @@ export const Modal: React.FC<ModalProps> = ({
   size = 'normal',
   children,
   disableClose = false,
+  overlayTestId,
 }) => {
   // Close on ESC
   useEffect(() => {
@@ -45,7 +48,11 @@ export const Modal: React.FC<ModalProps> = ({
   };
 
   return (
-    <div className="modal-overlay" onClick={handleOverlayClick}>
+    <div
+      className="modal-overlay"
+      onClick={handleOverlayClick}
+      data-testid={overlayTestId}
+    >
       <div className={`modal-content${size === 'large' ? ' large' : ''}`}>
         <div className="modal-header">
           <h2>{title}</h2>

@@ -65,6 +65,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ onClose }) => {
       onClose={onClose}
       footer={footer}
       disableClose={isAssemblyAIKeyMissing}
+      overlayTestId="settings-modal"
     >
       <div data-testid="slack-settings">
         <div className="form-group">
