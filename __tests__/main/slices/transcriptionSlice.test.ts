@@ -3,12 +3,14 @@ import transcriptionReducer, {
   updateTranscriptBuffer,
   clearTranscription,
 } from '../../../src/main/store/slices/transcriptionSlice';
-
-import type { TranscriptionState, TranscriptSegment } from '../../../src/types/redux';
+import type {
+  TranscriptionState,
+  TranscriptSegment,
+} from '../../../src/types/redux';
 
 describe('transcriptionSlice reducer', () => {
   const getInitialState = (): TranscriptionState =>
-    transcriptionReducer(undefined, { type: 'unknown' }) as TranscriptionState;
+    transcriptionReducer(undefined, { type: 'unknown' });
 
   it('should build currentTranscript from final segments', () => {
     const segment1: TranscriptSegment = {

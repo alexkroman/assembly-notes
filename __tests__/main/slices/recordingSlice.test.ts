@@ -2,12 +2,11 @@ import recordingReducer, {
   updateConnectionStatus,
   setRecordingError,
 } from '../../../src/main/store/slices/recordingSlice';
-
 import type { RecordingState } from '../../../src/types/redux';
 
 describe('recordingSlice reducer', () => {
   const getInitialState = (): RecordingState =>
-    recordingReducer(undefined, { type: 'unknown' }) as RecordingState;
+    recordingReducer(undefined, { type: 'unknown' });
 
   it('should clear error when both streams connected', () => {
     // start with error state

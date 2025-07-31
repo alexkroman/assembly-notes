@@ -4,12 +4,11 @@ import settingsReducer, {
   setSlackBotToken,
   setSlackChannels,
 } from '../../../src/main/store/slices/settingsSlice';
-
 import type { SettingsState } from '../../../src/types/index';
 
 describe('settingsSlice reducer', () => {
   const getInitialState = (): SettingsState =>
-    settingsReducer(undefined, { type: 'unknown' }) as SettingsState;
+    settingsReducer(undefined, { type: 'unknown' });
 
   it('should update computed properties via updateSettings', () => {
     const prevState = getInitialState();
