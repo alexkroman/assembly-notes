@@ -48,7 +48,7 @@
     "@slack/web-api": "^7.9.3",
     "@types/react": "^19.1.9",
     "@types/react-dom": "^19.1.7",
-    "assemblyai": "^4.14.0",
+    "assemblyai": "^4.14.2",
     "better-sqlite3": "^12.2.0",
     "electron-audio-loopback": "^1.0.5",
     "electron-log": "^5.4.2",
