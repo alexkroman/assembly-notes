@@ -3,51 +3,49 @@ let systemAudioWorkletNode: AudioWorkletNode | null = null;
 let microphoneAudioContext: AudioContext | null = null;
 let systemAudioContext: AudioContext | null = null;
 
+const SAMPLE_RATE = 16000;
+
+async function initAudioWorklet(
+  stream: MediaStream,
+  onAudioData: (data: ArrayBuffer) => void
+): Promise<{ node: AudioWorkletNode; ctx: AudioContext }> {
+  const ctx = new AudioContext({ sampleRate: SAMPLE_RATE });
+  await ctx.audioWorklet.addModule('./audio-processor.js');
+
+  const source = ctx.createMediaStreamSource(stream);
+  const node = new AudioWorkletNode(ctx, 'audio-processor');
+
+  node.port.onmessage = (event: MessageEvent) => {
+    const msg = event.data as { type: string; data: ArrayBuffer };
+    if (msg.type === 'audioData') {
+      onAudioData(msg.data);
+    }
+  };
+
+  source.connect(node);
+  node.connect(ctx.destination);
+
+  return { node, ctx };
+}
+
 export async function startAudioProcessing(
   micStream: MediaStream,
   systemStream: MediaStream | null
 ): Promise<void> {
-  microphoneAudioContext = new AudioContext({ sampleRate: 16000 });
-
-  await microphoneAudioContext.audioWorklet.addModule('./audio-processor.js');
-
-  const micSource = microphoneAudioContext.createMediaStreamSource(micStream);
-  microphoneWorkletNode = new AudioWorkletNode(
-    microphoneAudioContext,
-    'audio-processor'
+  const mic = await initAudioWorklet(
+    micStream,
+    window.electronAPI.sendMicrophoneAudio
   );
-
-  microphoneWorkletNode.port.onmessage = (event: MessageEvent) => {
-    const data = event.data as { type: string; data: ArrayBuffer };
-    if (data.type === 'audioData') {
-      window.electronAPI.sendMicrophoneAudio(data.data);
-    }
-  };
-
-  micSource.connect(microphoneWorkletNode);
-  microphoneWorkletNode.connect(microphoneAudioContext.destination);
+  microphoneWorkletNode = mic.node;
+  microphoneAudioContext = mic.ctx;
 
   if (systemStream) {
-    systemAudioContext = new AudioContext({ sampleRate: 16000 });
-
-    await systemAudioContext.audioWorklet.addModule('./audio-processor.js');
-
-    const systemSource =
-      systemAudioContext.createMediaStreamSource(systemStream);
-    systemAudioWorkletNode = new AudioWorkletNode(
-      systemAudioContext,
-      'audio-processor'
+    const sys = await initAudioWorklet(
+      systemStream,
+      window.electronAPI.sendSystemAudio
     );
-
-    systemAudioWorkletNode.port.onmessage = (event: MessageEvent) => {
-      const data = event.data as { type: string; data: ArrayBuffer };
-      if (data.type === 'audioData') {
-        window.electronAPI.sendSystemAudio(data.data);
-      }
-    };
-
-    systemSource.connect(systemAudioWorkletNode);
-    systemAudioWorkletNode.connect(systemAudioContext.destination);
+    systemAudioWorkletNode = sys.node;
+    systemAudioContext = sys.ctx;
   }
 }
 
@@ -97,13 +95,8 @@ export function setRecordingState(isRecording: boolean): void {
 }
 
 export function resetAudioProcessing(): void {
-  // First stop recording
   setRecordingState(false);
-
-  // Then stop all audio processing
   stopAudioProcessing();
-
-  // Log the reset for debugging
   window.logger.info('Audio processing completely reset');
 }
 
