@@ -4,6 +4,7 @@ import type { RecordingsListProps } from '../../types/components.js';
 import type { Recording } from '../../types/index.js';
 import { useAppDispatch, useAppSelector } from '../hooks/redux';
 import { navigateToNewRecording, setShowSettingsModal } from '../store';
+import '../../types/global.d.ts';
 
 export const RecordingsList: React.FC<RecordingsListProps> = ({
   onNavigateToRecording,

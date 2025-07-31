@@ -4,6 +4,7 @@ import type { SettingsModalProps } from '../../types/components.js';
 import type { SettingsState } from '../../types/redux.js';
 import { useAppDispatch, useAppSelector } from '../hooks/redux.js';
 import { setStatus } from '../store';
+import '../../types/global.d.ts';
 
 export const SettingsModal: React.FC<SettingsModalProps> = ({ onClose }) => {
   const reduxSettings = useAppSelector((state) => state.settings);
