@@ -13,10 +13,11 @@ Assembly Notes is an Electron desktop application for real-time transcription an
 npm start              # Build TypeScript and start Electron app
 npm run start:fresh    # Start with fresh state (clears cache)
 npm run dev            # Run TypeScript in watch mode with Electron
-npm run build:all      # Compile all TypeScript (main, preload, renderer)
+npm run build:all      # Compile all TypeScript (main, preload, renderer, audio)
 npm run build:main     # Compile main process TypeScript only
 npm run build:preload  # Compile preload script via Vite
 npm run build:renderer # Compile renderer via Vite + React
+npm run build:audio-processor # Compile audio worklet processor
 npm run typecheck      # Type check without emitting files
 
 # Code Quality
@@ -80,8 +81,27 @@ npm run release:major  # Bump major version and push tags
 - **Main Process**: TypeScript compiler (tsc) targeting ES2022 with strict settings
 - **Renderer Process**: Vite + React plugin with PostCSS and Tailwind CSS support
 - **Preload Script**: Vite in library mode generating CommonJS for Electron compatibility
+- **Audio Processor**: Separate Vite config for AudioWorkletProcessor compilation
 - **Asset Copying**: Custom Vite plugin copies CSS assets to dist directory
 - **Native Modules**: electron-builder unpacks native modules (electron-audio-loopback, better-sqlite3)
+
+### Dependency Injection Architecture
+
+The main process uses **tsyringe** for comprehensive dependency injection:
+
+- **Container Setup** (`src/main/container.ts`) - All service registrations with singleton lifecycle
+- **DI Tokens** (`src/main/di-tokens.ts`) - Type-safe service resolution tokens
+- **Service Pattern** - All services use `@injectable()` decorator and constructor injection
+- **Initialization Flow** - Container is configured before any service usage in `main.ts`
+
+### State Synchronization Architecture
+
+Dual Redux stores with **electron-redux** synchronization:
+
+- **Main Store** (`src/main/store/store.ts`) - Authoritative state source with `stateSyncEnhancer`
+- **Renderer Store** (`src/renderer/store.ts`) - Synchronized replica with custom sync reducers
+- **State Slices**: recording, transcription, settings, recordings, updates
+- **Automatic Sync** - State changes propagate between processes via IPC
 
 ### Key Files
 
@@ -183,6 +203,15 @@ ESLint configuration enforces:
 7. **Dual Audio Streams**: Separate AssemblyAI transcription instances for microphone and system audio
 8. **React Patterns**: Functional components with hooks, custom hooks for business logic abstraction
 
+### Audio Processing Pipeline
+
+1. **Dual Stream Capture** - Microphone via Web Audio API, system audio via electron-audio-loopback
+2. **Echo Cancellation** - Prevents feedback between microphone and system audio streams
+3. **AudioWorklet Processing** - Real-time audio data processing in separate thread
+4. **16-bit PCM Conversion** - Audio format conversion for AssemblyAI compatibility
+5. **Dual Transcription** - Independent AssemblyAI RealtimeTranscriber instances
+6. **Keep-Alive Mechanism** - Maintains WebSocket connections during silence
+
 ## Development Workflow
 
 ### Multi-Configuration TypeScript Setup
@@ -208,11 +237,15 @@ The project uses multiple TypeScript configurations:
 - **IPC Type Safety**: All IPC methods are typed in preload script and exported via contextBridge
 - **Mock Strategy**: Comprehensive mocks mirror real API surfaces for reliable testing
 - **Audio Worklets**: Custom AudioWorkletProcessor handles real-time audio data streaming
+- **ES Modules**: All imports use `.js` extension even for TypeScript files
+- **Development Database**: Uses separate SQLite database in development mode (DEV_MODE=true)
+- **Fresh Mode**: Start with clean state using `npm run start:fresh` (creates timestamped DB)
 
 When making changes, ensure:
 
 - TypeScript compilation passes (`npm run typecheck`)
 - ESLint passes (`npm run lint`)
+- Code is properly formatted (`npm run format`)
 - Tests pass (`npm test`)
 - Audio functionality is tested with both microphone and system audio
 - Native module rebuilds complete successfully (`npm run postinstall`)

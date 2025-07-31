@@ -1,6 +1,6 @@
 # Assembly Notes
 
-An Electron desktop application for real-time transcription and meeting note-taking. Records both microphone input and system audio (Zoom calls, music, etc.), transcribes in real-time using AssemblyAI, and automatically posts AI-generated summaries to Slack channels.
+An Electron desktop application for real-time transcription and meeting note-taking. Records both microphone input and system audio (Zoom calls, music, etc.), transcribes in real-time using AssemblyAI, and posts AI-generated summaries to Slack channels.
 
 ## Features
 
@@ -16,9 +16,9 @@ An Electron desktop application for real-time transcription and meeting note-tak
 
 ### Download Latest Release
 
-[![Latest Release](https://img.shields.io/github/v/release/alexkroman-assembly/assembly-notes?style=for-the-badge&logo=github)](https://github.com/alexkroman-assembly/assembly-notes/releases/latest)
+[![Latest Release](https://img.shields.io/github/v/release/alexkroman/assembly-notes?style=for-the-badge&logo=github)](https://github.com/alexkroman/assembly-notes/releases/latest)
 
-**[📥 Download Latest Release](https://github.com/alexkroman-assembly/assembly-notes/releases/latest)**
+**[📥 Download Latest Release](https://github.com/alexkroman/assembly-notes/releases/latest)**
 
 Choose your platform:
 
@@ -26,7 +26,7 @@ Choose your platform:
 - **Windows**: Download the `.exe` installer
 - **Linux**: Download the `.AppImage` file
 
-> **Note**: All releases are automatically built and tested via GitHub Actions. Visit the [releases page](https://github.com/alexkroman-assembly/assembly-notes/releases) to see all available versions.
+> **Note**: All releases are automatically built and tested via GitHub Actions. Visit the [releases page](https://github.com/alexkroman/assembly-notes/releases) to see all available versions.
 
 ## Development Setup
 
@@ -39,7 +39,7 @@ Choose your platform:
 
 ```bash
 # Clone the repository
-git clone https://github.com/alexkroman-assembly/assembly-notes.git
+git clone https://github.com/alexkroman/assembly-notes.git
 cd assembly-notes
 
 # Install dependencies
@@ -54,8 +54,13 @@ npm start
 ```bash
 # Development
 npm start              # Build TypeScript and start Electron app
+npm run start:fresh    # Start with fresh state (clears cache)
 npm run dev            # Run TypeScript in watch mode with Electron
-npm run build:all      # Compile all TypeScript (main, preload, renderer)
+npm run build:all      # Compile all TypeScript (main, preload, renderer, audio)
+npm run build:main     # Compile main process TypeScript only
+npm run build:preload  # Compile preload script via Vite
+npm run build:renderer # Compile renderer via Vite + React
+npm run build:audio-processor # Compile audio worklet processor
 npm run typecheck      # Type check without emitting files
 
 # Code Quality
@@ -69,6 +74,7 @@ npm test               # Run all tests (Jest unit tests + Playwright e2e)
 npm run test:watch     # Run Jest tests in watch mode
 npm run test:coverage  # Run tests with coverage report
 npm run test:e2e       # Run Playwright end-to-end tests only
+npm run test:all       # Run Jest watch and Playwright tests concurrently
 
 # Building
 npm run build          # Build for all platforms (macOS, Windows, Linux)
@@ -77,6 +83,15 @@ npm run build:mac:notarized  # Build notarized macOS app (requires env vars)
 npm run build:win      # Build NSIS installer for Windows
 npm run build:linux    # Build AppImage for Linux
 npm run pack           # Package without distributing
+
+# Release Management
+npm run release:patch  # Bump patch version and push tags
+npm run release:minor  # Bump minor version and push tags
+npm run release:major  # Bump major version and push tags
+
+# Dependency Management
+npm run check-updates  # Check for dependency updates
+npm run update-deps    # Update all dependencies
 ```
 
 ## Configuration
@@ -199,6 +214,7 @@ When making changes, ensure:
 
 - TypeScript compilation passes (`npm run typecheck`)
 - ESLint passes (`npm run lint`)
+- Code is properly formatted (`npm run format`)
 - Tests pass (`npm test`)
 - Audio functionality is tested with both microphone and system audio
 
