@@ -89,15 +89,16 @@ note: No update available - no build files found`;
     return;
   }
 
-  // Serve actual update files
-  if (req.url.includes('.dmg') || req.url.includes('.zip')) {
+  // Serve actual update files and blockmap files
+  if (req.url.includes('.dmg') || req.url.includes('.zip') || req.url.includes('.blockmap')) {
     const fileName = req.url.substring(1); // Remove leading slash
     const filePath = join(__dirname, '../dist', fileName);
 
     if (existsSync(filePath)) {
       const stats = statSync(filePath);
+      const contentType = req.url.includes('.blockmap') ? 'application/json' : 'application/octet-stream';
       res.writeHead(200, {
-        'Content-Type': 'application/octet-stream',
+        'Content-Type': contentType,
         'Content-Length': stats.size
       });
       const stream = readFileSync(filePath);
