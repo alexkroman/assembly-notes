@@ -5,6 +5,7 @@ import {
   IpcMainInvokeEvent,
   ipcMain,
 } from 'electron';
+import { IPC_CHANNELS } from '../constants/ipc.js';
 
 import type { AutoUpdaterService } from './auto-updater.js';
 import { DI_TOKENS, container } from './container.js';
@@ -77,22 +78,22 @@ function setupIpcHandlers(
   );
 
   ipcMain.on(
-    'system-audio-data',
+    IPC_CHANNELS.SYSTEM_AUDIO_DATA,
     (_event: IpcMainEvent, audioData: ArrayBuffer) => {
       recordingManager.sendSystemAudio(audioData);
     }
   );
 
-  ipcMain.handle('start-recording', async (): Promise<boolean> => {
+  ipcMain.handle(IPC_CHANNELS.START_RECORDING, async (): Promise<boolean> => {
     const result = await recordingManager.startTranscription();
     return result;
   });
 
-  ipcMain.handle('stop-recording', async (): Promise<boolean> => {
+  ipcMain.handle(IPC_CHANNELS.STOP_RECORDING, async (): Promise<boolean> => {
     return await recordingManager.stopTranscription();
   });
 
-  ipcMain.handle('new-recording', async (): Promise<string | null> => {
+  ipcMain.handle(IPC_CHANNELS.NEW_RECORDING, async (): Promise<string | null> => {
     return await recordingManager.newRecording();
   });
 
