@@ -171,8 +171,6 @@ describe('SlackOAuthService', () => {
         webPreferences: {
           nodeIntegration: false,
           contextIsolation: true,
-          webSecurity: false,
-          allowRunningInsecureContent: true,
           experimentalFeatures: true,
         },
         parent: mockMainWindow,
