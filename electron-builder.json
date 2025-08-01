@@ -1,7 +1,7 @@
 {
   "appId": "com.alexkroman.assembly-notes",
   "productName": "Assembly-Notes",
-  "artifactName": "Assembly-Notes-${version}-${os}-${arch}.${ext}",
+  "artifactName": "Assembly-Notes-${os}-${arch}.${ext}",
   "forceCodeSigning": false,
   "publish": {
     "provider": "github"
@@ -48,7 +48,12 @@
     "notarize": false
   },
   "win": {
-    "target": "nsis",
+    "target": [
+      {
+        "target": "zip",
+        "arch": ["x64"]
+      }
+    ],
     "icon": "build/icons/win/icon.ico",
     "forceCodeSigning": false,
     "publish": null
@@ -56,7 +61,7 @@
   "linux": {
     "target": [
       {
-        "target": "AppImage",
+        "target": "tar.gz",
         "arch": ["x64"]
       }
     ],
