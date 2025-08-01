@@ -72,15 +72,6 @@ test.describe('App Startup', () => {
         },
         cwd: process.cwd(),
         timeout: 30000,
-        // Disable remote debugging to avoid incompatible flag issue
-        bypassCSP: false,
-        colorScheme: 'no-preference',
-        executablePath:
-          process.platform === 'darwin'
-            ? './node_modules/electron/dist/Electron.app/Contents/MacOS/Electron'
-            : process.platform === 'win32'
-              ? './node_modules/electron/dist/electron.exe'
-              : './node_modules/electron/dist/electron',
       });
 
       // Get the first window that the app opens
