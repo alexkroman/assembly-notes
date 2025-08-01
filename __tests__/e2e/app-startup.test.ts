@@ -1,5 +1,3 @@
-import * as path from 'path';
-
 import { _electron as electron } from 'playwright';
 import { ElectronApplication, Page } from 'playwright';
 
@@ -47,13 +45,7 @@ test.describe('App Startup', () => {
         return;
       }
 
-      // Use our wrapper script to work around the --remote-debugging-port=0 issue
-      const wrapperPath = path.join(
-        process.cwd(),
-        'scripts/electron-test-wrapper.cjs'
-      );
-
-      // Launch Electron app using our wrapper
+      // Launch Electron app
       electronApp = await electron.launch({
         args: [
           './dist/main/main.js',
@@ -80,7 +72,15 @@ test.describe('App Startup', () => {
         },
         cwd: process.cwd(),
         timeout: 30000,
-        executablePath: wrapperPath,
+        // Disable remote debugging to avoid incompatible flag issue
+        bypassCSP: false,
+        colorScheme: 'no-preference',
+        executablePath:
+          process.platform === 'darwin'
+            ? './node_modules/electron/dist/Electron.app/Contents/MacOS/Electron'
+            : process.platform === 'win32'
+              ? './node_modules/electron/dist/electron.exe'
+              : './node_modules/electron/dist/electron',
       });
 
       // Get the first window that the app opens
