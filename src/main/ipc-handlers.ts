@@ -55,6 +55,7 @@ function setupIpcHandlers(
   const store = container.resolve<Store<RootState> & { dispatch: AppDispatch }>(
     DI_TOKENS.Store
   );
+
   ipcMain.on(
     'log',
     (_event: IpcMainEvent, level: keyof LogLevel, ...args: unknown[]) => {

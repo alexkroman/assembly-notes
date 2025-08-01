@@ -101,6 +101,7 @@ export interface UIState {
   showSettingsModal: boolean;
   showPromptModal: boolean;
   showChannelModal: boolean;
+  showUpdateModal: boolean;
   status: string;
 }
 

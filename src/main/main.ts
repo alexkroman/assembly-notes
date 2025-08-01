@@ -43,10 +43,12 @@ function createWindow(): void {
     },
   });
 
-  void mainWindow.loadFile(path.join(__dirname, '../renderer/index.html'));
-
+  // Set up the container and IPC handlers before loading the renderer
   setupContainer(mainWindow);
   setupIpcHandlers(mainWindow, store);
+
+  // Now load the renderer - IPC handlers are ready
+  void mainWindow.loadFile(path.join(__dirname, '../renderer/index.html'));
 
   log.info('🎯 About to resolve AutoUpdaterService from container');
   log.info('🎯 Environment vars:', {

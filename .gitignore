@@ -8,6 +8,7 @@ out
 .DS_Store
 dist
 release
+dev-app-update.yml
 .mypy_cache
 coverage
 *.map

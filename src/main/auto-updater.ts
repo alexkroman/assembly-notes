@@ -94,8 +94,13 @@ export class AutoUpdaterService {
 
     autoUpdater.on('update-available', (info: UpdateInfo) => {
       this.logger.info('Update available:', info);
-      this.store.dispatch(updateAvailable(info));
-      this.mainWindow.webContents.send('update-available', info);
+      // Serialize the date to avoid Redux warnings
+      const serializedInfo = {
+        ...info,
+        releaseDate: info.releaseDate ? info.releaseDate.toString() : '',
+      };
+      this.store.dispatch(updateAvailable(serializedInfo));
+      this.mainWindow.webContents.send('update-available', serializedInfo);
     });
 
     autoUpdater.on('update-not-available', (info: UpdateInfo) => {
@@ -128,8 +133,13 @@ export class AutoUpdaterService {
 
     autoUpdater.on('update-downloaded', (info: UpdateInfo) => {
       this.logger.info('Update downloaded:', info);
-      this.store.dispatch(downloadComplete(info));
-      this.mainWindow.webContents.send('update-downloaded', info);
+      // Serialize the date to avoid Redux warnings
+      const serializedInfo = {
+        ...info,
+        releaseDate: info.releaseDate ? info.releaseDate.toString() : '',
+      };
+      this.store.dispatch(downloadComplete(serializedInfo));
+      this.mainWindow.webContents.send('update-downloaded', serializedInfo);
 
       // Notify user that update is ready
       if (!this.mainWindow.isDestroyed()) {
@@ -168,25 +178,6 @@ export class AutoUpdaterService {
     }
   }
 
-  quitAndInstall(): void {
-    try {
-      // Check if update is downloaded
-      const state = this.store.getState();
-      if (!state.update.downloaded) {
-        this.logger.warn(
-          'AutoUpdaterService: No update downloaded, cannot quit and install'
-        );
-        return;
-      }
-
-      this.logger.info('Quitting and installing update...');
-      autoUpdater.quitAndInstall(true, true); // isSilent=true, isForceRunAfter=true
-    } catch (error) {
-      this.logger.error('AutoUpdaterService: Error in quitAndInstall:', error);
-      throw error;
-    }
-  }
-
   startUpdateCheck(delay = 3000): void {
     this.logger.info(`📅 Starting update check in ${String(delay)}ms`);
     setTimeout(() => {
@@ -200,5 +191,11 @@ export class AutoUpdaterService {
   // Get current update status
   getUpdateStatus(): unknown {
     return this.store.getState().update;
+  }
+
+  // Quit and install the downloaded update
+  quitAndInstall(): void {
+    this.logger.info('Quitting and installing update...');
+    autoUpdater.quitAndInstall();
   }
 }

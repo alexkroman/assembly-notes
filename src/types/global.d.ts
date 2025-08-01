@@ -14,6 +14,10 @@ import type {
 declare global {
   interface Window {
     electronAPI: {
+      // App ready state
+      isReady: () => Promise<boolean>;
+      onReady: (callback: () => void) => void;
+
       // Audio loopback
       enableLoopbackAudio: () => Promise<void>;
       disableLoopbackAudio: () => Promise<void>;

@@ -49,22 +49,26 @@ const server = createServer((req, res) => {
 
     if (existsSync(releaseDir)) {
       const files = readdirSync(releaseDir);
-      // Look for any DMG or ZIP file
-      const dmgFile = files.find(
-        (f) => f.endsWith('.dmg') && f.includes('Assembly-Notes')
-      );
+      // For macOS auto-updater, prioritize ZIP files over DMG
       const zipFile = files.find(
         (f) => f.endsWith('.zip') && f.includes('Assembly-Notes')
       );
+      const dmgFile = files.find(
+        (f) => f.endsWith('.dmg') && f.includes('Assembly-Notes')
+      );
 
-      if (dmgFile) {
-        usePath = join(releaseDir, dmgFile);
-        fileExt = 'dmg';
-        actualFileName = dmgFile;
-      } else if (zipFile) {
+      if (zipFile) {
         usePath = join(releaseDir, zipFile);
         fileExt = 'zip';
         actualFileName = zipFile;
+      } else if (dmgFile) {
+        // Note: DMG files won't work for auto-update on macOS
+        console.log(
+          'WARNING: Found DMG but macOS auto-updater requires ZIP. Build with npm run build:mac to create ZIP file.'
+        );
+        usePath = join(releaseDir, dmgFile);
+        fileExt = 'dmg';
+        actualFileName = dmgFile;
       }
     }
 
@@ -90,7 +94,7 @@ sha512: ${sha512}
 releaseDate: ${new Date().toISOString()}`;
     } else {
       console.log(
-        'No macOS build artifacts found. Run npm run build:mac:dev first to create a build file for testing.'
+        'No macOS build artifacts found. Run npm run build:mac first to create ZIP files for testing auto-update.'
       );
       updateInfo = `version: ${currentVersion}
 releaseDate: ${new Date().toISOString()}
@@ -139,12 +143,14 @@ server.listen(PORT, HOST, () => {
   console.log(`Current app version: ${currentVersion}`);
   console.log(`Fake test version: ${testVersion}`);
   console.log('\nTo test auto-update:');
-  console.log('1. Build once: npm run build:mac:dev (only needed once)');
+  console.log('1. Build once: npm run build:mac (creates ZIP for auto-update)');
   console.log(
-    '2. The server will serve any existing build as version 99.99.99'
+    '2. The server will serve any existing ZIP file as version 99.99.99'
   );
-  console.log('3. Run the test: npm run test:autoupdate');
+  console.log('3. Run the BUILT app: npm run test:autoupdate:built');
   console.log(
-    '4. No need to rebuild - reuse the same build file for all tests!'
+    '   (Auto-update testing requires running the built app, not npm start)'
   );
+  console.log('4. No need to rebuild - reuse the same ZIP file for all tests!');
+  console.log('\nNote: macOS auto-updater requires ZIP files, not DMG files.');
 });

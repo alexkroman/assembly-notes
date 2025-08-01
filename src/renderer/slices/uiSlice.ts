@@ -9,6 +9,7 @@ const initialState: UIState = {
   showSettingsModal: false,
   showPromptModal: false,
   showChannelModal: false,
+  showUpdateModal: false,
   status: '',
 };
 
@@ -43,6 +44,9 @@ const uiSlice = createSlice({
     setShowChannelModal: (state, action: PayloadAction<boolean>) => {
       state.showChannelModal = action.payload;
     },
+    setShowUpdateModal: (state, action: PayloadAction<boolean>) => {
+      state.showUpdateModal = action.payload;
+    },
     setStatus: (state, action: PayloadAction<string>) => {
       state.status = action.payload;
     },
@@ -56,6 +60,7 @@ export const {
   setShowSettingsModal,
   setShowPromptModal,
   setShowChannelModal,
+  setShowUpdateModal,
   setStatus,
 } = uiSlice.actions;
 
