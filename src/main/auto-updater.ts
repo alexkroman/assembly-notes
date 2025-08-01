@@ -28,7 +28,7 @@ export class AutoUpdaterService {
   ) {}
 
   init(): void {
-    console.log('🚀 AutoUpdater.init() called!');
+    this.logger.info('🚀 AutoUpdater.init() called!');
     autoUpdater.logger = this.logger;
 
     const initInfo = {
@@ -37,16 +37,16 @@ export class AutoUpdaterService {
       isPackaged: process.resourcesPath !== process.cwd(),
       useLocalServer: process.env['USE_LOCAL_UPDATE_SERVER'],
     };
-    
-    console.log('AutoUpdater initializing...', initInfo);
+
+    // Already logged on the next line
     this.logger.info('AutoUpdater initializing...', initInfo);
 
     // Configure for local testing if environment variable is set
     if (process.env['USE_LOCAL_UPDATE_SERVER'] === 'true') {
-      console.log('🔧 Configuring for local update server');
+      this.logger.info('🔧 Configuring for local update server');
       this.logger.info('Using local update server for testing');
       const feedUrl = process.env['UPDATE_FEED_URL'] ?? 'http://localhost:8000';
-      
+
       autoUpdater.setFeedURL({
         provider: 'generic',
         url: feedUrl,
@@ -139,19 +139,21 @@ export class AutoUpdaterService {
   }
 
   checkForUpdatesAndNotify(): void {
-    console.log('🔍 checkForUpdatesAndNotify called');
-    this.logger.debug('checkForUpdatesAndNotify called, downloadPromise is null');
-    
+    this.logger.info('🔍 checkForUpdatesAndNotify called');
+    this.logger.debug(
+      'checkForUpdatesAndNotify called, downloadPromise is null'
+    );
+
     const state = {
       isUpdaterActive: autoUpdater.isUpdaterActive(),
       feedURL: autoUpdater.getFeedURL(),
       forceDevUpdateConfig: autoUpdater.forceDevUpdateConfig,
     };
-    
-    console.log('Current autoUpdater state:', state);
+
+    // Already logged on the next line
     this.logger.debug('Current autoUpdater state:', state);
-    
-    console.log('🚀 Calling autoUpdater.checkForUpdatesAndNotify()...');
+
+    this.logger.info('🚀 Calling autoUpdater.checkForUpdatesAndNotify()...');
     void autoUpdater.checkForUpdatesAndNotify();
   }
 
@@ -186,9 +188,11 @@ export class AutoUpdaterService {
   }
 
   startUpdateCheck(delay = 3000): void {
-    console.log(`📅 Starting update check in ${delay}ms`);
+    this.logger.info(`📅 Starting update check in ${String(delay)}ms`);
     setTimeout(() => {
-      console.log('⏰ Timeout expired, calling checkForUpdatesAndNotify()');
+      this.logger.info(
+        '⏰ Timeout expired, calling checkForUpdatesAndNotify()'
+      );
       this.checkForUpdatesAndNotify();
     }, delay);
   }

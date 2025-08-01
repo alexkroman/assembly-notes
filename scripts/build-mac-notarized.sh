@@ -29,7 +29,7 @@ echo "Building notarized macOS app..."
 npm run build:all
 npm run build-icons
 
-# Build with electron-builder
-electron-builder --mac --publish=never
+# Build with electron-builder (notarization handled by afterSign script)
+electron-builder --mac --publish=never --config electron-builder-notarize.json
 
 echo "✅ Notarized build complete!" 

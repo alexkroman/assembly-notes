@@ -7,6 +7,10 @@
   "type": "module",
   "version": "1.0.51",
   "author": "Alex Kroman <alex@alexkroman.com>",
+  "engines": {
+    "node": ">=24.0.0",
+    "npm": ">=10.0.0"
+  },
   "scripts": {
     "start": "npm run build:all && cross-env DEV_MODE=true electron .",
     "start:fresh": "npm run build:all && cross-env DEV_MODE=true FRESH_MODE=true FRESH_ID=$(date +%s) electron .",
@@ -22,7 +26,6 @@
     "build": "npm run build:all && npm run build-icons && electron-builder --mac --win --linux",
     "build:mac": "npm run build:all && npm run build-icons && electron-builder --mac",
     "build:mac:notarized": "./scripts/build-mac-notarized.sh",
-    "build:mac:dev": "./scripts/build-mac-dev.sh",
     "build:win": "npm run build:all && npm run build-icons && electron-builder --win",
     "build:linux": "npm run build:all && npm run build-icons && electron-builder --linux",
     "build-icons": "icon-gen -i ./assets/icons/icon.png -o ./build --ico --icns",
@@ -97,6 +100,7 @@
     "npm-check-updates": "^18.0.2",
     "playwright": "^1.54.1",
     "prettier": "^3.6.2",
+    "rimraf": "^6.0.1",
     "ts-jest": "^29.4.0",
     "typescript": "^5.8.3",
     "typescript-eslint": "^8.38.0",
@@ -139,11 +143,17 @@
       "target": [
         {
           "target": "dmg",
-          "arch": ["arm64", "x64"]
+          "arch": [
+            "arm64",
+            "x64"
+          ]
         },
         {
           "target": "zip",
-          "arch": ["arm64", "x64"]
+          "arch": [
+            "arm64",
+            "x64"
+          ]
         }
       ],
       "icon": "build/icons/mac/icon.icns",
@@ -151,7 +161,7 @@
       "gatekeeperAssess": false,
       "entitlements": "build/entitlements.mac.plist",
       "entitlementsInherit": "build/entitlements.mac.plist",
-      "notarize": true
+      "notarize": false
     },
     "win": {
       "target": "nsis",

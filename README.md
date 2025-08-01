@@ -406,6 +406,7 @@ npm run test:autoupdate
 ```
 
 The app will automatically:
+
 1. Check for updates after 3 seconds
 2. Find version 99.99.99 available on localhost:8000 (using any existing build file)
 3. Download the update with progress logging

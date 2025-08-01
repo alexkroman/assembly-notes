@@ -133,6 +133,7 @@ const electronAPI = {
   onUpdateReadyToInstall: (callback: (info: UpdateInfo) => void) =>
     ipcRenderer.on('update-ready-to-install', (_event, info) => {
       callback(info as UpdateInfo);
+    }),
   // Slack OAuth event listeners
   onSlackOAuthSuccess: (callback: (installation: SlackInstallation) => void) =>
     ipcRenderer.on('slack-oauth-success', (_event, installation) => {

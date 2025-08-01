@@ -28,7 +28,10 @@ const server = createServer((req, res) => {
   // Enable CORS
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, HEAD');
-  res.setHeader('Access-Control-Allow-Headers', 'X-Requested-With,content-type');
+  res.setHeader(
+    'Access-Control-Allow-Headers',
+    'X-Requested-With,content-type'
+  );
 
   if (req.method === 'OPTIONS') {
     res.writeHead(200);
@@ -47,9 +50,13 @@ const server = createServer((req, res) => {
     if (existsSync(distDir)) {
       const files = readdirSync(distDir);
       // Look for any DMG or ZIP file
-      const dmgFile = files.find(f => f.endsWith('.dmg') && f.includes('Assembly-Notes'));
-      const zipFile = files.find(f => f.endsWith('.zip') && f.includes('Assembly-Notes'));
-      
+      const dmgFile = files.find(
+        (f) => f.endsWith('.dmg') && f.includes('Assembly-Notes')
+      );
+      const zipFile = files.find(
+        (f) => f.endsWith('.zip') && f.includes('Assembly-Notes')
+      );
+
       if (dmgFile) {
         usePath = join(distDir, dmgFile);
         fileExt = 'dmg';
@@ -64,10 +71,14 @@ const server = createServer((req, res) => {
     let updateInfo;
     if (usePath) {
       const stats = statSync(usePath);
-      const sha512 = createHash('sha512').update(readFileSync(usePath)).digest('base64');
-      
-      console.log(`Found existing build: ${actualFileName}, serving as version ${testVersion}`);
-      
+      const sha512 = createHash('sha512')
+        .update(readFileSync(usePath))
+        .digest('base64');
+
+      console.log(
+        `Found existing build: ${actualFileName}, serving as version ${testVersion}`
+      );
+
       // Serve the existing file but with our fake version number
       updateInfo = `version: ${testVersion}
 files:
@@ -78,7 +89,9 @@ path: ${actualFileName}
 sha512: ${sha512}
 releaseDate: ${new Date().toISOString()}`;
     } else {
-      console.log('No macOS build artifacts found. Run npm run build:mac:dev first to create a build file for testing.');
+      console.log(
+        'No macOS build artifacts found. Run npm run build:mac:dev first to create a build file for testing.'
+      );
       updateInfo = `version: ${currentVersion}
 releaseDate: ${new Date().toISOString()}
 note: No update available - no build files found`;
@@ -90,16 +103,22 @@ note: No update available - no build files found`;
   }
 
   // Serve actual update files and blockmap files
-  if (req.url.includes('.dmg') || req.url.includes('.zip') || req.url.includes('.blockmap')) {
+  if (
+    req.url.includes('.dmg') ||
+    req.url.includes('.zip') ||
+    req.url.includes('.blockmap')
+  ) {
     const fileName = req.url.substring(1); // Remove leading slash
     const filePath = join(__dirname, '../dist', fileName);
 
     if (existsSync(filePath)) {
       const stats = statSync(filePath);
-      const contentType = req.url.includes('.blockmap') ? 'application/json' : 'application/octet-stream';
+      const contentType = req.url.includes('.blockmap')
+        ? 'application/json'
+        : 'application/octet-stream';
       res.writeHead(200, {
         'Content-Type': contentType,
-        'Content-Length': stats.size
+        'Content-Length': stats.size,
       });
       const stream = readFileSync(filePath);
       res.end(stream);
@@ -121,7 +140,11 @@ server.listen(PORT, HOST, () => {
   console.log(`Fake test version: ${testVersion}`);
   console.log('\nTo test auto-update:');
   console.log('1. Build once: npm run build:mac:dev (only needed once)');
-  console.log('2. The server will serve any existing build as version 99.99.99');
+  console.log(
+    '2. The server will serve any existing build as version 99.99.99'
+  );
   console.log('3. Run the test: npm run test:autoupdate');
-  console.log('4. No need to rebuild - reuse the same build file for all tests!');
+  console.log(
+    '4. No need to rebuild - reuse the same build file for all tests!'
+  );
 });
