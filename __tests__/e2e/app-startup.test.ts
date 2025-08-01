@@ -16,7 +16,6 @@ test.describe('App Startup', () => {
       await new Promise((resolve, reject) => {
         const buildProcess = spawn('npm', ['run', 'build:main'], {
           stdio: 'inherit',
-          shell: true,
         });
         buildProcess.on('close', (code) => {
           if (code === 0) {
