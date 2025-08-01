@@ -2,7 +2,7 @@
 
 import { createServer } from 'http';
 import { readFileSync, existsSync, statSync, readdirSync } from 'fs';
-import { join, dirname } from 'path';
+import { join, dirname, resolve, sep } from 'path';
 import { fileURLToPath } from 'url';
 import { createHash } from 'crypto';
 
@@ -113,7 +113,25 @@ note: No update available - no build files found`;
     req.url.includes('.blockmap')
   ) {
     const fileName = req.url.substring(1); // Remove leading slash
-    const filePath = join(__dirname, '../release', fileName);
+
+    // Security: Validate filename to prevent path traversal
+    // Only allow alphanumeric, dots, hyphens, and underscores
+    if (!/^[a-zA-Z0-9._-]+$/.test(fileName)) {
+      res.writeHead(400);
+      res.end('Invalid file name');
+      return;
+    }
+
+    // Security: Ensure the file is actually in the release directory
+    const releaseDir = resolve(__dirname, '../release');
+    const filePath = resolve(releaseDir, fileName);
+
+    // Ensure the resolved path is within the release directory
+    if (!filePath.startsWith(releaseDir + sep)) {
+      res.writeHead(403);
+      res.end('Access denied');
+      return;
+    }
 
     if (existsSync(filePath)) {
       const stats = statSync(filePath);
