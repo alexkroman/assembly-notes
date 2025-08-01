@@ -163,8 +163,12 @@ export class AutoUpdaterService {
     // Already logged on the next line
     this.logger.debug('Current autoUpdater state:', state);
 
-    this.logger.info('🚀 Calling autoUpdater.checkForUpdatesAndNotify()...');
-    void autoUpdater.checkForUpdatesAndNotify();
+    this.logger.info(
+      '🚀 Calling autoUpdater.checkForUpdates() (without native notification)...'
+    );
+    // Use checkForUpdates instead of checkForUpdatesAndNotify to avoid native notifications
+    // The modal dialog will be shown via the update-available event handler
+    void autoUpdater.checkForUpdates();
   }
 
   async checkForUpdates(): Promise<void> {
