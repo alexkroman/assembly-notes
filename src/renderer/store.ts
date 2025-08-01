@@ -61,11 +61,11 @@ type SettingsSyncAction =
   | { type: 'settings/saveSettings/fulfilled'; payload: Partial<SettingsState> }
   | { type: 'settings/savePrompt/fulfilled'; payload: Partial<SettingsState> }
   | { type: 'settings/savePrompts/fulfilled'; payload: Partial<SettingsState> }
-  | { type: 'settings/selectPrompt/fulfilled'; payload: Partial<SettingsState> }
   | {
       type: 'settings/saveSelectedChannel/fulfilled';
       payload: Partial<SettingsState>;
-    };
+    }
+  | { type: 'settings/updateSettings'; payload: Partial<SettingsState> };
 
 // Recordings slice action types
 type RecordingsSyncAction =
@@ -226,15 +226,27 @@ const createSyncReducer = <T extends SyncState>(initialState: T) => {
       case 'settings/saveSettings/fulfilled':
       case 'settings/savePrompt/fulfilled':
       case 'settings/savePrompts/fulfilled':
-      case 'settings/selectPrompt/fulfilled':
       case 'settings/saveSelectedChannel/fulfilled':
+      case 'settings/updateSettings':
         if ('assemblyaiKey' in state && action.payload) {
-          return {
+          const payload = action.payload as Partial<SettingsState>;
+          const newState = {
             ...state,
-            ...action.payload,
+            ...payload,
             loading: false,
             error: null,
-          } as T;
+          };
+          // Compute hasSlackConfigured based on slackInstallation
+          if ('slackInstallation' in payload) {
+            newState.hasSlackConfigured = Boolean(payload.slackInstallation);
+          }
+          // Compute hasAssemblyAIKey if assemblyaiKey is updated
+          if ('assemblyaiKey' in payload) {
+            newState.hasAssemblyAIKey = Boolean(
+              (payload.assemblyaiKey || '').trim()
+            );
+          }
+          return newState as T;
         }
         break;
 
@@ -304,19 +316,16 @@ export function createRendererStore() {
       }),
       settings: createSyncReducer<SettingsState>({
         assemblyaiKey: '',
-        slackBotToken: '',
         slackChannels: '',
-        selectedSlackChannel: '',
+        slackInstallation: null,
         summaryPrompt: '',
-        selectedPromptIndex: 0,
         prompts: [],
         autoStart: false,
         loading: false,
         error: null,
         theme: 'dark' as const,
         hasAssemblyAIKey: false,
-        hasSlackBotToken: false,
-        hasSlackChannels: false,
+        hasSlackConfigured: false,
       }),
       ui: uiReducer,
     },

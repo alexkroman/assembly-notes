@@ -22,6 +22,7 @@ import {
 } from '../store/slices/recordingsSlice.js';
 import {
   addTranscriptSegment,
+  updateTranscriptBuffer,
   clearTranscription,
   loadExistingTranscript,
 } from '../store/slices/transcriptionSlice.js';
@@ -124,14 +125,32 @@ export class RecordingManager {
         apiKey,
         {
           onTranscript: (data) => {
-            this.store.dispatch(
-              addTranscriptSegment({
-                text: data.text,
-                timestamp: Date.now(),
-                isFinal: !data.partial,
-                source: data.streamType,
-              })
-            );
+            if (data.partial) {
+              // Handle partial transcripts - update buffer for immediate UI display
+              this.store.dispatch(
+                updateTranscriptBuffer({
+                  source: data.streamType,
+                  text: data.text,
+                })
+              );
+            } else {
+              // Handle final transcripts - add to segments and clear buffers
+              this.store.dispatch(
+                addTranscriptSegment({
+                  text: data.text,
+                  timestamp: Date.now(),
+                  isFinal: true,
+                  source: data.streamType,
+                })
+              );
+              // Clear the buffer for this source since we now have the final transcript
+              this.store.dispatch(
+                updateTranscriptBuffer({
+                  source: data.streamType,
+                  text: '',
+                })
+              );
+            }
           },
           onError: (stream: string, error: unknown) => {
             const errorMessage =

@@ -9,22 +9,31 @@
 
     // Testing
     "orta.vscode-jest",
+    "ms-playwright.playwright",
 
     // TypeScript/Node.js development
-    "ms-vscode.vscode-json",
     "ms-vscode.vscode-typescript-next",
+    "ms-vscode.vscode-json",
     "bradlc.vscode-tailwindcss",
 
     // YAML support
     "redhat.vscode-yaml",
 
-    // Git integration
-    "eamodio.gitlens",
+    // React development
+    "ms-vscode.vscode-react-refactor",
+    "burkeholland.simple-react-snippets",
+
+    // Database/SQLite support
+    "mtxr.sqltools",
+    "mtxr.sqltools-driver-sqlite",
 
     // General productivity
     "christian-kohler.path-intellisense",
     "formulahendry.auto-rename-tag",
-    "ms-vscode.hexeditor"
+    "ms-vscode.hexeditor",
+    "ms-vscode.vscode-npm-script",
+    "ms-vscode.vscode-import-cost",
+    "streetsidesoftware.code-spell-checker"
   ],
   "unwantedRecommendations": [
     // Avoid conflicting formatters

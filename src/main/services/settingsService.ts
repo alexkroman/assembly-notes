@@ -1,23 +1,12 @@
 import type { Store } from '@reduxjs/toolkit';
 import { inject, injectable } from 'tsyringe';
 
-import type { PromptTemplate } from '../../types/common.js';
+import type { SlackInstallation, SettingsSchema } from '../../types/common.js';
 import type { DatabaseService } from '../database.js';
 import { DI_TOKENS } from '../di-tokens.js';
 import type Logger from '../logger.js';
 import { updateSettings } from '../store/slices/settingsSlice.js';
 import type { AppDispatch, RootState } from '../store/store.js';
-
-interface StoredSettings {
-  assemblyaiKey: string;
-  slackBotToken: string;
-  slackChannels: string;
-  selectedSlackChannel: string;
-  summaryPrompt: string;
-  selectedPromptIndex: number;
-  prompts: PromptTemplate[];
-  autoStart: boolean;
-}
 
 @injectable()
 export class SettingsService {
@@ -37,39 +26,39 @@ export class SettingsService {
     }
   }
 
-  getSettings(): StoredSettings {
+  getSettings(): SettingsSchema {
     const dbSettings = this.databaseService.getSettings();
 
     return {
       assemblyaiKey: dbSettings.assemblyaiKey,
-      slackBotToken: dbSettings.slackBotToken,
       slackChannels: dbSettings.slackChannels,
-      selectedSlackChannel: dbSettings.selectedSlackChannel,
-      summaryPrompt:
-        dbSettings.summaryPrompt ||
-        'Summarize the key points from this meeting transcript:',
-      selectedPromptIndex: dbSettings.selectedPromptIndex,
+      summaryPrompt: dbSettings.summaryPrompt,
       prompts: dbSettings.prompts,
       autoStart: dbSettings.autoStart,
+      slackInstallation: dbSettings.slackInstallation,
     };
   }
 
-  updateSettings(updates: {
-    [K in keyof StoredSettings]?: StoredSettings[K] | undefined;
-  }): void {
+  updateSettings(updates: Partial<SettingsSchema>): void {
+    this.logger.info('SettingsService.updateSettings called with:', updates);
+
+    // Process each setting update
     Object.entries(updates).forEach(([key, value]) => {
-      if (value !== undefined) {
-        if (key === 'prompts') {
-          this.databaseService.setSetting(key, value);
-        } else if (key === 'slackChannels') {
-          this.databaseService.setSetting('slackChannels', value);
-        } else if (key === 'selectedSlackChannel') {
-          this.databaseService.setSetting('selectedSlackChannel', value);
-        } else {
-          this.databaseService.setSetting(key, value);
-        }
+      // Special handling for slackInstallation - explicitly allow null to clear it
+      if (key === 'slackInstallation') {
+        this.databaseService.setSetting(key, value);
+      } else if (value != null) {
+        // For other settings, only update if value is not null/undefined
+        this.databaseService.setSetting(key, value);
       }
     });
+
+    // Update Redux store with the new settings
+    const updatedSettings = this.getSettings();
+    this.logger.info('Dispatching updated settings to Redux:', {
+      slackInstallation: updatedSettings.slackInstallation,
+    });
+    this.store.dispatch(updateSettings(updatedSettings));
   }
 
   getAssemblyAIKey(): string {
@@ -77,19 +66,14 @@ export class SettingsService {
     return settings.assemblyaiKey;
   }
 
-  getSlackBotToken(): string {
-    const settings = this.databaseService.getSettings();
-    return settings.slackBotToken;
-  }
-
   getSlackChannels(): string {
     const settings = this.databaseService.getSettings();
     return settings.slackChannels;
   }
 
-  getSelectedSlackChannel(): string {
+  getSlackInstallation(): SlackInstallation | null {
     const settings = this.databaseService.getSettings();
-    return settings.selectedSlackChannel;
+    return settings.slackInstallation;
   }
 
   getSummaryPrompt(): string {
@@ -103,11 +87,6 @@ export class SettingsService {
   isAutoStartEnabled(): boolean {
     const settings = this.databaseService.getSettings();
     return settings.autoStart;
-  }
-
-  getSelectedPromptIndex(): number {
-    const settings = this.databaseService.getSettings();
-    return settings.selectedPromptIndex;
   }
 
   getPrompts(): { label: string; content: string }[] {
@@ -125,9 +104,15 @@ export class SettingsService {
   }
 
   // Helper method to safely check if a setting has a non-empty trimmed value
-  hasNonEmptySetting(key: keyof StoredSettings): boolean {
+  hasNonEmptySetting(key: keyof SettingsSchema): boolean {
     const settings = this.databaseService.getSettings();
     const value = settings[key];
     return Boolean(value && typeof value === 'string' && value.trim());
+  }
+
+  // Helper method to check if Slack is configured
+  hasSlackConfigured(): boolean {
+    const installation = this.getSlackInstallation();
+    return installation !== null;
   }
 }

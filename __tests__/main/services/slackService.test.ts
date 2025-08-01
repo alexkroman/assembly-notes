@@ -6,6 +6,7 @@ import {
   IHttpClient,
   SlackService,
 } from '../../../src/main/services/slackService';
+import { createMockInstallation } from '../../utils/testHelpers.js';
 
 // Mock HTTP client
 const mockHttpClient = {
@@ -20,12 +21,11 @@ describe('SlackService', () => {
   beforeEach(() => {
     jest.clearAllMocks();
 
-    // Create fresh mocks for each test
+    // Create fresh mocks for each test with OAuth-based structure
     mockStore = {
       getState: jest.fn(() => ({
         settings: {
-          slackBotToken: 'test-slack-token-12345',
-          selectedSlackChannel: '#general',
+          slackInstallation: createMockInstallation(),
           slackChannels: '#general,#dev',
         },
       })),
@@ -61,18 +61,18 @@ describe('SlackService', () => {
       };
       mockHttpClient.post.mockResolvedValue(mockResponse);
 
-      const result = await slackService.postMessage('Test message');
+      const result = await slackService.postMessage('Test message', 'C123456');
 
       expect(result.success).toBe(true);
       expect(mockHttpClient.post).toHaveBeenCalledWith(
         'https://slack.com/api/chat.postMessage',
         {
           headers: {
-            Authorization: 'Bearer test-slack-token-12345',
+            Authorization: 'Bearer test-bot-token',
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({
-            channel: '#general',
+            channel: 'C123456',
             text: 'Test message',
           }),
         }
@@ -86,45 +86,43 @@ describe('SlackService', () => {
       };
       mockHttpClient.post.mockResolvedValue(mockResponse);
 
-      await slackService.postMessage('Test message', '#custom');
+      await slackService.postMessage('Test message', 'C789012');
 
       expect(mockHttpClient.post).toHaveBeenCalledWith(
         'https://slack.com/api/chat.postMessage',
         {
           headers: {
-            Authorization: 'Bearer test-slack-token-12345',
+            Authorization: 'Bearer test-bot-token',
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({
-            channel: '#custom',
+            channel: 'C789012',
             text: 'Test message',
           }),
         }
       );
     });
 
-    it('should fail when bot token is missing', async () => {
+    it('should fail when no installation is available', async () => {
       mockStore.getState.mockReturnValue({
         settings: {
-          slackBotToken: '',
-          selectedSlackChannel: '#general',
+          slackInstallation: null,
         },
       });
 
-      const result = await slackService.postMessage('Test message');
+      const result = await slackService.postMessage('Test message', 'C123456');
 
       expect(result.success).toBe(false);
       expect(mockLogger.warn).toHaveBeenCalledWith(
-        'Slack bot token or channel not configured'
+        'No Slack workspace connected. Please connect a workspace first.'
       );
       expect(mockHttpClient.post).not.toHaveBeenCalled();
     });
 
-    it('should fail when channel is missing', async () => {
+    it('should fail when no channel ID is provided', async () => {
       mockStore.getState.mockReturnValue({
         settings: {
-          slackBotToken: 'test-slack-token-12345',
-          selectedSlackChannel: '',
+          slackInstallation: createMockInstallation(),
         },
       });
 
@@ -132,7 +130,7 @@ describe('SlackService', () => {
 
       expect(result.success).toBe(false);
       expect(mockLogger.warn).toHaveBeenCalledWith(
-        'Slack bot token or channel not configured'
+        'No channel selected. Please select a channel first.'
       );
       expect(mockHttpClient.post).not.toHaveBeenCalled();
     });
@@ -147,7 +145,7 @@ describe('SlackService', () => {
       };
       mockHttpClient.post.mockResolvedValue(mockResponse);
 
-      const result = await slackService.postMessage('Test message');
+      const result = await slackService.postMessage('Test message', 'C123456');
 
       expect(result.success).toBe(false);
       expect(mockLogger.error).toHaveBeenCalledWith(
@@ -163,7 +161,7 @@ describe('SlackService', () => {
       };
       mockHttpClient.post.mockResolvedValue(mockResponse);
 
-      const result = await slackService.postMessage('Test message');
+      const result = await slackService.postMessage('Test message', 'C123456');
 
       expect(result.success).toBe(false);
       expect(mockLogger.error).toHaveBeenCalledWith(
@@ -175,7 +173,7 @@ describe('SlackService', () => {
     it('should handle network errors', async () => {
       mockHttpClient.post.mockRejectedValue(new Error('Network error'));
 
-      const result = await slackService.postMessage('Test message');
+      const result = await slackService.postMessage('Test message', 'C123456');
 
       expect(result.success).toBe(false);
       expect(mockLogger.error).toHaveBeenCalledWith(
@@ -191,7 +189,7 @@ describe('SlackService', () => {
       };
       mockHttpClient.post.mockResolvedValue(mockResponse);
 
-      const result = await slackService.postMessage('Test message');
+      const result = await slackService.postMessage('Test message', 'C123456');
 
       expect(result.success).toBe(false);
       expect(mockLogger.error).toHaveBeenCalledWith(
@@ -207,7 +205,7 @@ describe('SlackService', () => {
       };
       mockHttpClient.post.mockResolvedValue(mockResponse);
 
-      const result = await slackService.postMessage('');
+      const result = await slackService.postMessage('', 'C123456');
 
       expect(result.success).toBe(false);
       expect(mockLogger.error).toHaveBeenCalledWith(
@@ -224,7 +222,7 @@ describe('SlackService', () => {
       mockHttpClient.post.mockResolvedValue(mockResponse);
 
       const specialMessage = 'Test with 🚀 emojis and @mentions #hashtags';
-      const result = await slackService.postMessage(specialMessage);
+      const result = await slackService.postMessage(specialMessage, 'C123456');
 
       expect(result.success).toBe(true);
     });
@@ -238,7 +236,7 @@ describe('SlackService', () => {
       };
       mockHttpClient.post.mockResolvedValue(mockResponse);
 
-      const result = await slackService.postMessage('Test message');
+      const result = await slackService.postMessage('Test message', 'C123456');
 
       expect(result.success).toBe(false);
       expect(mockLogger.error).toHaveBeenCalledWith(
@@ -255,7 +253,7 @@ describe('SlackService', () => {
       };
       mockHttpClient.post.mockResolvedValue(mockResponse);
 
-      const result = await slackService.postMessage('Test message');
+      const result = await slackService.postMessage('Test message', 'C123456');
 
       expect(result.success).toBe(false);
       expect(mockLogger.error).toHaveBeenCalledWith(
@@ -269,8 +267,9 @@ describe('SlackService', () => {
     it('should validate token format', async () => {
       mockStore.getState.mockReturnValue({
         settings: {
-          slackBotToken: 'invalid-token',
-          selectedSlackChannel: '#general',
+          slackInstallation: createMockInstallation({
+            botToken: 'invalid-token',
+          }),
         },
       });
 
@@ -283,7 +282,7 @@ describe('SlackService', () => {
       };
       mockHttpClient.post.mockResolvedValue(mockResponse);
 
-      const result = await slackService.postMessage('Test message');
+      const result = await slackService.postMessage('Test message', 'C123456');
 
       expect(result.success).toBe(false);
       expect(mockLogger.error).toHaveBeenCalledWith(
@@ -296,8 +295,7 @@ describe('SlackService', () => {
       // Reset mock store state to use proper test token
       mockStore.getState.mockReturnValue({
         settings: {
-          slackBotToken: 'test-slack-token-12345',
-          selectedSlackChannel: '#general',
+          slackInstallation: createMockInstallation(),
           slackChannels: '#general,#dev',
         },
       });
@@ -315,7 +313,7 @@ describe('SlackService', () => {
         'https://slack.com/api/chat.postMessage',
         {
           headers: {
-            Authorization: 'Bearer test-slack-token-12345',
+            Authorization: 'Bearer test-bot-token',
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({
@@ -324,6 +322,60 @@ describe('SlackService', () => {
           }),
         }
       );
+    });
+  });
+
+  describe('isConfigured', () => {
+    it('should return true when installation and channel are configured', () => {
+      const result = slackService.isConfigured();
+
+      expect(result).toBe(true);
+    });
+
+    it('should return false when no installation is selected', () => {
+      mockStore.getState.mockReturnValue({
+        settings: {
+          slackInstallation: null,
+        },
+      });
+
+      const result = slackService.isConfigured();
+
+      expect(result).toBe(false);
+    });
+
+    it('should return true when installation is present', () => {
+      mockStore.getState.mockReturnValue({
+        settings: {
+          slackInstallation: createMockInstallation(),
+        },
+      });
+
+      const result = slackService.isConfigured();
+
+      expect(result).toBe(true);
+    });
+  });
+
+  describe('getCurrentInstallationInfo', () => {
+    it('should return installation info when configured', () => {
+      const result = slackService.getCurrentInstallationInfo();
+
+      expect(result).toEqual({
+        teamName: 'Test Team',
+      });
+    });
+
+    it('should return null when no installation is selected', () => {
+      mockStore.getState.mockReturnValue({
+        settings: {
+          slackInstallation: null,
+        },
+      });
+
+      const result = slackService.getCurrentInstallationInfo();
+
+      expect(result).toBeNull();
     });
   });
 });

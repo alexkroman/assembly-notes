@@ -25,7 +25,7 @@ export async function startAudioProcessing(
   };
 
   micSource.connect(microphoneWorkletNode);
-  microphoneWorkletNode.connect(microphoneAudioContext.destination);
+  // Audio worklet processes and sends data via postMessage - no need to connect to destination
 
   if (systemStream) {
     systemAudioContext = new AudioContext({ sampleRate: 16000 });
@@ -47,7 +47,7 @@ export async function startAudioProcessing(
     };
 
     systemSource.connect(systemAudioWorkletNode);
-    systemAudioWorkletNode.connect(systemAudioContext.destination);
+    // Audio worklet processes and sends data via postMessage - no need to connect to destination
   }
 }
 
@@ -96,17 +96,6 @@ export function setRecordingState(isRecording: boolean): void {
   }
 }
 
-export function resetAudioProcessing(): void {
-  // First stop recording
-  setRecordingState(false);
-
-  // Then stop all audio processing
-  stopAudioProcessing();
-
-  // Log the reset for debugging
-  window.logger.info('Audio processing completely reset');
-}
-
 declare global {
   interface Window {
     AudioProcessing: {
@@ -116,7 +105,6 @@ declare global {
       ) => Promise<void>;
       stopAudioProcessing: () => void;
       setRecordingState: (recording: boolean) => void;
-      resetAudioProcessing: () => void;
     };
   }
 }
@@ -129,6 +117,5 @@ if (typeof window !== 'undefined') {
     startAudioProcessing,
     stopAudioProcessing,
     setRecordingState,
-    resetAudioProcessing,
   };
 }

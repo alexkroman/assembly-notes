@@ -122,11 +122,165 @@ npm run update-deps    # Update all dependencies
 ## Configuration
 
 1. **AssemblyAI API Key**: Required for real-time transcription services
-2. **Slack Bot Token**: Required for automated posting to Slack channels
+2. **Slack Integration**: Set up a Slack app to enable automated posting (see setup guide below)
 3. **Custom Summary Prompts**: Customize AI-generated meeting summaries
 4. **Audio Processing**: Configure keep-alive settings and echo cancellation
 
 Settings are persisted using SQLite database in your system's user data directory and persist between app sessions.
+
+## Slack Integration Setup
+
+Assembly Notes can automatically post AI-generated meeting summaries to your Slack workspace. Follow these steps to set up the integration:
+
+### Step 1: Create a Slack App
+
+1. **Go to [Slack API](https://api.slack.com/apps)** and sign in to your workspace
+2. **Click "Create New App"** and select **"From an app manifest"**
+3. **Choose your workspace** where you want to install Assembly Notes
+4. **Copy and paste** the contents of [`slack-app-manifest.json`](./slack-app-manifest.json) from this repository
+5. **Click "Next"**, review the configuration, and **click "Create"**
+
+### Step 2: Configure OAuth & Permissions
+
+After creating the app:
+
+1. **Go to "OAuth & Permissions"** in the left sidebar
+2. **Verify the Bot Token Scopes** include:
+   - `channels:read` - View basic information about public channels
+   - `groups:read` - View basic information about private channels (when invited)
+   - `im:read` - View direct message channels
+   - `im:write` - Send direct messages to users
+   - `mpim:read` - View group direct message channels
+   - `mpim:write` - Send messages to group direct messages
+   - `chat:write` - Send messages as @assembly-notes
+   - `chat:write.public` - Send messages to channels the app hasn't been added to
+   - `users:read` - View basic user information (for DM functionality)
+3. **Note the Redirect URL**: `http://localhost:3000/auth/slack/callback` (already configured in the manifest)
+
+### Step 3: Get Your App Credentials
+
+1. **Go to "Basic Information"** in the left sidebar
+2. **In the "App Credentials" section**, find:
+   - **Client ID**: A string like `1234567890.1234567890123`
+   - **Client Secret**: Click "Show" to reveal (keep this secret!)
+3. **Copy both values** - you'll need them for Assembly Notes
+
+### Step 4: Connect Assembly Notes to Slack
+
+1. **Open Assembly Notes** and go to **Settings**
+2. **In the Slack Integration section**:
+   - Enter your **Slack Client ID**
+   - Enter your **Slack Client Secret**
+3. **Click "Save"** to save your credentials
+4. **Click "Connect to Slack"** button
+5. **This will open a browser window** to authorize the connection
+6. **Grant permissions** and you'll see a success page
+7. **Close the browser window** and return to Assembly Notes
+8. **Select your preferred channels** where meeting summaries should be posted
+
+> **Technical Note**: Assembly Notes creates a temporary local server (`localhost:3000`) to securely handle the OAuth callback. This is automatically managed and requires no additional setup.
+
+> **Security Note**: Your Slack credentials are stored locally on your computer and are never sent to any external servers. Each user must create their own Slack app to ensure complete control over their integration.
+
+### Step 5: Using Private Channels & Direct Messages (Optional)
+
+**For Private Channels:**
+
+1. **Invite the bot** to your private channel: `/invite @assembly-notes`
+2. **Refresh channels** in Assembly Notes settings to see the private channel
+3. **Select the private channel** as your preferred posting destination
+
+**For Direct Messages:**
+
+1. **The bot can send DMs** to any user in your workspace automatically
+2. **Select a user** as your posting destination to receive private meeting summaries
+3. **Meeting summaries** will be sent directly to that user's DMs
+
+> **Note**: Assembly Notes can send meeting summaries directly to any user's DMs without prior conversation. This is perfect for sending personalized meeting notes or confidential summaries.
+
+### Step 6: Test the Integration
+
+1. **Start a recording** in Assembly Notes
+2. **Say something** to generate a transcript
+3. **Stop the recording** and click "Generate Summary"
+4. **The AI-generated summary** will automatically post to your selected Slack channel (public or private)
+
+### Troubleshooting
+
+- **Connection Issues**: Make sure you're using the same workspace where you created the Slack app
+- **Permission Errors**: Verify the bot has been added to the channels you want to post to, or use the `chat:write.public` scope
+- **Private Channels Not Visible**: Make sure you've invited the bot (`/invite @assembly-notes`) and refreshed channels in Assembly Notes
+- **DMs Not Working**: Ensure the bot has `im:write` permission to send direct messages
+- **Missing Messages**: Check that the bot token is correctly configured in Assembly Notes settings
+- **Private Channel Access Denied**: Ensure the bot has `groups:read` permission and has been invited to the specific private channel
+- **User DM Access Issues**: Verify the bot has `users:read` permission to look up user information
+
+### Security Notes
+
+- **OAuth Flow**: Assembly Notes uses OAuth 2.0 for secure authentication
+- **Token Storage**: Bot tokens are stored locally and encrypted in your system's user data directory
+- **No Data Sharing**: Transcripts and summaries are only sent to your designated Slack channels
+- **Open Source**: The entire OAuth implementation is open source and can be audited
+
+For more technical details about the Slack integration, see the [SlackOAuthService](./src/main/services/slackOAuthService.ts) implementation.
+
+## Environment Variables & Build Configuration
+
+### Local Development
+
+For local development with Slack integration, create a `.env` file in the project root:
+
+```bash
+# Copy the sample file
+cp .env.sample .env
+```
+
+Then edit `.env` and add your Slack credentials:
+
+```env
+# Slack Integration is now configured through the Settings UI
+# Users will need to create their own Slack app and enter credentials in the app
+
+# Development options
+DEV_MODE=true
+NODE_ENV=development
+```
+
+Get your Slack credentials from:
+
+1. Go to [Slack API Apps](https://api.slack.com/apps)
+2. Select your app
+3. Go to "Basic Information"
+4. Copy the Client ID and Client Secret
+
+### GitHub Actions & CI/CD
+
+**For maintainers and forks**: GitHub Actions builds use the following secrets:
+
+#### Optional Repository Secrets (for macOS notarization)
+
+| Secret Name                   | Description                                |
+| ----------------------------- | ------------------------------------------ |
+| `APPLE_ID`                    | Apple Developer account email              |
+| `APPLE_APP_SPECIFIC_PASSWORD` | App-specific password for notarization     |
+| `APPLE_TEAM_ID`               | 10-character Team ID from Apple Developer  |
+| `CSC_LINK`                    | Base64-encoded .p12 certificate (optional) |
+| `CSC_KEY_PASSWORD`            | Certificate password (optional)            |
+
+#### Note on Slack Integration
+
+Slack integration is now configured by users through the Settings UI in the app. Users will need to:
+
+1. **Create their own Slack app** following the setup guide above
+2. **Enter their Client ID and Client Secret** in the app's Settings modal
+3. **Click "Connect to Slack"** to authorize the app
+
+#### Security Notes
+
+- Repository secrets are **encrypted** and only accessible to GitHub Actions
+- Secrets are **not exposed** in build logs or to pull requests from forks
+- Each fork needs **its own Slack app** and secrets for security isolation
+- The app uses **OAuth 2.0 flow** with localhost callback for secure authentication
 
 ## Architecture
 

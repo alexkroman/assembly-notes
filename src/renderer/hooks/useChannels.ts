@@ -1,49 +1,50 @@
 import { useEffect, useState } from 'react';
 
 import { useAppSelector } from './redux.js';
+
+interface SlackChannel {
+  id: string;
+  name: string;
+  isPrivate: boolean;
+}
+
 export const useChannels = () => {
   const settings = useAppSelector((state) => state.settings);
-  const [channels, setChannels] = useState<string[]>([]);
-  const [selectedChannel, setSelectedChannel] = useState('');
+  const [channels, setChannels] = useState<SlackChannel[]>([]);
+  const [selectedChannelId, setSelectedChannelId] = useState<string>('');
 
   useEffect(() => {
-    const channelsList = settings.slackChannels
+    // Parse favorite channel names from comma-delimited string
+    const favoriteChannelNames = settings.slackChannels
       ? settings.slackChannels
           .split(',')
-          .map((ch: string) => ch.trim())
-          .filter((ch: string) => ch)
+          .map((name) => name.trim().toLowerCase())
+          .filter(Boolean)
       : [];
 
-    setChannels(channelsList);
+    // Create simple channel objects from the favorite names
+    // In the simplified approach, we just use the names directly
+    const favoriteChannels: SlackChannel[] = favoriteChannelNames.map(
+      (name) => ({
+        id: name, // Use name as ID for simplicity
+        name: name,
+        isPrivate: false, // We can't determine this from just the name
+      })
+    );
 
-    const savedChannel = settings.selectedSlackChannel;
-    if (savedChannel && channelsList.includes(savedChannel)) {
-      setSelectedChannel(savedChannel);
-    } else if (channelsList.length > 0 && !savedChannel) {
-      const firstChannel = channelsList[0];
-      if (firstChannel) {
-        setSelectedChannel(firstChannel);
-        void window.electronAPI.saveSelectedChannel(firstChannel).catch(() => {
-          // Ignore channel save errors on initial load
-        });
-      }
-    }
-  }, [settings.slackChannels, settings.selectedSlackChannel]);
+    setChannels(favoriteChannels);
+  }, [settings.slackChannels]);
 
-  const handleChannelChange = async (channel: string) => {
-    setSelectedChannel(channel);
-    if (channel) {
-      try {
-        await window.electronAPI.saveSelectedChannel(channel);
-      } catch (error) {
-        console.error('Error saving selected channel:', error);
-      }
-    }
+  const handleChannelChange = (channelId: string) => {
+    setSelectedChannelId(channelId);
   };
+
+  const selectedChannel = channels.find((ch) => ch.id === selectedChannelId);
 
   return {
     channels,
     selectedChannel,
+    selectedChannelId,
     handleChannelChange,
   };
 };

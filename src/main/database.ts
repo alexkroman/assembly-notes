@@ -7,7 +7,12 @@ import { inject, injectable } from 'tsyringe';
 
 import { DI_TOKENS } from './di-tokens.js';
 import { DEFAULT_PROMPTS } from '../constants/defaultPrompts.js';
-import { PromptTemplate, Recording, SettingsSchema } from '../types/common.js';
+import {
+  PromptTemplate,
+  Recording,
+  SettingsSchema,
+  SlackInstallation,
+} from '../types/common.js';
 @injectable()
 class DatabaseService {
   private db: Database.Database;
@@ -17,14 +22,8 @@ class DatabaseService {
     @inject(DI_TOKENS.Logger)
     private logger: typeof import('./logger.js').default
   ) {
-    // Use development database if DEV_MODE environment variable is set
-    const isDevMode = process.env['DEV_MODE'] === 'true';
-    const dbName = isDevMode ? 'assembly-notes-dev.db' : 'assembly-notes.db';
-    const userDataPath = isDevMode
-      ? path.join(app.getPath('userData'), 'dev')
-      : app.getPath('userData');
-
-    this.dbPath = path.join(userDataPath, dbName);
+    // Use consistent database name - app.setName() in main.ts handles dev/prod separation
+    this.dbPath = path.join(app.getPath('userData'), 'assembly-notes.db');
 
     const dir = path.dirname(this.dbPath);
     if (!fs.existsSync(dir)) {
@@ -137,10 +136,8 @@ class DatabaseService {
       customPrompt: '',
       summaryPrompt: '',
       prompts: JSON.stringify(DEFAULT_PROMPTS),
-      selectedPromptIndex: 0,
-      slackBotToken: '',
-      slackChannels: '',
-      selectedSlackChannel: '',
+      // Slack OAuth fields
+      slackInstallation: JSON.stringify(null),
       autoStart: false,
     };
 
@@ -172,7 +169,9 @@ class DatabaseService {
       } else {
         stringValue = JSON.stringify(value);
       }
+      this.logger.debug(`Setting ${key} to: ${stringValue}`);
       stmt.run(key, stringValue);
+      this.logger.debug(`Successfully set ${key}`);
     } catch (error) {
       this.logger.error(`Error setting ${key}:`, error);
       throw error;
@@ -202,15 +201,12 @@ class DatabaseService {
 
       return {
         assemblyaiKey: (settingsMap.get('assemblyaiKey') ?? '') as string,
-        customPrompt: (settingsMap.get('customPrompt') ?? '') as string,
         summaryPrompt: (settingsMap.get('summaryPrompt') ?? '') as string,
         prompts: (settingsMap.get('prompts') ?? []) as PromptTemplate[],
-        selectedPromptIndex: (settingsMap.get('selectedPromptIndex') ??
-          0) as number,
-        slackBotToken: (settingsMap.get('slackBotToken') ?? '') as string,
+        // Slack OAuth fields
+        slackInstallation: (settingsMap.get('slackInstallation') ??
+          null) as SlackInstallation | null,
         slackChannels: (settingsMap.get('slackChannels') ?? '') as string,
-        selectedSlackChannel: (settingsMap.get('selectedSlackChannel') ??
-          '') as string,
         autoStart: (settingsMap.get('autoStart') ?? false) as boolean,
       };
     } catch (error) {
@@ -218,13 +214,11 @@ class DatabaseService {
       // Return default settings if bulk query fails
       return {
         assemblyaiKey: '',
-        customPrompt: '',
         summaryPrompt: '',
         prompts: [],
-        selectedPromptIndex: 0,
-        slackBotToken: '',
+        // Slack OAuth fields
+        slackInstallation: null,
         slackChannels: '',
-        selectedSlackChannel: '',
         autoStart: false,
       };
     }

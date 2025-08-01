@@ -1,0 +1,38 @@
+{
+  "display_information": {
+    "name": "Assembly Notes",
+    "description": "Real-time transcription and AI-powered meeting summaries for your Slack workspace",
+    "background_color": "#2c3e50",
+    "long_description": "Assembly Notes is a desktop application that provides real-time transcription of meetings and calls, then automatically generates AI-powered summaries and posts them to your Slack channels. Perfect for keeping your team informed about meeting outcomes without having to attend every call."
+  },
+  "features": {
+    "bot_user": {
+      "display_name": "Assembly Notes",
+      "always_online": false
+    }
+  },
+  "oauth_config": {
+    "redirect_urls": ["http://localhost:3000/auth/slack/callback"],
+    "scopes": {
+      "bot": [
+        "channels:read",
+        "groups:read",
+        "im:read",
+        "im:write",
+        "mpim:read",
+        "mpim:write",
+        "chat:write",
+        "chat:write.public",
+        "users:read"
+      ]
+    }
+  },
+  "settings": {
+    "interactivity": {
+      "is_enabled": false
+    },
+    "org_deploy_enabled": false,
+    "socket_mode_enabled": false,
+    "token_rotation_enabled": false
+  }
+}

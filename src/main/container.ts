@@ -9,6 +9,7 @@ import { DI_TOKENS } from './di-tokens.js';
 import logger from './logger.js';
 import { RecordingManager } from './services/recordingManager.js';
 import { SettingsService } from './services/settingsService.js';
+import { SlackOAuthService } from './services/slackOAuthService.js';
 import { FetchHttpClient, SlackService } from './services/slackService.js';
 import {
   AssemblyAIFactoryWithLemur,
@@ -54,6 +55,7 @@ export function setupContainer(mainWindow: BrowserWindow): void {
   container.registerSingleton(DI_TOKENS.DatabaseService, DatabaseService);
   container.registerSingleton(DI_TOKENS.SettingsService, SettingsService);
   container.registerSingleton(DI_TOKENS.SlackService, SlackService);
+  container.registerSingleton(DI_TOKENS.SlackOAuthService, SlackOAuthService);
   container.registerSingleton(
     DI_TOKENS.TranscriptionService,
     TranscriptionService
