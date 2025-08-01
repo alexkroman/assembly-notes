@@ -81,7 +81,6 @@ export class SlackOAuthService {
       webPreferences: {
         nodeIntegration: false,
         contextIsolation: true,
-        allowRunningInsecureContent: true,
         experimentalFeatures: true,
       },
       parent: this.mainWindow,
