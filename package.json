@@ -115,9 +115,9 @@
       "buildResources": "build"
     },
     "files": [
+      "src/**/*",
       "dist/**/*",
-      "!dist/**/*.map",
-      "package.json"
+      "node_modules/**/*"
     ],
     "asarUnpack": [
       "node_modules/electron-audio-loopback/**/*",

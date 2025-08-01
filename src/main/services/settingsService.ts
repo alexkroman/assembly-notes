@@ -42,8 +42,13 @@ export class SettingsService {
   updateSettings(updates: Partial<SettingsSchema>): void {
     this.logger.info('SettingsService.updateSettings called with:', updates);
 
+    // Process each setting update
     Object.entries(updates).forEach(([key, value]) => {
-      if (value != null) {
+      // Special handling for slackInstallation - explicitly allow null to clear it
+      if (key === 'slackInstallation') {
+        this.databaseService.setSetting(key, value);
+      } else if (value != null) {
+        // For other settings, only update if value is not null/undefined
         this.databaseService.setSetting(key, value);
       }
     });

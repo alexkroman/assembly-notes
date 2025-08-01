@@ -11,11 +11,8 @@ import type Logger from '../logger.js';
 import type { SettingsService } from './settingsService.js';
 
 // Slack OAuth configuration
-// For open source Electron apps, there are a few approaches:
-// 1. Use environment variables during build (not runtime)
-// 2. Use a proxy server to handle OAuth flow
-// 3. Have users create their own Slack app and enter credentials
-//
+// Users must create their own Slack app and enter credentials in the Settings UI
+// This ensures complete control over their integration and security
 const SLACK_REDIRECT_URI = 'http://localhost:3000/auth/slack/callback';
 
 interface SlackOAuthResponse {
@@ -34,44 +31,34 @@ interface SlackOAuthResponse {
 export class SlackOAuthService {
   private oauthWindow: BrowserWindow | null = null;
   private oauthServer: Server | null = null;
-  private readonly SLACK_CLIENT_ID: string;
-  private readonly SLACK_CLIENT_SECRET: string;
+  private tempClientId = '';
+  private tempClientSecret = '';
 
   constructor(
     @inject(DI_TOKENS.DatabaseService) private database: DatabaseService,
     @inject(DI_TOKENS.Logger) private logger: typeof Logger,
     @inject(DI_TOKENS.MainWindow) private mainWindow: BrowserWindow,
     @inject(DI_TOKENS.SettingsService) private settingsService: SettingsService
-  ) {
-    // Read environment variables at runtime (after dotenv.config())
-    this.SLACK_CLIENT_ID = process.env['SLACK_CLIENT_ID'] ?? '';
-    this.SLACK_CLIENT_SECRET = process.env['SLACK_CLIENT_SECRET'] ?? '';
-
-    // Debug logging for environment variables
-    this.logger.info('SlackOAuthService initialized');
-    this.logger.info('SLACK_CLIENT_ID:', this.SLACK_CLIENT_ID);
-    this.logger.info(
-      'SLACK_CLIENT_SECRET:',
-      this.SLACK_CLIENT_SECRET ? '[REDACTED]' : 'NOT_SET'
-    );
-  }
+  ) {}
 
   /**
    * Initiates the Slack OAuth flow using a temporary HTTP server
    */
-  async initiateOAuth(): Promise<void> {
-    // Check if OAuth credentials are configured
-    if (!this.SLACK_CLIENT_ID || !this.SLACK_CLIENT_SECRET) {
-      const error = new Error(
-        'Slack OAuth is not configured. Please set SLACK_CLIENT_ID and SLACK_CLIENT_SECRET environment variables.'
-      );
+  async initiateOAuth(clientId: string, clientSecret: string): Promise<void> {
+    // Check if OAuth credentials are provided
+    if (!clientId || !clientSecret) {
+      const error = new Error('Slack OAuth credentials are required.');
       this.logger.error('OAuth configuration missing:', error.message);
       this.mainWindow.webContents.send(
         'slack-oauth-error',
-        'Slack integration is not configured. Please see the documentation for setup instructions.'
+        'Please enter both Slack Client ID and Client Secret.'
       );
       return;
     }
+
+    // Store credentials temporarily for this OAuth flow
+    this.tempClientId = clientId;
+    this.tempClientSecret = clientSecret;
 
     if (this.oauthWindow) {
       this.oauthWindow.focus();
@@ -83,7 +70,7 @@ export class SlackOAuthService {
 
     const authUrl =
       `https://slack.com/oauth/v2/authorize?` +
-      `client_id=${this.SLACK_CLIENT_ID}&` +
+      `client_id=${this.tempClientId}&` +
       `scope=channels:read,groups:read,im:read,im:write,mpim:read,mpim:write,chat:write,chat:write.public,users:read&` +
       `redirect_uri=${encodeURIComponent(SLACK_REDIRECT_URI)}`;
 
@@ -281,8 +268,8 @@ export class SlackOAuthService {
         'Content-Type': 'application/x-www-form-urlencoded',
       },
       body: new URLSearchParams({
-        client_id: this.SLACK_CLIENT_ID,
-        client_secret: this.SLACK_CLIENT_SECRET,
+        client_id: this.tempClientId,
+        client_secret: this.tempClientSecret,
         code: code,
         redirect_uri: SLACK_REDIRECT_URI,
       }),
@@ -313,6 +300,10 @@ export class SlackOAuthService {
       slackInstallation: installation,
     });
 
+    // Clear temporary credentials
+    this.tempClientId = '';
+    this.tempClientSecret = '';
+
     this.logger.info(
       `Slack installation saved for team: ${installation.teamName}`
     );
@@ -324,6 +315,7 @@ export class SlackOAuthService {
   removeInstallation(): void {
     this.settingsService.updateSettings({
       slackInstallation: null,
+      slackChannels: '', // Clear selected channels
     });
     this.logger.info('Removed current Slack installation');
   }

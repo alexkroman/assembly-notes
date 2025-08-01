@@ -36,7 +36,6 @@ export default defineConfig(({ command, mode }) => {
       build: {
         outDir: '../../dist/preload',
         emptyOutDir: false,
-        sourcemap: process.env.NODE_ENV === 'development',
         lib: {
           entry: path.resolve(__dirname, 'src/preload/preload.ts'),
           name: 'preload',

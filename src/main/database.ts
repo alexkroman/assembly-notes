@@ -169,7 +169,9 @@ class DatabaseService {
       } else {
         stringValue = JSON.stringify(value);
       }
+      this.logger.debug(`Setting ${key} to: ${stringValue}`);
       stmt.run(key, stringValue);
+      this.logger.debug(`Successfully set ${key}`);
     } catch (error) {
       this.logger.error(`Error setting ${key}:`, error);
       throw error;

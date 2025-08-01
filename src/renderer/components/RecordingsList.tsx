@@ -232,6 +232,7 @@ export const RecordingsList: React.FC<RecordingsListProps> = ({
         message="Are you sure you want to delete this recording? This action cannot be undone."
         confirmText="Delete"
         cancelText="Cancel"
+        confirmVariant="danger"
         onConfirm={() => {
           void confirmDeleteRecording();
         }}

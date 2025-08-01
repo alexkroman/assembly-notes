@@ -86,8 +86,14 @@ describe('SettingsModal', () => {
     expect(
       screen.getByLabelText('AssemblyAI API Key (required):')
     ).toBeInTheDocument();
-    // OAuth section should be present instead of bot token
-    expect(screen.getByText('Connect to Slack')).toBeInTheDocument();
+    // Slack credential fields should be present
+    expect(
+      screen.getByText('Slack Credentials (optional):')
+    ).toBeInTheDocument();
+    expect(screen.getByTestId('slack-client-id-input')).toBeInTheDocument();
+    expect(screen.getByTestId('slack-client-secret-input')).toBeInTheDocument();
+    // OAuth button should NOT be present until credentials are entered
+    expect(screen.queryByText('Connect to Slack')).not.toBeInTheDocument();
     expect(screen.getByText('Save')).toBeInTheDocument();
     expect(screen.getByText('Cancel')).toBeInTheDocument();
   });
@@ -127,10 +133,23 @@ describe('SettingsModal', () => {
   it('should handle slack oauth connection', () => {
     renderModal();
 
+    // First enter Slack credentials to make the Connect button appear
+    const clientIdInput = screen.getByTestId('slack-client-id-input');
+    const clientSecretInput = screen.getByTestId('slack-client-secret-input');
+
+    fireEvent.change(clientIdInput, { target: { value: 'test-client-id' } });
+    fireEvent.change(clientSecretInput, {
+      target: { value: 'test-client-secret' },
+    });
+
+    // Now the Connect button should appear
     const connectButton = screen.getByText('Connect to Slack');
     fireEvent.click(connectButton);
 
-    expect(mockElectronAPI.slackOAuthInitiate).toHaveBeenCalled();
+    expect(mockElectronAPI.slackOAuthInitiate).toHaveBeenCalledWith(
+      'test-client-id',
+      'test-client-secret'
+    );
   });
 
   it('should disable save and cancel when API key is empty', () => {

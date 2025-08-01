@@ -226,12 +226,19 @@ function setupIpcHandlers(
   );
 
   // Slack OAuth handlers
-  ipcMain.handle('slack-oauth-initiate', async (): Promise<void> => {
-    const slackOAuthService = container.resolve<SlackOAuthService>(
-      DI_TOKENS.SlackOAuthService
-    );
-    await slackOAuthService.initiateOAuth();
-  });
+  ipcMain.handle(
+    'slack-oauth-initiate',
+    async (
+      _event: IpcMainInvokeEvent,
+      clientId: string,
+      clientSecret: string
+    ): Promise<void> => {
+      const slackOAuthService = container.resolve<SlackOAuthService>(
+        DI_TOKENS.SlackOAuthService
+      );
+      await slackOAuthService.initiateOAuth(clientId, clientSecret);
+    }
+  );
 
   ipcMain.handle(
     'slack-oauth-remove-installation',

@@ -11,18 +11,13 @@ import '../../types/global.d.ts';
 export const SettingsModal: React.FC<SettingsModalProps> = ({ onClose }) => {
   const reduxSettings = useAppSelector((state) => state.settings);
   const [settings, setSettings] = useState<SettingsState>(reduxSettings);
+  const [slackClientId, setSlackClientId] = useState('');
+  const [slackClientSecret, setSlackClientSecret] = useState('');
   const dispatch = useAppDispatch();
 
   useEffect(() => {
-    setSettings((prevSettings) => ({
-      ...reduxSettings,
-      // Preserve local assemblyaiKey if it's been modified but not saved
-      assemblyaiKey:
-        prevSettings.assemblyaiKey !== reduxSettings.assemblyaiKey &&
-        prevSettings.assemblyaiKey.trim() !== ''
-          ? prevSettings.assemblyaiKey
-          : reduxSettings.assemblyaiKey,
-    }));
+    // Update local state when Redux state changes
+    setSettings(reduxSettings);
   }, [reduxSettings]);
 
   useEffect(() => {
@@ -124,10 +119,46 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ onClose }) => {
         />
       </div>
 
-      <div className="form-group">
-        <label>Slack Integration (optional):</label>
-        <SlackOAuthConnectionOnly />
-      </div>
+      {!settings.slackInstallation && (
+        <div className="form-group">
+          <label>Slack Credentials (optional):</label>
+          <div style={{ display: 'flex', gap: '8px' }}>
+            <input
+              type="text"
+              id="slackClientId"
+              data-testid="slack-client-id-input"
+              value={slackClientId}
+              onChange={(e) => {
+                setSlackClientId(e.target.value);
+              }}
+              placeholder="Client ID"
+              style={{ flex: 1 }}
+            />
+            <input
+              type="password"
+              id="slackClientSecret"
+              data-testid="slack-client-secret-input"
+              value={slackClientSecret}
+              onChange={(e) => {
+                setSlackClientSecret(e.target.value);
+              }}
+              placeholder="Client Secret"
+              style={{ flex: 1 }}
+            />
+          </div>
+        </div>
+      )}
+
+      {(Boolean(settings.slackInstallation) ||
+        (slackClientId.trim() && slackClientSecret.trim())) && (
+        <div className="form-group">
+          <label>Slack Connection:</label>
+          <SlackOAuthConnectionOnly
+            clientId={slackClientId}
+            clientSecret={slackClientSecret}
+          />
+        </div>
+      )}
     </Modal>
   );
 };

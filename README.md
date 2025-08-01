@@ -132,23 +132,30 @@ After creating the app:
    - `users:read` - View basic user information (for DM functionality)
 3. **Note the Redirect URL**: `http://localhost:3000/auth/slack/callback` (already configured in the manifest)
 
-### Step 3: Install the App to Your Workspace
+### Step 3: Get Your App Credentials
 
-1. **Go to "Install App"** in the left sidebar
-2. **Click "Install to Workspace"**
-3. **Review the permissions** and click "Allow"
-4. **Copy the "Bot User OAuth Token"** (starts with `xoxb-`) - you'll need this for Assembly Notes
+1. **Go to "Basic Information"** in the left sidebar
+2. **In the "App Credentials" section**, find:
+   - **Client ID**: A string like `1234567890.1234567890123`
+   - **Client Secret**: Click "Show" to reveal (keep this secret!)
+3. **Copy both values** - you'll need them for Assembly Notes
 
 ### Step 4: Connect Assembly Notes to Slack
 
 1. **Open Assembly Notes** and go to **Settings**
-2. **In the Slack Integration section**, click **"Connect to Slack"**
-3. **This will open a browser window** to authorize the connection
-4. **Grant permissions** and you'll see a success page
-5. **Close the browser window** and return to Assembly Notes
-6. **Select your preferred channels** where meeting summaries should be posted
+2. **In the Slack Integration section**:
+   - Enter your **Slack Client ID**
+   - Enter your **Slack Client Secret**
+3. **Click "Save"** to save your credentials
+4. **Click "Connect to Slack"** button
+5. **This will open a browser window** to authorize the connection
+6. **Grant permissions** and you'll see a success page
+7. **Close the browser window** and return to Assembly Notes
+8. **Select your preferred channels** where meeting summaries should be posted
 
 > **Technical Note**: Assembly Notes creates a temporary local server (`localhost:3000`) to securely handle the OAuth callback. This is automatically managed and requires no additional setup.
+
+> **Security Note**: Your Slack credentials are stored locally on your computer and are never sent to any external servers. Each user must create their own Slack app to ensure complete control over their integration.
 
 ### Step 5: Using Private Channels & Direct Messages (Optional)
 
@@ -206,11 +213,8 @@ cp .env.sample .env
 Then edit `.env` and add your Slack credentials:
 
 ```env
-# Slack Integration (required for OAuth functionality)
-# WARNING: Never commit these values to the repository!
-# For public distribution, consider using a proxy server or having users create their own Slack app
-SLACK_CLIENT_ID=your_slack_client_id_here
-SLACK_CLIENT_SECRET=your_slack_client_secret_here
+# Slack Integration is now configured through the Settings UI
+# Users will need to create their own Slack app and enter credentials in the app
 
 # Development options
 DEV_MODE=true
@@ -226,16 +230,7 @@ Get your Slack credentials from:
 
 ### GitHub Actions & CI/CD
 
-**For maintainers and forks**: To enable Slack integration in GitHub Actions builds, you need to set up repository secrets:
-
-#### Required Repository Secrets
-
-Go to your repository **Settings → Secrets and variables → Actions** and add:
-
-| Secret Name           | Description             | How to Get                                     |
-| --------------------- | ----------------------- | ---------------------------------------------- |
-| `SLACK_CLIENT_ID`     | Slack app Client ID     | From your Slack app's "Basic Information" page |
-| `SLACK_CLIENT_SECRET` | Slack app Client Secret | From your Slack app's "Basic Information" page |
+**For maintainers and forks**: GitHub Actions builds use the following secrets:
 
 #### Optional Repository Secrets (for macOS notarization)
 
@@ -247,20 +242,13 @@ Go to your repository **Settings → Secrets and variables → Actions** and add
 | `CSC_LINK`                    | Base64-encoded .p12 certificate (optional) |
 | `CSC_KEY_PASSWORD`            | Certificate password (optional)            |
 
-#### Why These Secrets Are Needed
+#### Note on Slack Integration
 
-- **Without Slack secrets**: Builds will succeed but Slack integration will be disabled (shows "not configured" message)
-- **With Slack secrets**: Builds include full Slack OAuth functionality for end users
-- **Production releases**: Should always include Slack secrets for complete functionality
+Slack integration is now configured by users through the Settings UI in the app. Users will need to:
 
-#### Setting Up Secrets for Forks
-
-If you fork this repository and want to maintain Slack integration:
-
-1. **Create your own Slack app** following the setup guide above
-2. **Add the secrets** to your forked repository
-3. **GitHub Actions will automatically** use these secrets during builds
-4. **Your builds will have** working Slack integration
+1. **Create their own Slack app** following the setup guide above
+2. **Enter their Client ID and Client Secret** in the app's Settings modal
+3. **Click "Connect to Slack"** to authorize the app
 
 #### Security Notes
 

@@ -149,7 +149,10 @@ describe('SlackOAuthService', () => {
     it('should create HTTP server, OAuth window and load authorization URL', async () => {
       const { createServer } = await import('http');
 
-      await slackOAuthService.initiateOAuth();
+      await slackOAuthService.initiateOAuth(
+        'test-client-id',
+        'test-client-secret'
+      );
 
       // Verify HTTP server was created and started
       expect(createServer).toHaveBeenCalledWith(expect.any(Function));
@@ -205,7 +208,10 @@ describe('SlackOAuthService', () => {
     });
 
     it('should stop server when OAuth window is closed', async () => {
-      await slackOAuthService.initiateOAuth();
+      await slackOAuthService.initiateOAuth(
+        'test-client-id',
+        'test-client-secret'
+      );
 
       // Simulate window closed event
       const closeHandler = mockBrowserWindow.on.mock.calls.find(
@@ -237,9 +243,9 @@ describe('SlackOAuthService', () => {
         }
       });
 
-      await expect(slackOAuthService.initiateOAuth()).rejects.toThrow(
-        'Port already in use'
-      );
+      await expect(
+        slackOAuthService.initiateOAuth('test-client-id', 'test-client-secret')
+      ).rejects.toThrow('Port already in use');
     });
 
     it('should handle OAuth window creation failure', async () => {
@@ -267,43 +273,27 @@ describe('SlackOAuthService', () => {
         mockSettingsService as any
       );
 
-      await expect(testService.initiateOAuth()).rejects.toThrow(
-        'Window creation failed'
-      );
+      await expect(
+        testService.initiateOAuth('test-client-id', 'test-client-secret')
+      ).rejects.toThrow('Window creation failed');
     });
 
     it('should handle missing OAuth credentials gracefully', async () => {
-      // Temporarily set to placeholder values
-      process.env['SLACK_CLIENT_ID'] = 'YOUR_SLACK_CLIENT_ID_HERE';
-      process.env['SLACK_CLIENT_SECRET'] = 'YOUR_SLACK_CLIENT_SECRET_HERE';
-
-      // Force module to re-evaluate constants
-      jest.resetModules();
-      const { SlackOAuthService: TestSlackOAuthService } = await import(
-        '../../../src/main/services/slackOAuthService'
-      );
-
-      const testService = new TestSlackOAuthService(
-        mockDatabase as any,
-        mockLogger as any,
-        mockMainWindow as any,
-        mockSettingsService as any
-      );
-
-      await testService.initiateOAuth();
+      // Test with empty credentials
+      await slackOAuthService.initiateOAuth('', '');
 
       expect(mockLogger.error).toHaveBeenCalledWith(
         'OAuth configuration missing:',
-        expect.stringContaining('Slack OAuth is not configured')
+        'Slack OAuth credentials are required.'
       );
       expect(mockMainWindow.webContents.send).toHaveBeenCalledWith(
         'slack-oauth-error',
-        'Slack integration is not configured in this build.'
+        'Please enter both Slack Client ID and Client Secret.'
       );
 
-      // Restore test values
-      process.env['SLACK_CLIENT_ID'] = 'test-client-id';
-      process.env['SLACK_CLIENT_SECRET'] = 'test-client-secret';
+      // Verify no window was created
+      const { BrowserWindow: MockedBrowserWindow } = await import('electron');
+      expect(MockedBrowserWindow).not.toHaveBeenCalled();
     });
   });
 
@@ -327,7 +317,10 @@ describe('SlackOAuthService', () => {
 
       // Get the request handler from createServer mock
       const { createServer } = await import('http');
-      await slackOAuthService.initiateOAuth();
+      await slackOAuthService.initiateOAuth(
+        'test-client-id',
+        'test-client-secret'
+      );
 
       const createServerCall = (createServer as jest.Mock).mock.calls[0];
       requestHandler = createServerCall[0]; // The request handler function
@@ -547,6 +540,7 @@ describe('SlackOAuthService', () => {
 
       expect(mockSettingsService.updateSettings).toHaveBeenCalledWith({
         slackInstallation: null,
+        slackChannels: '',
       });
 
       expect(mockLogger.info).toHaveBeenCalledWith(
@@ -565,6 +559,7 @@ describe('SlackOAuthService', () => {
 
       expect(mockSettingsService.updateSettings).toHaveBeenCalledWith({
         slackInstallation: null,
+        slackChannels: '',
       });
     });
 
@@ -611,11 +606,17 @@ describe('SlackOAuthService', () => {
       const { BrowserWindow: MockedBrowserWindow } = await import('electron');
 
       // First OAuth attempt
-      await slackOAuthService.initiateOAuth();
+      await slackOAuthService.initiateOAuth(
+        'test-client-id',
+        'test-client-secret'
+      );
       expect(MockedBrowserWindow).toHaveBeenCalledTimes(1);
 
       // Second OAuth attempt should focus existing window, not create new one
-      await slackOAuthService.initiateOAuth();
+      await slackOAuthService.initiateOAuth(
+        'test-client-id',
+        'test-client-secret'
+      );
       expect(MockedBrowserWindow).toHaveBeenCalledTimes(1); // Still only 1 call
       expect(mockBrowserWindow.focus).toHaveBeenCalled();
     });

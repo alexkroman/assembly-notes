@@ -229,12 +229,24 @@ const createSyncReducer = <T extends SyncState>(initialState: T) => {
       case 'settings/saveSelectedChannel/fulfilled':
       case 'settings/updateSettings':
         if ('assemblyaiKey' in state && action.payload) {
-          return {
+          const payload = action.payload as Partial<SettingsState>;
+          const newState = {
             ...state,
-            ...action.payload,
+            ...payload,
             loading: false,
             error: null,
-          } as T;
+          };
+          // Compute hasSlackConfigured based on slackInstallation
+          if ('slackInstallation' in payload) {
+            newState.hasSlackConfigured = Boolean(payload.slackInstallation);
+          }
+          // Compute hasAssemblyAIKey if assemblyaiKey is updated
+          if ('assemblyaiKey' in payload) {
+            newState.hasAssemblyAIKey = Boolean(
+              (payload.assemblyaiKey || '').trim()
+            );
+          }
+          return newState as T;
         }
         break;
 

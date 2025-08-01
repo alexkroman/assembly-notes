@@ -66,7 +66,10 @@ declare global {
       ) => Promise<{ success: boolean; error?: string }>;
 
       // Slack OAuth
-      slackOAuthInitiate: () => Promise<void>;
+      slackOAuthInitiate: (
+        clientId: string,
+        clientSecret: string
+      ) => Promise<void>;
       slackOAuthRemoveInstallation: () => Promise<void>;
       slackOAuthValidateChannels: (
         teamId: string,

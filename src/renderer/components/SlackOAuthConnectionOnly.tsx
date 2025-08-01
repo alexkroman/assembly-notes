@@ -2,7 +2,14 @@ import React, { useEffect, useState } from 'react';
 
 import { useAppSelector } from '../hooks/redux.js';
 
-export const SlackOAuthConnectionOnly: React.FC = () => {
+interface SlackOAuthConnectionOnlyProps {
+  clientId?: string;
+  clientSecret?: string;
+}
+
+export const SlackOAuthConnectionOnly: React.FC<
+  SlackOAuthConnectionOnlyProps
+> = ({ clientId = '', clientSecret = '' }) => {
   const settings = useAppSelector((state) => state.settings);
   const [isConnecting, setIsConnecting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -32,7 +39,7 @@ export const SlackOAuthConnectionOnly: React.FC = () => {
     try {
       setIsConnecting(true);
       setError(null);
-      await window.electronAPI.slackOAuthInitiate();
+      await window.electronAPI.slackOAuthInitiate(clientId, clientSecret);
     } catch (err) {
       setIsConnecting(false);
       setError(err instanceof Error ? err.message : 'Failed to initiate OAuth');
@@ -76,17 +83,15 @@ export const SlackOAuthConnectionOnly: React.FC = () => {
 
   return (
     <div className="slack-oauth-section">
-      <div style={{ marginBottom: '12px' }}>
-        <button
-          type="button"
-          className="btn-small btn-danger"
-          onClick={() => {
-            void handleDisconnect();
-          }}
-        >
-          Disconnect from Slack
-        </button>
-      </div>
+      <button
+        type="button"
+        className="btn-primary oauth-button btn-danger"
+        onClick={() => {
+          void handleDisconnect();
+        }}
+      >
+        Disconnect from Slack
+      </button>
       {error && (
         <div
           className="error-message"

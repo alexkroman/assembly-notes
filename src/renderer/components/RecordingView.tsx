@@ -154,8 +154,8 @@ export const RecordingView: React.FC<RecordingViewProps> = ({
     return isStopping || isStarting || isStoppingForNavigation;
   };
 
-  // Use computed properties instead of direct trim operations
-  const hasSlackConfigured = settings.hasSlackConfigured;
+  // Check if Slack is configured using the same method as SlackOAuthConnectionOnly
+  const hasSlackConfigured = Boolean(settings.slackInstallation);
 
   return (
     <div

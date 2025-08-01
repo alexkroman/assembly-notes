@@ -6,6 +6,7 @@ interface ConfirmModalProps {
   message: string;
   confirmText?: string;
   cancelText?: string;
+  confirmVariant?: 'primary' | 'danger';
   onConfirm: () => void;
   onCancel: () => void;
 }
@@ -16,6 +17,7 @@ export const ConfirmModal: React.FC<ConfirmModalProps> = ({
   message,
   confirmText = 'Confirm',
   cancelText = 'Cancel',
+  confirmVariant = 'primary',
   onConfirm,
   onCancel,
 }) => {
@@ -49,7 +51,7 @@ export const ConfirmModal: React.FC<ConfirmModalProps> = ({
         }
       }}
     >
-      <div className="modal-content large">
+      <div className="modal-content">
         <div className="modal-header">
           <h2>{title}</h2>
           <button
@@ -74,7 +76,9 @@ export const ConfirmModal: React.FC<ConfirmModalProps> = ({
             {cancelText}
           </button>
           <button
-            className="btn-primary"
+            className={
+              confirmVariant === 'danger' ? 'btn-danger' : 'btn-primary'
+            }
             data-testid="confirm-btn"
             onClick={onConfirm}
           >
