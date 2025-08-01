@@ -81,7 +81,6 @@ export class SlackOAuthService {
       webPreferences: {
         nodeIntegration: false,
         contextIsolation: true,
-        webSecurity: false, // Temporarily disable for OAuth
         allowRunningInsecureContent: true,
         experimentalFeatures: true,
       },
