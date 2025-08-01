@@ -17,7 +17,9 @@
     "dev": "concurrently \"npm run dev:main\" \"npm run dev:renderer\" \"cross-env DEV_MODE=true electron .\"",
     "dev:main": "tsc --watch",
     "dev:renderer": "cross-env BUILD_TARGET=renderer vite",
-    "clean": "rimraf dist",
+    "clean": "rimraf dist/main dist/preload dist/renderer",
+    "clean:all": "rimraf dist",
+    "clean:release": "rimraf release",
     "build:all": "npm run clean && npm run build:main && npm run build:preload && npm run build:renderer && npm run build:audio-processor",
     "build:main": "tsc",
     "build:preload": "cross-env BUILD_TARGET=preload vite build",
@@ -109,7 +111,7 @@
   "build": {
     "appId": "com.alexkroman.assembly-notes",
     "productName": "Assembly-Notes",
-    "artifactName": "Assembly-Notes-${version}-${arch}.${ext}",
+    "artifactName": "Assembly-Notes-${version}-${os}-${arch}.${ext}",
     "forceCodeSigning": false,
     "publish": {
       "provider": "github"
@@ -119,11 +121,12 @@
       "allowToChangeInstallationDirectory": true
     },
     "directories": {
-      "output": "dist",
+      "output": "release",
       "buildResources": "build"
     },
     "files": [
-      "dist/**/*"
+      "dist/**/*",
+      "!dist/**/*.map"
     ],
     "asarUnpack": [
       "node_modules/electron-audio-loopback/**/*",

@@ -42,13 +42,13 @@ const server = createServer((req, res) => {
   // Serve update info (latest.yml, latest-mac.yml, etc.)
   if (req.url.includes('latest') && req.url.includes('.yml')) {
     // Look for any existing macOS build artifacts (any version)
-    const distDir = join(__dirname, '../dist');
+    const releaseDir = join(__dirname, '../release');
     let usePath = '';
     let fileExt = '';
     let actualFileName = '';
 
-    if (existsSync(distDir)) {
-      const files = readdirSync(distDir);
+    if (existsSync(releaseDir)) {
+      const files = readdirSync(releaseDir);
       // Look for any DMG or ZIP file
       const dmgFile = files.find(
         (f) => f.endsWith('.dmg') && f.includes('Assembly-Notes')
@@ -58,11 +58,11 @@ const server = createServer((req, res) => {
       );
 
       if (dmgFile) {
-        usePath = join(distDir, dmgFile);
+        usePath = join(releaseDir, dmgFile);
         fileExt = 'dmg';
         actualFileName = dmgFile;
       } else if (zipFile) {
-        usePath = join(distDir, zipFile);
+        usePath = join(releaseDir, zipFile);
         fileExt = 'zip';
         actualFileName = zipFile;
       }
@@ -109,7 +109,7 @@ note: No update available - no build files found`;
     req.url.includes('.blockmap')
   ) {
     const fileName = req.url.substring(1); // Remove leading slash
-    const filePath = join(__dirname, '../dist', fileName);
+    const filePath = join(__dirname, '../release', fileName);
 
     if (existsSync(filePath)) {
       const stats = statSync(filePath);

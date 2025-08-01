@@ -7,6 +7,7 @@ out
 .claude
 .DS_Store
 dist
+release
 .mypy_cache
 coverage
 *.map

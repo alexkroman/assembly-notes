@@ -26,7 +26,7 @@ export default defineConfig({
   build: {
     outDir: '../../dist/renderer',
     emptyOutDir: false,
-    sourcemap: process.env.NODE_ENV === 'development',
+    sourcemap: false,
     lib: {
       entry: path.resolve(__dirname, 'src/renderer/audio-processor.ts'),
       name: 'AudioProcessor',

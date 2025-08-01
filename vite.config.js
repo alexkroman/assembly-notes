@@ -58,7 +58,7 @@ export default defineConfig(({ command, mode }) => {
     build: {
       outDir: '../../dist/renderer',
       emptyOutDir: false,
-      sourcemap: process.env.NODE_ENV === 'development',
+      sourcemap: false,
       rollupOptions: {
         input: {
           main: path.resolve(__dirname, 'src/renderer/index.html'),
