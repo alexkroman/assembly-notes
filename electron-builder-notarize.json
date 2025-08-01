@@ -1,4 +1,4 @@
 {
-  "extends": "./package.json",
+  "extends": "./electron-builder.json",
   "afterSign": "scripts/notarize.js"
 }
