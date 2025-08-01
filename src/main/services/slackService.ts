@@ -1,6 +1,7 @@
 import type { Store } from '@reduxjs/toolkit';
 import { inject, injectable } from 'tsyringe';
 
+import { SlackInstallation } from '../../types/common.js';
 import { DI_TOKENS } from '../di-tokens.js';
 import type Logger from '../logger.js';
 import { RootState } from '../store/store.js';
@@ -50,17 +51,31 @@ export class SlackService {
     @inject(DI_TOKENS.HttpClient) private httpClient: IHttpClient
   ) {}
 
-  async postMessage(
-    message: string,
-    channel?: string
-  ): Promise<{ success: boolean; error?: string }> {
+  private getCurrentInstallation(): SlackInstallation | null {
     const state = this.store.getState();
     const settings = state.settings;
-    const slackBotToken = settings.slackBotToken;
-    const targetChannel = channel ?? settings.selectedSlackChannel;
+    return settings.slackInstallation;
+  }
 
-    if (!slackBotToken || !targetChannel) {
-      const error = 'Slack bot token or channel not configured';
+  async postMessage(
+    message: string,
+    channelId?: string
+  ): Promise<{ success: boolean; error?: string }> {
+    // Get current OAuth installation
+    const installation = this.getCurrentInstallation();
+
+    // Use provided channelId
+    const targetChannelId = channelId;
+
+    if (!installation) {
+      const error =
+        'No Slack workspace connected. Please connect a workspace first.';
+      this.logger.warn(error);
+      return { success: false, error };
+    }
+
+    if (!targetChannelId) {
+      const error = 'No channel selected. Please select a channel first.';
       this.logger.warn(error);
       return { success: false, error };
     }
@@ -70,11 +85,11 @@ export class SlackService {
         'https://slack.com/api/chat.postMessage',
         {
           headers: {
-            Authorization: `Bearer ${slackBotToken}`,
+            Authorization: `Bearer ${installation.botToken}`,
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({
-            channel: targetChannel,
+            channel: targetChannelId,
             text: message,
           }),
         }
@@ -95,5 +110,31 @@ export class SlackService {
       this.logger.error('Failed to post to Slack:', error);
       return { success: false, error: errorMessage };
     }
+  }
+
+  /**
+   * Check if Slack is properly configured
+   */
+  isConfigured(): boolean {
+    const installation = this.getCurrentInstallation();
+
+    return !!installation;
+  }
+
+  /**
+   * Get current installation info for UI display
+   */
+  getCurrentInstallationInfo(): {
+    teamName: string;
+  } | null {
+    const installation = this.getCurrentInstallation();
+
+    if (!installation) {
+      return null;
+    }
+
+    return {
+      teamName: installation.teamName,
+    };
   }
 }

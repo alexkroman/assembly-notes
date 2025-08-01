@@ -200,9 +200,6 @@ describe('RecordingsList', () => {
   it('should delete recording when delete button clicked', async () => {
     mockElectronAPI.deleteRecording.mockResolvedValue(undefined);
 
-    // Mock window.confirm
-    const confirmSpy = jest.spyOn(window, 'confirm').mockReturnValue(true);
-
     renderList();
 
     await waitFor(() => {
@@ -215,22 +212,23 @@ describe('RecordingsList', () => {
       fireEvent.click(firstDeleteButton);
     }
 
-    expect(confirmSpy).toHaveBeenCalledWith(
-      'Are you sure you want to delete this recording?'
-    );
+    // Should show confirm modal
+    await waitFor(() => {
+      expect(screen.getByTestId('confirm-modal')).toBeInTheDocument();
+      expect(screen.getByText('Delete Recording')).toBeInTheDocument();
+    });
+
+    // Click confirm button
+    const confirmButton = screen.getByTestId('confirm-btn');
+    fireEvent.click(confirmButton);
 
     await waitFor(() => {
       expect(mockElectronAPI.deleteRecording).toHaveBeenCalledWith('rec-1');
       expect(mockElectronAPI.getAllRecordings).toHaveBeenCalledTimes(2); // Initial + after delete
     });
-
-    confirmSpy.mockRestore();
   });
 
   it('should cancel deletion when user cancels confirm dialog', async () => {
-    // Mock window.confirm to return false (cancel)
-    const confirmSpy = jest.spyOn(window, 'confirm').mockReturnValue(false);
-
     renderList();
 
     await waitFor(() => {
@@ -243,12 +241,22 @@ describe('RecordingsList', () => {
       fireEvent.click(firstDeleteButton);
     }
 
-    expect(confirmSpy).toHaveBeenCalledWith(
-      'Are you sure you want to delete this recording?'
-    );
-    expect(mockElectronAPI.deleteRecording).not.toHaveBeenCalled();
+    // Should show confirm modal
+    await waitFor(() => {
+      expect(screen.getByTestId('confirm-modal')).toBeInTheDocument();
+      expect(screen.getByText('Delete Recording')).toBeInTheDocument();
+    });
 
-    confirmSpy.mockRestore();
+    // Click cancel button
+    const cancelButton = screen.getByTestId('cancel-confirm-btn');
+    fireEvent.click(cancelButton);
+
+    // Modal should be closed and delete should not be called
+    await waitFor(() => {
+      expect(screen.queryByTestId('confirm-modal')).not.toBeInTheDocument();
+    });
+
+    expect(mockElectronAPI.deleteRecording).not.toHaveBeenCalled();
   });
 
   it('should create new recording when button clicked', async () => {

@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useCallback } from 'react';
 
 import type { RecordingViewProps } from '../../types/components.js';
 import { useAppSelector } from '../hooks/redux';
@@ -48,11 +48,14 @@ export const RecordingView: React.FC<RecordingViewProps> = ({
     setSummary,
   } = useRecording(recordingId);
 
-  const { channels, selectedChannel, handleChannelChange } = useChannels();
+  const { channels, selectedChannelId, handleChannelChange } = useChannels();
   const { prompts, selectedPromptIndex, handlePromptChange } = usePrompts();
 
   const summaryRef = useRef<HTMLTextAreaElement>(null);
   const hasAutoStarted = useRef(false);
+  const transcriptRef = useRef<HTMLPreElement>(null);
+  const isUserScrolled = useRef(false);
+  const lastTranscriptLength = useRef(0);
 
   useEffect(() => {
     if (summaryRef.current) {
@@ -85,6 +88,48 @@ export const RecordingView: React.FC<RecordingViewProps> = ({
     setSummary(e.target.value);
   };
 
+  const checkIfAtBottom = useCallback((element: HTMLElement) => {
+    const threshold = 50; // Allow 50px from bottom to be considered "at bottom"
+    return (
+      element.scrollHeight - element.scrollTop - element.clientHeight <=
+      threshold
+    );
+  }, []);
+
+  const scrollToBottom = useCallback((element: HTMLElement) => {
+    element.scrollTop = element.scrollHeight;
+  }, []);
+
+  const handleTranscriptScroll = useCallback(() => {
+    if (!transcriptRef.current) return;
+
+    const atBottom = checkIfAtBottom(transcriptRef.current);
+    isUserScrolled.current = !atBottom;
+  }, [checkIfAtBottom]);
+
+  // Auto-scroll when transcript updates
+  useEffect(() => {
+    const currentTranscript = isNewRecording
+      ? (transcript || '') + (partialTranscript || '')
+      : (currentRecording?.transcript ?? '');
+
+    const currentLength = currentTranscript.length;
+
+    if (transcriptRef.current && currentLength > lastTranscriptLength.current) {
+      if (!isUserScrolled.current) {
+        scrollToBottom(transcriptRef.current);
+      }
+    }
+
+    lastTranscriptLength.current = currentLength;
+  }, [
+    transcript,
+    partialTranscript,
+    currentRecording?.transcript,
+    isNewRecording,
+    scrollToBottom,
+  ]);
+
   const getButtonText = () => {
     if (isStopping || isStoppingForNavigation) {
       return 'Stopping...';
@@ -109,8 +154,8 @@ export const RecordingView: React.FC<RecordingViewProps> = ({
     return isStopping || isStarting || isStoppingForNavigation;
   };
 
-  // Use computed properties instead of direct trim operations
-  const hasSlackToken = settings.hasSlackBotToken;
+  // Check if Slack is configured using the same method as SlackOAuthConnectionOnly
+  const hasSlackConfigured = Boolean(settings.slackInstallation);
 
   return (
     <div
@@ -167,7 +212,7 @@ export const RecordingView: React.FC<RecordingViewProps> = ({
               if (e.target.value === 'manage') {
                 onShowPromptModal();
               } else {
-                void handlePromptChange(parseInt(e.target.value));
+                handlePromptChange(parseInt(e.target.value));
               }
             }}
           >
@@ -195,7 +240,7 @@ export const RecordingView: React.FC<RecordingViewProps> = ({
             {isSummarizing ? 'Summarizing...' : 'Summarize'}
           </button>
 
-          {!hasSlackToken && (
+          {!hasSlackConfigured && (
             <span
               className="slack-tip"
               style={{
@@ -209,24 +254,24 @@ export const RecordingView: React.FC<RecordingViewProps> = ({
             </span>
           )}
 
-          {hasSlackToken && (
+          {hasSlackConfigured && (
             <>
               <select
                 className="channel-select"
                 data-testid="channel-btn"
-                value={selectedChannel}
+                value={selectedChannelId}
                 onChange={(e) => {
                   if (e.target.value === 'manage') {
                     onShowChannelModal();
                   } else {
-                    void handleChannelChange(e.target.value);
+                    handleChannelChange(e.target.value);
                   }
                 }}
               >
                 <option value="">Choose channel...</option>
                 {channels.map((channel) => (
-                  <option key={channel} value={channel}>
-                    {channel}
+                  <option key={channel.id} value={channel.id}>
+                    #{channel.name} {channel.isPrivate ? '🔒' : ''}
                   </option>
                 ))}
                 <option value="manage">+ Manage Channels</option>
@@ -236,11 +281,11 @@ export const RecordingView: React.FC<RecordingViewProps> = ({
                 type="button"
                 className="slack-btn"
                 onClick={() => {
-                  void handlePostToSlack(summary, selectedChannel);
+                  void handlePostToSlack(summary, selectedChannelId);
                 }}
                 disabled={
                   !(summary || '').trim() ||
-                  !selectedChannel ||
+                  !selectedChannelId ||
                   isPostingToSlack
                 }
               >
@@ -254,7 +299,12 @@ export const RecordingView: React.FC<RecordingViewProps> = ({
       <div className="content-section">
         <div className="content-panel">
           <h3>Transcript</h3>
-          <pre className="panel-content" data-testid="transcript-area">
+          <pre
+            ref={transcriptRef}
+            className="panel-content"
+            data-testid="transcript-area"
+            onScroll={handleTranscriptScroll}
+          >
             {isNewRecording ? (
               <>
                 {(transcript || '').trim() || (

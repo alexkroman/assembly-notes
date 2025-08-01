@@ -1,8 +1,12 @@
 import * as path from 'path';
 import { fileURLToPath } from 'url';
 
+import dotenv from 'dotenv';
 import { app, BrowserWindow, Menu } from 'electron';
 import { initMain as initAudioLoopback } from 'electron-audio-loopback';
+
+// Load environment variables from .env file
+dotenv.config();
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -16,6 +20,11 @@ import type { SettingsService } from './services/settingsService.js';
 import { store } from './store/store.js';
 
 initAudioLoopback();
+
+// Set different app name for development builds
+if (process.env['NODE_ENV'] !== 'production' && !app.isPackaged) {
+  app.setName('Assembly-Notes-Dev');
+}
 
 let mainWindow: BrowserWindow | null = null;
 
@@ -38,21 +47,6 @@ function createWindow(): void {
 
   setupContainer(mainWindow);
   setupIpcHandlers(mainWindow, store);
-  let actionCount = 0;
-  store.subscribe(() => {
-    const state = store.getState();
-    actionCount++;
-    log.info(
-      `Main store state change #${String(actionCount)} - status: ${state.recording.status}, isTranscribing: ${String(state.transcription.isTranscribing)}`
-    );
-  });
-
-  const originalDispatch = store.dispatch;
-  store.dispatch = (action: unknown) => {
-    log.info(`Main store action dispatched:`, JSON.stringify(action, null, 2));
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-return
-    return originalDispatch(action as any);
-  };
 
   const autoUpdaterService = container.resolve<AutoUpdaterService>(
     DI_TOKENS.AutoUpdaterService
@@ -64,6 +58,8 @@ function createWindow(): void {
   );
   settingsService.initializeSettings();
 }
+
+// Note: OAuth now uses temporary HTTP server instead of custom protocol
 
 void app.whenReady().then(() => {
   log.info('App is ready, initializing...');
@@ -151,3 +147,19 @@ app.on('before-quit', () => {
   );
   databaseService.close();
 });
+
+// Prevent multiple instances
+if (process.platform !== 'darwin') {
+  app.on('second-instance', () => {
+    // Someone tried to run a second instance, focus our window
+    if (mainWindow) {
+      if (mainWindow.isMinimized()) mainWindow.restore();
+      mainWindow.focus();
+    }
+  });
+
+  const gotTheLock = app.requestSingleInstanceLock();
+  if (!gotTheLock) {
+    app.quit();
+  }
+}

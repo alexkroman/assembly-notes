@@ -9,6 +9,7 @@ import '@testing-library/jest-dom';
 
 import { SettingsModal } from '../../../src/renderer/components/SettingsModal';
 import { setStatus } from '../../../src/renderer/store';
+import { createMockInstallation } from '../../utils/testHelpers.js';
 
 // Mock electron API
 const mockElectronAPI = {
@@ -17,6 +18,12 @@ const mockElectronAPI = {
     assemblyaiKey: 'test-key',
     autoStart: false,
   }),
+  // OAuth-related methods
+  onSlackOAuthSuccess: jest.fn(),
+  onSlackOAuthError: jest.fn(),
+  slackOAuthInitiate: jest.fn().mockResolvedValue(undefined),
+  slackOAuthRemoveInstallation: jest.fn().mockResolvedValue(undefined),
+  slackOAuthRefreshChannels: jest.fn().mockResolvedValue(undefined),
 };
 
 Object.defineProperty(window, 'electronAPI', {
@@ -35,16 +42,20 @@ const createMockStore = (initialState: any = {}) => {
       settings: (
         state = {
           assemblyaiKey: '',
-          slackBotToken: '',
           autoStart: false,
+          slackInstallation: null,
+          selectedChannelId: '',
+          slackChannels: '',
         }
       ) => state,
     },
     preloadedState: {
       settings: {
         assemblyaiKey: '',
-        slackBotToken: '',
         autoStart: false,
+        slackInstallation: null,
+        selectedChannelId: '',
+        slackChannels: '',
         ...(initialState.settings || {}),
       },
     },
@@ -75,9 +86,14 @@ describe('SettingsModal', () => {
     expect(
       screen.getByLabelText('AssemblyAI API Key (required):')
     ).toBeInTheDocument();
+    // Slack credential fields should be present
     expect(
-      screen.getByLabelText('Slack Bot Token (optional):')
+      screen.getByText('Slack Credentials (optional):')
     ).toBeInTheDocument();
+    expect(screen.getByTestId('slack-client-id-input')).toBeInTheDocument();
+    expect(screen.getByTestId('slack-client-secret-input')).toBeInTheDocument();
+    // OAuth button should NOT be present until credentials are entered
+    expect(screen.queryByText('Connect to Slack')).not.toBeInTheDocument();
     expect(screen.getByText('Save')).toBeInTheDocument();
     expect(screen.getByText('Cancel')).toBeInTheDocument();
   });
@@ -86,20 +102,23 @@ describe('SettingsModal', () => {
     const customStore = createMockStore({
       settings: {
         assemblyaiKey: 'stored-api-key',
-        slackBotToken: 'stored-slack-token',
         autoStart: true,
+        slackInstallation: createMockInstallation({
+          teamId: 'T123',
+          botToken: 'xoxb-test',
+          botUserId: 'U123',
+          scope: 'chat:write',
+        }),
       },
     });
 
     renderModal(customStore);
 
     const apiKeyInput = screen.getByTestId('assemblyai-key-input');
-    const slackTokenInput = screen.getByTestId('slack-token-input');
 
     expect((apiKeyInput as HTMLInputElement).value).toBe('stored-api-key');
-    expect((slackTokenInput as HTMLInputElement).value).toBe(
-      'stored-slack-token'
-    );
+    // Should show connected state for Slack - disconnect button should be visible
+    expect(screen.getByText(/Disconnect from Slack/)).toBeInTheDocument();
   });
 
   it('should update assemblyai key on input', () => {
@@ -111,13 +130,26 @@ describe('SettingsModal', () => {
     expect(apiKeyInput).toHaveValue('new-api-key');
   });
 
-  it('should update slack token on input', () => {
+  it('should handle slack oauth connection', () => {
     renderModal();
 
-    const slackTokenInput = screen.getByTestId('slack-token-input');
-    fireEvent.change(slackTokenInput, { target: { value: 'new-slack-token' } });
+    // First enter Slack credentials to make the Connect button appear
+    const clientIdInput = screen.getByTestId('slack-client-id-input');
+    const clientSecretInput = screen.getByTestId('slack-client-secret-input');
 
-    expect(slackTokenInput).toHaveValue('new-slack-token');
+    fireEvent.change(clientIdInput, { target: { value: 'test-client-id' } });
+    fireEvent.change(clientSecretInput, {
+      target: { value: 'test-client-secret' },
+    });
+
+    // Now the Connect button should appear
+    const connectButton = screen.getByText('Connect to Slack');
+    fireEvent.click(connectButton);
+
+    expect(mockElectronAPI.slackOAuthInitiate).toHaveBeenCalledWith(
+      'test-client-id',
+      'test-client-secret'
+    );
   });
 
   it('should disable save and cancel when API key is empty', () => {
@@ -147,10 +179,8 @@ describe('SettingsModal', () => {
 
     // Update fields
     const apiKeyInput = screen.getByTestId('assemblyai-key-input');
-    const slackTokenInput = screen.getByTestId('slack-token-input');
 
     fireEvent.change(apiKeyInput, { target: { value: 'new-api-key' } });
-    fireEvent.change(slackTokenInput, { target: { value: 'new-slack-token' } });
 
     // Click save
     const saveButton = screen.getByText('Save');
@@ -160,7 +190,6 @@ describe('SettingsModal', () => {
       expect(mockElectronAPI.saveSettings).toHaveBeenCalledWith(
         expect.objectContaining({
           assemblyaiKey: 'new-api-key',
-          slackBotToken: 'new-slack-token',
         })
       );
     });

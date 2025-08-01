@@ -1,5 +1,6 @@
 import js from '@eslint/js';
 import importPlugin from 'eslint-plugin-import';
+import markdownPlugin from 'eslint-plugin-markdown';
 import globals from 'globals';
 import tseslint from 'typescript-eslint';
 
@@ -216,6 +217,36 @@ export default tseslint.config(
         'error',
         { argsIgnorePattern: '^_', varsIgnorePattern: '^_' },
       ],
+    },
+  },
+
+  // 9. Configuration for Markdown files
+  {
+    files: ['**/*.md'],
+    plugins: {
+      markdown: markdownPlugin,
+    },
+    processor: 'markdown/markdown',
+  },
+
+  // 10. Configuration for code blocks within Markdown files
+  {
+    files: ['**/*.md/*.js', '**/*.md/*.ts', '**/*.md/*.jsx', '**/*.md/*.tsx'],
+    languageOptions: {
+      parserOptions: {
+        ecmaFeatures: {
+          impliedStrict: true,
+        },
+      },
+    },
+    rules: {
+      // Relax rules for code examples in markdown
+      'no-console': 'off',
+      'no-unused-vars': 'off',
+      'no-undef': 'off',
+      '@typescript-eslint/no-unused-vars': 'off',
+      '@typescript-eslint/no-explicit-any': 'off',
+      'import/order': 'off',
     },
   }
 );

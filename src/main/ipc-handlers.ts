@@ -10,6 +10,7 @@ import type { AutoUpdaterService } from './auto-updater.js';
 import { DI_TOKENS, container } from './container.js';
 import { PromptTemplate, SettingsSchema } from '../types/common.js';
 import type { RecordingManager } from './services/recordingManager.js';
+import type { SlackOAuthService } from './services/slackOAuthService.js';
 import type { SlackService } from './services/slackService.js';
 import {
   deleteRecording,
@@ -23,9 +24,7 @@ import {
   fetchSettings,
   savePrompt,
   savePrompts,
-  saveSelectedChannel,
   saveSettings,
-  selectPrompt,
 } from './store/slices/settingsSlice.js';
 import type { AppDispatch, RootState } from './store/store.js';
 
@@ -44,6 +43,9 @@ function setupIpcHandlers(
     DI_TOKENS.RecordingManager
   );
   const slackService = container.resolve<SlackService>(DI_TOKENS.SlackService);
+  const slackOAuthService = container.resolve<SlackOAuthService>(
+    DI_TOKENS.SlackOAuthService
+  );
   const autoUpdaterService = container.resolve<AutoUpdaterService>(
     DI_TOKENS.AutoUpdaterService
   );
@@ -110,6 +112,17 @@ function setupIpcHandlers(
       recordingId: string,
       title: string
     ): Promise<void> => {
+      // Validate that this update is for the current recording
+      const state = store.getState();
+      const currentRecordingId = state.recordings.currentRecording?.id;
+
+      if (currentRecordingId && recordingId !== currentRecordingId) {
+        logger.warn(
+          `Ignoring title update for non-current recording: ${recordingId} !== ${currentRecordingId}`
+        );
+        return;
+      }
+
       await store
         .dispatch(updateRecordingTitle({ id: recordingId, title }))
         .unwrap();
@@ -123,6 +136,17 @@ function setupIpcHandlers(
       recordingId: string,
       summary: string
     ): Promise<void> => {
+      // Validate that this update is for the current recording
+      const state = store.getState();
+      const currentRecordingId = state.recordings.currentRecording?.id;
+
+      if (currentRecordingId && recordingId !== currentRecordingId) {
+        logger.warn(
+          `Ignoring summary update for non-current recording: ${recordingId} !== ${currentRecordingId}`
+        );
+        return;
+      }
+
       await store
         .dispatch(updateRecordingSummary({ id: recordingId, summary }))
         .unwrap();
@@ -164,16 +188,6 @@ function setupIpcHandlers(
       }
 
       await store.dispatch(saveSettings(mappedSettings)).unwrap();
-
-      // Clear any existing transcription errors
-      const { clearTranscription } = await import(
-        './store/slices/transcriptionSlice.js'
-      );
-      store.dispatch(clearTranscription());
-
-      // Stop any active recording and reset connections
-      await recordingManager.stopTranscription();
-      _mainWindow.webContents.send('reset-audio-processing');
       return true;
     }
   );
@@ -201,29 +215,38 @@ function setupIpcHandlers(
   );
 
   ipcMain.handle(
-    'select-prompt',
-    async (_event: IpcMainInvokeEvent, index: number): Promise<boolean> => {
-      await store.dispatch(selectPrompt(index)).unwrap();
-      return true;
-    }
-  );
-
-  ipcMain.handle(
-    'save-selected-channel',
-    async (_event: IpcMainInvokeEvent, channel: string): Promise<boolean> => {
-      await store.dispatch(saveSelectedChannel(channel)).unwrap();
-      return true;
-    }
-  );
-
-  ipcMain.handle(
     'post-to-slack',
     async (
       _event: IpcMainInvokeEvent,
       message: string,
-      channel: string
+      channelId?: string
     ): Promise<{ success: boolean; error?: string }> => {
-      return await slackService.postMessage(message, channel);
+      return await slackService.postMessage(message, channelId);
+    }
+  );
+
+  // Slack OAuth handlers
+  ipcMain.handle(
+    'slack-oauth-initiate',
+    async (
+      _event: IpcMainInvokeEvent,
+      clientId: string,
+      clientSecret: string
+    ): Promise<void> => {
+      const slackOAuthService = container.resolve<SlackOAuthService>(
+        DI_TOKENS.SlackOAuthService
+      );
+      await slackOAuthService.initiateOAuth(clientId, clientSecret);
+    }
+  );
+
+  ipcMain.handle(
+    'slack-oauth-remove-installation',
+    (_event: IpcMainInvokeEvent): void => {
+      const slackOAuthService = container.resolve<SlackOAuthService>(
+        DI_TOKENS.SlackOAuthService
+      );
+      slackOAuthService.removeInstallation();
     }
   );
 
@@ -271,6 +294,15 @@ function setupIpcHandlers(
       return true;
     }
   );
+
+  ipcMain.handle('slack-oauth-get-current', () => {
+    return slackOAuthService.getCurrentInstallation();
+  });
+
+  ipcMain.handle('slack-oauth-validate-channels', (): void => {
+    // No validation needed - we assume all channels exist
+    return;
+  });
 }
 
 export { setupIpcHandlers };

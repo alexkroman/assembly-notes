@@ -7,6 +7,7 @@ export const DI_TOKENS = {
   TranscriptionService: Symbol('TranscriptionService'),
   RecordingManager: Symbol('RecordingManager'),
   SlackService: Symbol('SlackService'),
+  SlackOAuthService: Symbol('SlackOAuthService'),
   AutoUpdaterService: Symbol('AutoUpdaterService'),
   AssemblyAIFactory: Symbol('AssemblyAIFactory'),
   AssemblyAIFactoryWithLemur: Symbol('AssemblyAIFactoryWithLemur'),

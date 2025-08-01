@@ -4,6 +4,7 @@ import type { RecordingsListProps } from '../../types/components.js';
 import type { Recording } from '../../types/index.js';
 import { useAppDispatch, useAppSelector } from '../hooks/redux';
 import { navigateToNewRecording, setShowSettingsModal } from '../store';
+import { ConfirmModal } from './ConfirmModal';
 import '../../types/global.d.ts';
 
 export const RecordingsList: React.FC<RecordingsListProps> = ({
@@ -15,6 +16,10 @@ export const RecordingsList: React.FC<RecordingsListProps> = ({
   const [recordings, setRecordings] = useState<Recording[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
+  const [deleteModal, setDeleteModal] = useState<{
+    isOpen: boolean;
+    recordingId: string | null;
+  }>({ isOpen: false, recordingId: null });
 
   // Check if recording is active (starting, recording, or stopping)
   const isRecordingActive =
@@ -72,20 +77,29 @@ export const RecordingsList: React.FC<RecordingsListProps> = ({
     }
   };
 
-  const handleDeleteRecording = async (
+  const handleDeleteRecording = (
     recordingId: string,
     event: React.MouseEvent
   ) => {
     event.stopPropagation();
+    setDeleteModal({ isOpen: true, recordingId });
+  };
 
-    if (confirm('Are you sure you want to delete this recording?')) {
-      try {
-        await window.electronAPI.deleteRecording(recordingId);
-        await loadRecordings(); // Refresh the list
-      } catch (error) {
-        console.error('Error deleting recording:', error);
-      }
+  const confirmDeleteRecording = async () => {
+    if (!deleteModal.recordingId) return;
+
+    try {
+      await window.electronAPI.deleteRecording(deleteModal.recordingId);
+      await loadRecordings(); // Refresh the list
+    } catch (error) {
+      console.error('Error deleting recording:', error);
+    } finally {
+      setDeleteModal({ isOpen: false, recordingId: null });
     }
+  };
+
+  const cancelDeleteRecording = () => {
+    setDeleteModal({ isOpen: false, recordingId: null });
   };
 
   const formatDate = (timestamp: number) => {
@@ -136,11 +150,19 @@ export const RecordingsList: React.FC<RecordingsListProps> = ({
             </button>
             <button
               type="button"
-              className="settings-btn"
+              className={`settings-btn ${isRecordingActive ? 'disabled' : ''}`}
               data-testid="settings-button"
               onClick={() => {
-                dispatch(setShowSettingsModal(true));
+                if (!isRecordingActive) {
+                  dispatch(setShowSettingsModal(true));
+                }
               }}
+              disabled={isRecordingActive}
+              title={
+                isRecordingActive
+                  ? 'Please wait for the current recording to finish'
+                  : undefined
+              }
             >
               ⚙️
             </button>
@@ -190,7 +212,7 @@ export const RecordingsList: React.FC<RecordingsListProps> = ({
                       type="button"
                       className="delete-btn"
                       onClick={(e) => {
-                        void handleDeleteRecording(recording.id, e);
+                        handleDeleteRecording(recording.id, e);
                       }}
                       title="Delete recording"
                     >
@@ -203,6 +225,19 @@ export const RecordingsList: React.FC<RecordingsListProps> = ({
           </div>
         )}
       </div>
+
+      <ConfirmModal
+        isOpen={deleteModal.isOpen}
+        title="Delete Recording"
+        message="Are you sure you want to delete this recording? This action cannot be undone."
+        confirmText="Delete"
+        cancelText="Cancel"
+        confirmVariant="danger"
+        onConfirm={() => {
+          void confirmDeleteRecording();
+        }}
+        onCancel={cancelDeleteRecording}
+      />
     </div>
   );
 };
