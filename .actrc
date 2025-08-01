@@ -1,0 +1,19 @@
+# Configuration for act (GitHub Actions local runner)
+# https://github.com/nektos/act
+
+# Use larger Docker images that have more tools pre-installed
+# This helps avoid issues with missing dependencies
+-P ubuntu-latest=catthehacker/ubuntu:act-latest
+-P ubuntu-22.04=catthehacker/ubuntu:act-22.04
+-P ubuntu-20.04=catthehacker/ubuntu:act-20.04
+-P macos-latest=catthehacker/macos:12
+-P windows-latest=catthehacker/windows:2022
+
+# Default runner platform
+--platform ubuntu-latest
+
+# Reuse containers to speed up subsequent runs
+--reuse
+
+# Use Docker host network mode (helpful for some actions)
+--network host

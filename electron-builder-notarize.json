@@ -1,0 +1,4 @@
+{
+  "extends": "./package.json",
+  "afterSign": "scripts/notarize.js"
+}

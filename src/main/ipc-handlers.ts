@@ -55,6 +55,7 @@ function setupIpcHandlers(
   const store = container.resolve<Store<RootState> & { dispatch: AppDispatch }>(
     DI_TOKENS.Store
   );
+
   ipcMain.on(
     'log',
     (_event: IpcMainEvent, level: keyof LogLevel, ...args: unknown[]) => {
@@ -250,14 +251,21 @@ function setupIpcHandlers(
     }
   );
 
-  ipcMain.handle('install-update', (): void => {
-    void import('electron-updater').then(({ autoUpdater }) => {
-      void autoUpdater.downloadUpdate();
-    });
+  ipcMain.handle('install-update', async (): Promise<void> => {
+    try {
+      logger.info('IPC: install-update requested');
+      await import('electron-updater').then(({ autoUpdater }) => {
+        return autoUpdater.downloadUpdate();
+      });
+    } catch (error) {
+      logger.error('IPC Handler: install-update error:', error);
+      throw error;
+    }
   });
 
   ipcMain.handle('quit-and-install', (): void => {
     try {
+      logger.info('IPC: quit-and-install requested');
       autoUpdaterService.quitAndInstall();
     } catch (error) {
       logger.error('IPC Handler: quit-and-install error:', error);
@@ -265,8 +273,18 @@ function setupIpcHandlers(
     }
   });
 
-  ipcMain.handle('check-for-updates', (): void => {
-    autoUpdaterService.checkForUpdatesAndNotify();
+  ipcMain.handle('check-for-updates', async (): Promise<void> => {
+    try {
+      logger.info('IPC: check-for-updates requested');
+      await autoUpdaterService.checkForUpdates();
+    } catch (error) {
+      logger.error('IPC Handler: check-for-updates error:', error);
+      throw error;
+    }
+  });
+
+  ipcMain.handle('get-update-status', (): unknown => {
+    return autoUpdaterService.getUpdateStatus();
   });
 
   ipcMain.handle('get-all-recordings', async () => {

@@ -1,9 +1,14 @@
 node_modules
 out
 .env
+.env.act.local
+.secrets.act.local
+.secrets.act
 .claude
 .DS_Store
 dist
+release
+dev-app-update.yml
 .mypy_cache
 coverage
 *.map

@@ -5,15 +5,22 @@
   "keywords": [],
   "main": "./dist/main/main.js",
   "type": "module",
-  "version": "1.0.50",
+  "version": "1.0.51",
   "author": "Alex Kroman <alex@alexkroman.com>",
+  "engines": {
+    "node": ">=24.0.0",
+    "npm": ">=10.0.0"
+  },
   "scripts": {
     "start": "npm run build:all && cross-env DEV_MODE=true electron .",
     "start:fresh": "npm run build:all && cross-env DEV_MODE=true FRESH_MODE=true FRESH_ID=$(date +%s) electron .",
     "dev": "concurrently \"npm run dev:main\" \"npm run dev:renderer\" \"cross-env DEV_MODE=true electron .\"",
     "dev:main": "tsc --watch",
     "dev:renderer": "cross-env BUILD_TARGET=renderer vite",
-    "build:all": "npm run build:main && npm run build:preload && npm run build:renderer && npm run build:audio-processor",
+    "clean": "rimraf dist/main dist/preload dist/renderer",
+    "clean:all": "rimraf dist",
+    "clean:release": "rimraf release",
+    "build:all": "npm run clean && npm run build:main && npm run build:preload && npm run build:renderer && npm run build:audio-processor",
     "build:main": "tsc",
     "build:preload": "cross-env BUILD_TARGET=preload vite build",
     "build:renderer": "cross-env BUILD_TARGET=renderer vite build",
@@ -43,7 +50,10 @@
     "check-updates": "ncu",
     "update-deps": "ncu -u",
     "setup": "./scripts/setup-env.sh",
-    "prepare": "husky"
+    "prepare": "husky",
+    "dev:update-server": "node scripts/update-server.js",
+    "test:autoupdate": "npm run build:all && node scripts/test-autoupdate.js",
+    "test:autoupdate:built": "USE_LOCAL_UPDATE_SERVER=true UPDATE_FEED_URL=http://localhost:8000 open release/mac-arm64/Assembly-Notes.app"
   },
   "dependencies": {
     "@reduxjs/toolkit": "^2.8.2",
@@ -93,6 +103,7 @@
     "npm-check-updates": "^18.0.2",
     "playwright": "^1.54.1",
     "prettier": "^3.6.2",
+    "rimraf": "^6.0.1",
     "ts-jest": "^29.4.0",
     "typescript": "^5.8.3",
     "typescript-eslint": "^8.38.0",
@@ -101,7 +112,7 @@
   "build": {
     "appId": "com.alexkroman.assembly-notes",
     "productName": "Assembly-Notes",
-    "artifactName": "Assembly-Notes-${version}-${arch}.${ext}",
+    "artifactName": "Assembly-Notes-${version}-${os}-${arch}.${ext}",
     "forceCodeSigning": false,
     "publish": {
       "provider": "github"
@@ -111,13 +122,12 @@
       "allowToChangeInstallationDirectory": true
     },
     "directories": {
-      "output": "dist",
+      "output": "release",
       "buildResources": "build"
     },
     "files": [
-      "src/**/*",
       "dist/**/*",
-      "node_modules/**/*"
+      "!dist/**/*.map"
     ],
     "asarUnpack": [
       "node_modules/electron-audio-loopback/**/*",
@@ -134,13 +144,28 @@
     "asar": true,
     "mac": {
       "category": "public.app-category.productivity",
-      "target": "dmg",
+      "target": [
+        {
+          "target": "dmg",
+          "arch": [
+            "arm64",
+            "x64"
+          ]
+        },
+        {
+          "target": "zip",
+          "arch": [
+            "arm64",
+            "x64"
+          ]
+        }
+      ],
       "icon": "build/icons/mac/icon.icns",
       "hardenedRuntime": true,
       "gatekeeperAssess": false,
       "entitlements": "build/entitlements.mac.plist",
       "entitlementsInherit": "build/entitlements.mac.plist",
-      "notarize": true
+      "notarize": false
     },
     "win": {
       "target": "nsis",

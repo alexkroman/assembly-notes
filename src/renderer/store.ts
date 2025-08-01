@@ -2,13 +2,14 @@ import { configureStore } from '@reduxjs/toolkit';
 import { stateSyncEnhancer } from 'electron-redux/es/renderer.js';
 
 // Import local UI slice
-import type { Recording } from '../types/common.js';
+import type { Recording, UpdateInfo } from '../types/common.js';
 import type {
   RecordingState,
   RecordingsState,
   SettingsState,
   TranscriptSegment,
   TranscriptionState,
+  UpdateState,
 } from '../types/redux.js';
 import uiReducer, {
   navigateToList,
@@ -17,6 +18,7 @@ import uiReducer, {
   setShowChannelModal,
   setShowPromptModal,
   setShowSettingsModal,
+  setShowUpdateModal,
   setStatus,
 } from './slices/uiSlice.js';
 
@@ -72,19 +74,32 @@ type RecordingsSyncAction =
   | { type: 'recordings/setCurrentRecording'; payload: Recording | null }
   | { type: 'recordings/updateCurrentRecordingSummary'; payload: string };
 
+// Update slice action types
+type UpdateSyncAction =
+  | { type: 'update/startChecking' }
+  | { type: 'update/updateAvailable'; payload: UpdateInfo }
+  | { type: 'update/updateNotAvailable' }
+  | { type: 'update/startDownloading' }
+  | { type: 'update/updateProgress'; payload: { percent: number } }
+  | { type: 'update/downloadComplete'; payload: UpdateInfo }
+  | { type: 'update/setError'; payload: string }
+  | { type: 'update/resetUpdate' };
+
 // Union of all sync action types
 type SyncAction =
   | BaseSyncAction
   | RecordingSyncAction
   | TranscriptionSyncAction
   | SettingsSyncAction
-  | RecordingsSyncAction;
+  | RecordingsSyncAction
+  | UpdateSyncAction;
 
 // Generic state type for the sync reducer
 type SyncState =
   | RecordingState
   | RecordingsState
   | TranscriptionState
+  | UpdateState
   | SettingsState;
 
 // Create sync reducers that handle actions from main process
@@ -270,6 +285,78 @@ const createSyncReducer = <T extends SyncState>(initialState: T) => {
         }
         break;
 
+      // Update slice actions
+      case 'update/startChecking':
+        if ('checking' in state) {
+          return { ...state, checking: true, error: null } as T;
+        }
+        break;
+      case 'update/updateAvailable':
+        if ('available' in state) {
+          return {
+            ...state,
+            checking: false,
+            available: true,
+            updateInfo: action.payload as UpdateInfo,
+          } as T;
+        }
+        break;
+      case 'update/updateNotAvailable':
+        if ('available' in state) {
+          return {
+            ...state,
+            checking: false,
+            available: false,
+            updateInfo: null,
+          } as T;
+        }
+        break;
+      case 'update/startDownloading':
+        if ('downloading' in state) {
+          return { ...state, downloading: true, progress: 0 } as T;
+        }
+        break;
+      case 'update/updateProgress':
+        if ('progress' in state) {
+          const payload = action.payload as { percent: number };
+          return { ...state, progress: payload.percent } as T;
+        }
+        break;
+      case 'update/downloadComplete':
+        if ('downloaded' in state) {
+          return {
+            ...state,
+            downloading: false,
+            downloaded: true,
+            updateInfo: action.payload as UpdateInfo,
+          } as T;
+        }
+        break;
+      case 'update/setError':
+        if ('error' in state && 'checking' in state) {
+          return {
+            ...state,
+            checking: false,
+            downloading: false,
+            error: action.payload as string,
+          } as T;
+        }
+        break;
+      case 'update/resetUpdate':
+        if ('checking' in state) {
+          return {
+            ...state,
+            checking: false,
+            available: false,
+            downloading: false,
+            progress: 0,
+            downloaded: false,
+            error: null,
+            updateInfo: null,
+          } as T;
+        }
+        break;
+
       default:
         return state;
     }
@@ -327,6 +414,15 @@ export function createRendererStore() {
         hasAssemblyAIKey: false,
         hasSlackConfigured: false,
       }),
+      update: createSyncReducer<UpdateState>({
+        checking: false,
+        available: false,
+        downloading: false,
+        progress: 0,
+        downloaded: false,
+        error: null,
+        updateInfo: null,
+      }),
       ui: uiReducer,
     },
     enhancers: (getDefaultEnhancers) =>
@@ -350,6 +446,7 @@ export {
   setShowChannelModal,
   setShowPromptModal,
   setShowSettingsModal,
+  setShowUpdateModal,
   setStatus,
 };
 

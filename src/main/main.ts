@@ -43,14 +43,22 @@ function createWindow(): void {
     },
   });
 
-  void mainWindow.loadFile(path.join(__dirname, '../renderer/index.html'));
-
+  // Set up the container and IPC handlers before loading the renderer
   setupContainer(mainWindow);
   setupIpcHandlers(mainWindow, store);
 
+  // Now load the renderer - IPC handlers are ready
+  void mainWindow.loadFile(path.join(__dirname, '../renderer/index.html'));
+
+  log.info('🎯 About to resolve AutoUpdaterService from container');
+  log.info('🎯 Environment vars:', {
+    USE_LOCAL_UPDATE_SERVER: process.env['USE_LOCAL_UPDATE_SERVER'],
+    UPDATE_FEED_URL: process.env['UPDATE_FEED_URL'],
+  });
   const autoUpdaterService = container.resolve<AutoUpdaterService>(
     DI_TOKENS.AutoUpdaterService
   );
+  log.info('🎯 Calling autoUpdaterService.init()');
   autoUpdaterService.init();
 
   const settingsService = container.resolve<SettingsService>(
@@ -116,6 +124,7 @@ void app.whenReady().then(() => {
   const menu = Menu.buildFromTemplate(template);
   Menu.setApplicationMenu(menu);
 
+  log.info('🎯 About to start update check');
   const autoUpdaterService = container.resolve<AutoUpdaterService>(
     DI_TOKENS.AutoUpdaterService
   );

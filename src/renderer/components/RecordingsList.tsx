@@ -20,7 +20,6 @@ export const RecordingsList: React.FC<RecordingsListProps> = ({
     isOpen: boolean;
     recordingId: string | null;
   }>({ isOpen: false, recordingId: null });
-
   // Check if recording is active (starting, recording, or stopping)
   const isRecordingActive =
     recordingStatus === 'starting' ||

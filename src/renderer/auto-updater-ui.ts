@@ -29,14 +29,19 @@ function createUpdateNotification(message: string, type = 'info'): void {
 
 function createUpdateDialog(info: UpdateInfo): void {
   const dialog = document.createElement('div');
-  dialog.className = 'update-dialog';
+  dialog.className = 'modal-overlay';
   dialog.innerHTML = `
-    <div class="dialog-content">
-      <h3>Update Available</h3>
-      <p>A new version (${String(info.version)}) is available. Would you like to download and install it?</p>
-      <div class="dialog-buttons">
-        <button id="installUpdate" class="primary">Install Update</button>
-        <button id="skipUpdate">Skip</button>
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2>Update Available</h2>
+        <button class="modal-close" id="closeUpdate">&times;</button>
+      </div>
+      <div class="modal-body">
+        <p>A new version (${String(info.version)}) is available. Would you like to download and install it?</p>
+      </div>
+      <div class="modal-footer">
+        <button id="skipUpdate" class="btn-secondary">Skip</button>
+        <button id="installUpdate" class="btn-primary">Install Update</button>
       </div>
     </div>
   `;
@@ -45,6 +50,7 @@ function createUpdateDialog(info: UpdateInfo): void {
 
   const installBtn = document.getElementById('installUpdate');
   const skipBtn = document.getElementById('skipUpdate');
+  const closeBtn = document.getElementById('closeUpdate');
 
   if (installBtn) {
     installBtn.onclick = () => {
@@ -55,6 +61,12 @@ function createUpdateDialog(info: UpdateInfo): void {
 
   if (skipBtn) {
     skipBtn.onclick = () => {
+      dialog.remove();
+    };
+  }
+
+  if (closeBtn) {
+    closeBtn.onclick = () => {
       dialog.remove();
     };
   }
@@ -70,17 +82,21 @@ function updateDialogProgress(
   percent: number | null = null,
   showQuitButton = false
 ): void {
-  const content = dialog.querySelector('.dialog-content');
+  const content = dialog.querySelector('.modal-content');
   if (!content) return;
   const progressText =
     percent !== null ? ` (${String(Math.round(percent))}%)` : '';
 
   if (showQuitButton) {
     content.innerHTML = `
-      <h3>Update Ready</h3>
-      <p>${message}</p>
-      <div class="dialog-buttons">
-        <button id="quitAndReopen" class="primary">Quit and Reopen</button>
+      <div class="modal-header">
+        <h2>Update Ready</h2>
+      </div>
+      <div class="modal-body">
+        <p>${message}</p>
+      </div>
+      <div class="modal-footer">
+        <button id="quitAndReopen" class="btn-primary">Quit and Reopen</button>
       </div>
     `;
 
@@ -99,18 +115,25 @@ function updateDialogProgress(
           quitBtn.disabled = false;
 
           // Show error message
-          const errorMsg = document.createElement('p');
-          errorMsg.style.color = 'red';
-          errorMsg.textContent =
-            'Failed to restart. Please try again or restart manually.';
-          content.appendChild(errorMsg);
+          const modalBody = content.querySelector('.modal-body');
+          if (modalBody) {
+            const errorMsg = document.createElement('p');
+            errorMsg.style.color = 'red';
+            errorMsg.textContent =
+              'Failed to restart. Please try again or restart manually.';
+            modalBody.appendChild(errorMsg);
+          }
         }
       };
     }
   } else {
     content.innerHTML = `
-      <h3>Updating...</h3>
-      <p>${message}${progressText}</p>
+      <div class="modal-header">
+        <h2>Updating...</h2>
+      </div>
+      <div class="modal-body">
+        <p>${message}${progressText}</p>
+      </div>
     `;
   }
 }

@@ -5,6 +5,12 @@
 
 set -e
 
+# Load environment variables from .env file if it exists
+if [ -f ".env" ]; then
+    echo "Loading environment variables from .env file..."
+    export $(grep -v '^#' .env | xargs)
+fi
+
 # Check if required environment variables are set
 if [ -z "$APPLE_ID" ] || [ -z "$APPLE_APP_SPECIFIC_PASSWORD" ] || [ -z "$APPLE_TEAM_ID" ]; then
     echo "Error: Required environment variables not set."
@@ -23,7 +29,7 @@ echo "Building notarized macOS app..."
 npm run build:all
 npm run build-icons
 
-# Build with electron-builder
-electron-builder --mac --publish=never
+# Build with electron-builder (notarization handled by afterSign script)
+electron-builder --mac --publish=never --config electron-builder-notarize.json
 
 echo "✅ Notarized build complete!" 

@@ -31,9 +31,9 @@
 
     /**
      * Create source map files for emitted JavaScript files.
-     * Essential for debugging TypeScript code.
+     * Disabled for production builds to reduce size.
      */
-    "sourceMap": true,
+    "sourceMap": false,
 
     /**
      * Specify an output folder for all emitted files.
