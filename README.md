@@ -18,15 +18,16 @@ An Electron desktop application for real-time transcription and meeting note-tak
 
 [![Latest Release](https://img.shields.io/github/v/release/alexkroman/assembly-notes?style=for-the-badge&logo=github)](https://github.com/alexkroman/assembly-notes/releases/latest)
 
-**[📥 Download Latest Release](https://github.com/alexkroman/assembly-notes/releases/latest)**
+**Direct Downloads:**
 
-Choose your platform:
+| Platform    | Architecture             | Download                                                                                                                 |
+| ----------- | ------------------------ | ------------------------------------------------------------------------------------------------------------------------ |
+| **macOS**   | Apple Silicon (M1/M2/M3) | [Download DMG](https://github.com/alexkroman/assembly-notes/releases/latest/download/Assembly-Notes-mac-arm64.dmg)       |
+| **macOS**   | Intel                    | [Download DMG](https://github.com/alexkroman/assembly-notes/releases/latest/download/Assembly-Notes-mac-x64.dmg)         |
+| **Windows** | x64                      | [Download ZIP](https://github.com/alexkroman/assembly-notes/releases/latest/download/Assembly-Notes-win-x64.zip)         |
+| **Linux**   | x64                      | [Download TAR.GZ](https://github.com/alexkroman/assembly-notes/releases/latest/download/Assembly-Notes-linux-x64.tar.gz) |
 
-- **macOS**: Download the `.dmg` file
-- **Windows**: Download the `.exe` installer
-- **Linux**: Download the `.AppImage` file
-
-> **Note**: All releases are automatically built and tested via GitHub Actions. Visit the [releases page](https://github.com/alexkroman/assembly-notes/releases) to see all available versions.
+> **Note**: All releases are automatically built and tested via GitHub Actions. The download links above will always fetch the latest version. Visit the [releases page](https://github.com/alexkroman/assembly-notes/releases) to see all available versions and release notes.
 
 ## Development Setup
 

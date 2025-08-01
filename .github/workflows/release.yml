@@ -107,18 +107,6 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           npm_config_cache: .npm
 
-      - name: Create ZIP file of EXE (Windows)
-        if: matrix.os == 'windows-latest'
-        run: |
-          cd release
-          if (Get-ChildItem -Filter "*.exe" -ErrorAction SilentlyContinue) {
-            Get-ChildItem -Filter "*.exe" | ForEach-Object {
-              $zipName = $_.BaseName + ".zip"
-              Compress-Archive -Path $_.Name -DestinationPath $zipName
-              Write-Host "Created $zipName from $($_.Name)"
-            }
-          }
-        shell: powershell
 
       - name: Install Linux dependencies
         if: matrix.os == 'ubuntu-latest'
@@ -132,16 +120,6 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Create tar.gz file of AppImage (Linux)
-        if: matrix.os == 'ubuntu-latest'
-        run: |
-          cd release
-          if ls *.AppImage 1> /dev/null 2>&1; then
-            for appimage in *.AppImage; do
-              tar -czf "${appimage%.AppImage}.tar.gz" "$appimage"
-              echo "Created ${appimage%.AppImage}.tar.gz from $appimage"
-            done
-          fi
 
       - name: Upload build artifacts
         uses: actions/upload-artifact@v4
