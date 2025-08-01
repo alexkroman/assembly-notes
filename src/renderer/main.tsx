@@ -7,14 +7,10 @@ import {
   stopAudioProcessing,
   setRecordingState,
 } from './audio-processing';
-import { initAutoUpdaterUI } from './auto-updater-ui';
 import { App } from './components/App';
 import { acquireStreams, releaseStreams } from './media';
 import { createRendererStore, setStatus } from './store';
 import './assets/styles.css';
-
-// Initialize auto-updater UI
-initAutoUpdaterUI();
 
 // Create Redux store for renderer
 const store = createRendererStore();
