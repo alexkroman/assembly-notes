@@ -144,6 +144,8 @@ export class RecordingManager {
                   text: '',
                 })
               );
+              // Auto-save transcript after receiving final transcript
+              this.recordingDataService.saveCurrentTranscription();
             }
           },
           onError: (stream: string, error: unknown) => {

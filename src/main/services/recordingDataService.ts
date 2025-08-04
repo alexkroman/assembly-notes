@@ -40,6 +40,9 @@ export class RecordingDataService {
     ) {
       this.logger.info('Stopping ongoing recording before creating new one');
       await this.store.dispatch(stopRecording());
+
+      // Wait for the recording to actually stop
+      await this.waitForRecordingToStop();
     }
 
     const recordingId = uuidv4();
@@ -140,5 +143,28 @@ export class RecordingDataService {
       this.logger.error(`Failed to get recording transcript: ${String(error)}`);
       return null;
     }
+  }
+
+  private async waitForRecordingToStop(): Promise<void> {
+    return new Promise((resolve) => {
+      const checkStatus = () => {
+        const state = this.store.getState();
+        if (state.recording.status === 'idle') {
+          resolve();
+        } else {
+          // Check again in 50ms
+          setTimeout(checkStatus, 50);
+        }
+      };
+
+      // Start checking immediately
+      checkStatus();
+
+      // Set a timeout to prevent infinite waiting
+      setTimeout(() => {
+        this.logger.warn('Timeout waiting for recording to stop');
+        resolve();
+      }, 5000); // 5 second timeout
+    });
   }
 }

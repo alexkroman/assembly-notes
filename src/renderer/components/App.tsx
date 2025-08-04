@@ -12,7 +12,7 @@ import { PromptModal } from './PromptModal';
 import { RecordingsList } from './RecordingsList';
 import { RecordingView } from './RecordingView';
 import { SettingsModal } from './SettingsModal';
-import { useGetSettingsQuery } from '../store/api/apiSlice.js';
+import { useGetSettingsQuery, apiSlice } from '../store/api/apiSlice.js';
 
 export const App: React.FC = () => {
   const dispatch = useAppDispatch();
@@ -39,6 +39,8 @@ export const App: React.FC = () => {
         setIsStoppingForNavigation(false);
         dispatch(navigateToList());
         dispatch(setStatus(''));
+        // Invalidate recordings list to force reload
+        dispatch(apiSlice.util.invalidateTags(['RecordingsList']));
       }
     };
 
@@ -67,10 +69,14 @@ export const App: React.FC = () => {
         setIsStoppingForNavigation(false);
         dispatch(navigateToList());
         dispatch(setStatus(''));
+        // Invalidate recordings list to force reload
+        dispatch(apiSlice.util.invalidateTags(['RecordingsList']));
       }
     } else {
       dispatch(navigateToList());
       dispatch(setStatus(''));
+      // Invalidate recordings list to force reload
+      dispatch(apiSlice.util.invalidateTags(['RecordingsList']));
     }
   };
 
