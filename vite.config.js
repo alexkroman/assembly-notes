@@ -1,29 +1,6 @@
 import react from '@vitejs/plugin-react';
-import { copyFileSync, existsSync, mkdirSync } from 'fs';
 import path from 'path';
 import { defineConfig } from 'vite';
-
-// Plugin to copy assets after build
-const copyAssetsPlugin = () => ({
-  name: 'copy-assets',
-  closeBundle() {
-    // Ensure dist/renderer directory exists
-    if (!existsSync('dist/renderer')) {
-      mkdirSync('dist/renderer', { recursive: true });
-    }
-
-    // Copy CSS file
-    try {
-      copyFileSync(
-        'src/renderer/assets/styles.css',
-        'dist/renderer/styles.css'
-      );
-      console.log('✓ Copied styles.css');
-    } catch (error) {
-      console.warn('Could not copy styles.css:', error.message);
-    }
-  },
-});
 
 export default defineConfig(({ command, mode }) => {
   const isRenderer = process.env.BUILD_TARGET === 'renderer';
@@ -52,7 +29,7 @@ export default defineConfig(({ command, mode }) => {
 
   // Renderer build configuration (default)
   return {
-    plugins: [react(), copyAssetsPlugin()],
+    plugins: [react()],
     root: 'src/renderer',
     base: './',
     build: {

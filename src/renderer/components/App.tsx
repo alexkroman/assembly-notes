@@ -75,7 +75,7 @@ export const App: React.FC = () => {
   };
 
   return (
-    <div className="container" data-testid="app-container">
+    <div className="container-flex" data-testid="app-container">
       {currentPage === 'list' && (
         <div className="page active">
           <RecordingsList onNavigateToRecording={handleNavigateToRecording} />

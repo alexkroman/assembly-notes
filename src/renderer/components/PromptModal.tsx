@@ -118,12 +118,12 @@ export const PromptModal: React.FC<PromptModalProps> = ({ onClose }) => {
       size="large"
       testId="prompt-modal"
     >
-      <div className="prompt-editor-dense">
-        <div className="prompt-tabs">
+      <div className="flex flex-col gap-1 h-full">
+        <div className="flex gap-0.25 mb-1">
           {prompts.map((prompt, index) => (
             <button
               key={index}
-              className={`prompt-tab ${index === selectedIndex ? 'active' : ''}`}
+              className={`px-1.5 py-0.5 text-xs font-medium bg-surface border border-border rounded-sm text-text-secondary cursor-pointer transition-all duration-150 ease-in-out min-w-[24px] text-center hover:bg-surface-hover hover:text-text-primary ${index === selectedIndex ? 'bg-success-bg border-success-border text-foreground' : ''}`}
               onClick={() => {
                 setSelectedIndex(index);
               }}
@@ -135,12 +135,14 @@ export const PromptModal: React.FC<PromptModalProps> = ({ onClose }) => {
         </div>
 
         {prompts[selectedIndex] && (
-          <div className="prompt-content-dense">
-            <div className="prompt-header-row">
-              <span className="prompt-label">Name:</span>
+          <div className="flex flex-col gap-1 flex-1">
+            <div className="grid grid-cols-[50px_1fr] gap-1.5 items-start">
+              <span className="text-xs font-medium text-text-primary pt-0.75">
+                Name:
+              </span>
               <input
                 type="text"
-                className="prompt-name-input-dense"
+                className="bg-surface-input border border-light rounded-sm px-1.25 py-0.75 text-xs text-foreground focus:outline-none focus:border-success-border focus:bg-surface-active"
                 value={prompts[selectedIndex].name}
                 onChange={(e) => {
                   handleUpdatePrompt(selectedIndex, 'name', e.target.value);
@@ -149,11 +151,13 @@ export const PromptModal: React.FC<PromptModalProps> = ({ onClose }) => {
               />
             </div>
 
-            <div className="prompt-content-row">
-              <span className="prompt-label">Content:</span>
-              <div className="prompt-content-wrapper">
+            <div className="grid grid-cols-[50px_1fr] gap-1.5 items-start">
+              <span className="text-xs font-medium text-text-primary pt-0.75">
+                Content:
+              </span>
+              <div className="flex flex-col">
                 <textarea
-                  className="prompt-content-input-dense"
+                  className="bg-surface-input border border-light rounded-sm p-1 text-xs text-foreground resize-none min-h-[80px] font-mono leading-tight focus:outline-none focus:border-success-border focus:bg-surface-active"
                   value={prompts[selectedIndex].content}
                   onChange={(e) => {
                     handleUpdatePrompt(
@@ -164,32 +168,17 @@ export const PromptModal: React.FC<PromptModalProps> = ({ onClose }) => {
                   }}
                   placeholder="Enter prompt content..."
                   rows={9}
-                  style={{ width: '100%', boxSizing: 'border-box' }}
+                  style={{ width: '100%' }}
                 />
-                <div className="revert-link-wrapper">
+                <div className="mt-1">
                   <a
                     href="#"
-                    className="revert-to-default-link"
+                    className="text-xs text-text-subtle no-underline inline-block hover:text-text-secondary hover:underline"
                     onClick={(e) => {
                       e.preventDefault();
                       handleRevertToDefault();
                     }}
                     title="Revert to the default name and prompt for this slot"
-                    style={{
-                      fontSize: '0.7em',
-                      color: '#888',
-                      textDecoration: 'none',
-                      marginTop: '4px',
-                      display: 'inline-block',
-                    }}
-                    onMouseEnter={(e) => {
-                      e.currentTarget.style.color = '#666';
-                      e.currentTarget.style.textDecoration = 'underline';
-                    }}
-                    onMouseLeave={(e) => {
-                      e.currentTarget.style.color = '#888';
-                      e.currentTarget.style.textDecoration = 'none';
-                    }}
                   >
                     Revert to default
                   </a>

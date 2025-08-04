@@ -11,7 +11,7 @@ import { initAutoUpdaterUI } from './auto-updater-ui';
 import { App } from './components/App';
 import { acquireStreams, releaseStreams } from './media';
 import { createRendererStore, setStatus } from './store';
-import './assets/styles.css';
+import './assets/tailwind.css';
 
 // Initialize auto-updater UI
 initAutoUpdaterUI();

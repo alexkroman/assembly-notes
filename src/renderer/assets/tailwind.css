@@ -1,0 +1,389 @@
+@import 'tailwindcss';
+
+/* Theme configuration */
+@theme {
+  /* Colors */
+  --color-background: #1a1a1a;
+  --color-foreground: #ffffff;
+
+  /* Border colors */
+  --color-border: rgba(255, 255, 255, 0.12);
+  --color-border-light: rgba(255, 255, 255, 0.18);
+  --color-border-medium: rgba(255, 255, 255, 0.24);
+  --color-border-heavy: rgba(255, 255, 255, 0.45);
+
+  /* Surface colors */
+  --color-surface: rgba(255, 255, 255, 0.06);
+  --color-surface-hover: rgba(255, 255, 255, 0.09);
+  --color-surface-active: rgba(255, 255, 255, 0.12);
+  --color-surface-subtle: rgba(255, 255, 255, 0.03);
+  --color-surface-input: rgba(255, 255, 255, 0.05);
+
+  /* Text colors */
+  --color-text-primary: rgba(255, 255, 255, 0.85);
+  --color-text-secondary: rgba(255, 255, 255, 0.7);
+  --color-text-muted: rgba(255, 255, 255, 0.45);
+  --color-text-placeholder: rgba(255, 255, 255, 0.35);
+  --color-text-subtle: rgba(255, 255, 255, 0.6);
+
+  /* Success colors */
+  --color-success: #28a745;
+  --color-success-bg: rgba(40, 167, 69, 0.2);
+  --color-success-border: rgba(40, 167, 69, 0.5);
+  --color-success-hover: rgba(40, 167, 69, 0.3);
+
+  /* Danger colors */
+  --color-danger: #dc3545;
+  --color-danger-bg: rgba(220, 53, 69, 0.2);
+  --color-danger-border: rgba(220, 53, 69, 0.5);
+  --color-danger-hover: rgba(220, 53, 69, 0.3);
+  --color-danger-text: rgba(220, 53, 69, 0.8);
+
+  /* Warning colors */
+  --color-warning: #ffc107;
+  --color-warning-bg: rgba(255, 193, 7, 0.2);
+  --color-warning-border: rgba(255, 193, 7, 0.5);
+
+  /* Other colors */
+  --color-partial: rgba(255, 255, 255, 0.5);
+
+  /* Font sizes */
+  --font-size-2xs: 0.625rem;
+  --font-size-xs: 0.6875rem;
+  --font-size-sm: 0.75rem;
+  --font-size-base: 0.875rem;
+  --font-size-lg: 1rem;
+  --font-size-xl: 1.125rem;
+
+  /* Font family */
+  --font-family-sans: ui-sans-serif, system-ui, sans-serif;
+  --font-family-mono:
+    ui-monospace, SFMono-Regular, SF Mono, Menlo, Monaco, Consolas,
+    'Cascadia Code', 'Source Code Pro', 'Liberation Mono', 'DejaVu Sans Mono',
+    'Courier New', monospace;
+
+  /* Spacing scale */
+  --spacing-0\.25: 1px;
+  --spacing-0\.5: 2px;
+  --spacing-0\.75: 3px;
+  --spacing-1: 4px;
+  --spacing-1\.25: 5px;
+  --spacing-1\.5: 6px;
+  --spacing-2: 8px;
+  --spacing-2\.5: 10px;
+  --spacing-3: 12px;
+  --spacing-3\.5: 14px;
+  --spacing-4: 16px;
+  --spacing-4\.5: 18px;
+  --spacing-5: 20px;
+  --spacing-6: 24px;
+  --spacing-7: 28px;
+  --spacing-8: 32px;
+  --spacing-9: 36px;
+  --spacing-10: 40px;
+
+  /* Border radius */
+  --radius-none: 0;
+  --radius-sm: 2px;
+  --radius: 4px;
+  --radius-lg: 8px;
+
+  /* Line height */
+  --line-height-tight: 1.3;
+  --line-height-snug: 1.4;
+  --line-height-normal: 1.5;
+
+  /* Letter spacing */
+  --letter-spacing-wide: 0.025em;
+
+  /* Opacity */
+  --opacity-45: 0.45;
+  --opacity-50: 0.5;
+  --opacity-80: 0.8;
+  --opacity-85: 0.85;
+
+  /* Transition duration */
+  --duration-150: 150ms;
+  --duration-200: 200ms;
+
+  /* Box shadow */
+  --shadow-modal: 0 4px 16px rgba(0, 0, 0, 0.4);
+  --shadow-focus: 0 0 0 2px rgba(255, 255, 255, 0.1);
+
+  /* Z-index */
+  --z-100: 100;
+  --z-1000: 1000;
+}
+
+@layer base {
+  body {
+    @apply m-0 h-screen overflow-hidden bg-background text-foreground font-sans;
+  }
+}
+
+/* Custom utilities for our design system */
+@utility border-light {
+  border-color: var(--color-border-light);
+}
+
+@utility border-medium {
+  border-color: var(--color-border-medium);
+}
+
+@utility border-heavy {
+  border-color: var(--color-border-heavy);
+}
+
+/* Background colors */
+@utility bg-background {
+  background-color: var(--color-background);
+}
+
+@utility bg-surface {
+  background-color: var(--color-surface);
+}
+
+@utility bg-surface-hover {
+  background-color: var(--color-surface-hover);
+}
+
+@utility bg-surface-active {
+  background-color: var(--color-surface-active);
+}
+
+@utility bg-surface-subtle {
+  background-color: var(--color-surface-subtle);
+}
+
+@utility bg-surface-input {
+  background-color: var(--color-surface-input);
+}
+
+/* Text colors */
+@utility text-foreground {
+  color: var(--color-foreground);
+}
+
+@utility text-text-primary {
+  color: var(--color-text-primary);
+}
+
+@utility text-text-secondary {
+  color: var(--color-text-secondary);
+}
+
+@utility text-text-muted {
+  color: var(--color-text-muted);
+}
+
+@utility text-text-placeholder {
+  color: var(--color-text-placeholder);
+}
+
+@utility text-text-subtle {
+  color: var(--color-text-subtle);
+}
+
+@utility text-partial {
+  color: var(--color-partial);
+}
+
+/* Success colors */
+@utility text-success {
+  color: var(--color-success);
+}
+
+@utility bg-success-bg {
+  background-color: var(--color-success-bg);
+}
+
+@utility bg-success-hover {
+  background-color: var(--color-success-hover);
+}
+
+@utility border-success-border {
+  border-color: var(--color-success-border);
+}
+
+/* Danger colors */
+@utility text-danger {
+  color: var(--color-danger);
+}
+
+@utility text-danger-text {
+  color: var(--color-danger-text);
+}
+
+@utility bg-danger-bg {
+  background-color: var(--color-danger-bg);
+}
+
+@utility bg-danger-hover {
+  background-color: var(--color-danger-hover);
+}
+
+@utility border-danger-border {
+  border-color: var(--color-danger-border);
+}
+
+@utility border-danger {
+  border-color: var(--color-danger);
+}
+
+/* Warning colors */
+@utility text-warning {
+  color: var(--color-warning);
+}
+
+@utility bg-warning-bg {
+  background-color: var(--color-warning-bg);
+}
+
+@utility border-warning-border {
+  border-color: var(--color-warning-border);
+}
+
+/* Shadow utilities */
+@utility shadow-modal {
+  box-shadow: var(--shadow-modal);
+}
+
+@utility shadow-focus {
+  box-shadow: var(--shadow-focus);
+}
+
+/* Z-index utilities */
+@utility z-100 {
+  z-index: var(--z-100);
+}
+
+@utility z-1000 {
+  z-index: var(--z-1000);
+}
+
+/* Placeholder utilities */
+@utility placeholder-text-placeholder {
+  &::placeholder {
+    color: var(--color-text-placeholder);
+  }
+}
+
+@utility placeholder-italic {
+  &::placeholder {
+    font-style: italic;
+  }
+}
+
+@layer components {
+  /* Container components */
+  .container-flex {
+    @apply flex flex-col w-full h-screen p-0;
+  }
+
+  /* Page components */
+  .page {
+    @apply hidden h-screen overflow-hidden;
+  }
+
+  .page.active {
+    @apply flex flex-col;
+  }
+
+  /* Input components */
+  .input-base {
+    @apply bg-surface-input border border-border text-foreground transition-all duration-200;
+  }
+
+  .input-base:hover {
+    @apply bg-surface-hover border-light;
+  }
+
+  .input-base:focus {
+    @apply outline-none border-heavy bg-surface-active;
+  }
+
+  /* Button components */
+  .btn-base {
+    @apply px-3 h-8 rounded-sm transition-all duration-200 cursor-pointer flex items-center justify-center whitespace-nowrap flex-shrink-0;
+  }
+
+  .btn-primary {
+    @apply px-3 py-1.5 bg-success-bg border border-success-border text-success rounded-sm cursor-pointer font-medium transition-all duration-200;
+  }
+
+  .btn-primary:hover {
+    @apply bg-success-hover;
+  }
+
+  .btn-danger {
+    @apply px-3 py-1.5 bg-danger-bg border border-danger-border text-danger rounded-sm cursor-pointer font-medium transition-all duration-200;
+  }
+
+  .btn-danger:hover {
+    @apply bg-danger-hover;
+  }
+
+  .btn-secondary {
+    @apply px-4 py-2 bg-surface-hover border border-light text-text-primary rounded-sm cursor-pointer font-medium transition-all duration-200;
+  }
+
+  .btn-secondary:hover {
+    @apply bg-surface-active text-foreground;
+  }
+
+  /* Modal components */
+  .modal-overlay {
+    @apply fixed inset-0 bg-black/70 flex items-center justify-center z-[1000];
+  }
+
+  .modal-content {
+    @apply bg-background border border-light rounded-lg w-[400px] max-w-[90%] max-h-[80vh] flex flex-col overflow-hidden shadow-modal;
+  }
+
+  .modal-content.large {
+    @apply w-[600px] h-[500px] max-w-[95%] max-h-[90vh];
+  }
+
+  /* Panel components */
+  .content-panel {
+    @apply flex-1 flex flex-col bg-surface border border-border rounded-sm min-h-0 overflow-hidden;
+  }
+
+  .panel-header {
+    @apply m-0 px-2 py-1 text-sm font-semibold text-foreground bg-surface-hover border-b border-light tracking-wide;
+  }
+
+  .panel-content {
+    @apply flex-1 p-2 m-0 border-none bg-transparent text-foreground font-mono text-xs leading-snug resize-none whitespace-pre-wrap break-words overflow-y-auto;
+  }
+
+  .panel-content:focus {
+    @apply outline-none;
+  }
+
+  /* Recording card components */
+  .recording-card {
+    @apply flex flex-col p-2 px-3 bg-surface border border-border rounded transition-all duration-200 gap-1 cursor-pointer;
+  }
+
+  .recording-card:hover {
+    @apply bg-surface-hover border-light;
+  }
+
+  /* Form components */
+  .form-group {
+    @apply mb-3.5 bg-transparent;
+  }
+
+  .form-group label {
+    @apply block mb-1 text-base font-medium text-text-primary;
+  }
+
+  .form-input {
+    @apply w-full p-2 bg-transparent border border-border rounded-sm text-foreground text-base outline-none transition-all duration-200 box-border;
+  }
+
+  .form-input:focus {
+    @apply border-heavy bg-transparent;
+  }
+}

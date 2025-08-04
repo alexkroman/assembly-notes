@@ -143,10 +143,17 @@ export const RecordingView: React.FC<RecordingViewProps> = ({
   const buttonText = getButtonText();
 
   const getButtonClass = () => {
-    let baseClass = 'record-btn';
-    if (isRecording) baseClass += ' recording';
-    if (isStopping || isStoppingForNavigation) baseClass += ' stopping';
-    if (isStarting) baseClass += ' starting';
+    let baseClass =
+      'px-2 py-1 text-xs font-semibold rounded-sm cursor-pointer transition-all duration-200 h-7 tracking-wide bg-surface-active border border-medium text-foreground hover:bg-surface-input';
+    if (isRecording)
+      baseClass =
+        'px-2 py-1 text-xs font-semibold rounded-sm cursor-pointer transition-all duration-200 h-7 tracking-wide bg-danger-bg border-danger-border text-danger hover:bg-danger-hover';
+    if (isStopping || isStoppingForNavigation)
+      baseClass =
+        'px-2 py-1 text-xs font-semibold rounded-sm cursor-not-allowed transition-all duration-200 h-7 tracking-wide bg-warning-bg border-warning-border text-warning opacity-80';
+    if (isStarting)
+      baseClass =
+        'px-2 py-1 text-xs font-semibold rounded-sm cursor-pointer transition-all duration-200 h-7 tracking-wide bg-surface-active border border-medium text-foreground hover:bg-surface-input';
     return baseClass;
   };
 
@@ -163,10 +170,10 @@ export const RecordingView: React.FC<RecordingViewProps> = ({
       className="page active"
       data-testid="recording-view"
     >
-      <div className="recording-header">
+      <div className="flex items-center px-2 py-0.75 bg-background flex-shrink-0 h-7">
         <button
           type="button"
-          className="back-btn"
+          className="text-sm px-2 py-1 text-text-primary bg-transparent border border-light rounded-sm cursor-pointer font-medium transition-all duration-200 hover:bg-surface-hover hover:text-foreground hover:border-medium"
           data-testid="back-to-list-btn"
           onClick={onNavigateToList}
           disabled={isStoppingForNavigation}
@@ -175,10 +182,10 @@ export const RecordingView: React.FC<RecordingViewProps> = ({
         </button>
       </div>
 
-      <div className="title-section">
+      <div className="px-2 py-1 bg-background flex justify-start items-center flex-shrink-0 h-8">
         <input
           type="text"
-          className="title-input"
+          className="text-lg font-semibold px-2.5 py-1.5 bg-surface border border-light rounded-sm text-foreground w-80 flex-shrink-0 text-left transition-all duration-200 m-0 cursor-text hover:bg-surface-hover hover:border-medium focus:outline-none focus:border-heavy focus:bg-surface-active focus:shadow-focus placeholder:text-placeholder"
           data-testid="recording-title-input"
           placeholder="Recording title..."
           value={recordingTitle}
@@ -188,8 +195,8 @@ export const RecordingView: React.FC<RecordingViewProps> = ({
         />
       </div>
 
-      <div className="controls-section">
-        <div className="controls-row">
+      <div className="px-2 py-1 bg-transparent flex-shrink-0 h-9">
+        <div className="flex items-center gap-1.5 flex-nowrap">
           {isNewRecording && (
             <button
               type="button"
@@ -205,7 +212,7 @@ export const RecordingView: React.FC<RecordingViewProps> = ({
           )}
 
           <select
-            className="prompt-select"
+            className="px-2 py-1 text-xs bg-surface-hover border border-light rounded-sm text-foreground min-w-[90px] h-7 overflow-hidden text-ellipsis whitespace-nowrap transition-all duration-200 hover:bg-surface-active hover:border-medium focus:outline-none focus:border-heavy focus:bg-surface-active"
             data-testid="prompt-btn"
             value={selectedPromptIndex}
             onChange={(e) => {
@@ -226,7 +233,7 @@ export const RecordingView: React.FC<RecordingViewProps> = ({
 
           <button
             type="button"
-            className="summary-btn"
+            className="px-2 py-1 text-xs font-semibold rounded-sm cursor-pointer transition-all duration-200 h-7 tracking-wide w-[100px] bg-surface-hover border border-light text-text-primary hover:bg-surface-active hover:text-foreground disabled:text-text-muted disabled:cursor-not-allowed disabled:opacity-50"
             data-testid="summarize-btn"
             onClick={() => {
               void handleSummarize();
@@ -257,7 +264,7 @@ export const RecordingView: React.FC<RecordingViewProps> = ({
           {hasSlackConfigured && (
             <>
               <select
-                className="channel-select"
+                className="px-2 py-1 text-xs bg-surface-hover border border-light rounded-sm text-foreground min-w-[90px] h-7 overflow-hidden text-ellipsis whitespace-nowrap transition-all duration-200 hover:bg-surface-active hover:border-medium focus:outline-none focus:border-heavy focus:bg-surface-active"
                 data-testid="channel-btn"
                 value={selectedChannelId}
                 onChange={(e) => {
@@ -279,7 +286,7 @@ export const RecordingView: React.FC<RecordingViewProps> = ({
 
               <button
                 type="button"
-                className="slack-btn"
+                className="px-2 py-1 text-xs font-semibold rounded-sm cursor-pointer transition-all duration-200 h-7 tracking-wide w-20 bg-surface-hover border border-light text-text-primary hover:bg-surface-active hover:text-foreground disabled:text-text-muted disabled:cursor-not-allowed disabled:opacity-50"
                 onClick={() => {
                   void handlePostToSlack(summary, selectedChannelId);
                 }}
@@ -296,9 +303,9 @@ export const RecordingView: React.FC<RecordingViewProps> = ({
         </div>
       </div>
 
-      <div className="content-section">
+      <div className="flex flex-1 gap-1.5 px-1.5 py-1 pb-0.5 min-h-0 overflow-hidden bg-background">
         <div className="content-panel">
-          <h3>Transcript</h3>
+          <h3 className="panel-header">Transcript</h3>
           <pre
             ref={transcriptRef}
             className="panel-content"
@@ -308,14 +315,14 @@ export const RecordingView: React.FC<RecordingViewProps> = ({
             {isNewRecording ? (
               <>
                 {(transcript || '').trim() || (
-                  <span className="placeholder-text">
+                  <span className="text-placeholder italic">
                     {recordingId
                       ? ''
                       : 'Click "Record" to begin transcribing audio from your microphone and system'}
                   </span>
                 )}
                 {partialTranscript && (
-                  <span className="partial-transcript">
+                  <span className="inline text-partial">
                     {(transcript || '').trim()
                       ? ` ${partialTranscript}`
                       : partialTranscript}
@@ -324,7 +331,7 @@ export const RecordingView: React.FC<RecordingViewProps> = ({
               </>
             ) : (
               (currentRecording?.transcript ?? (
-                <span className="placeholder-text">
+                <span className="text-placeholder italic">
                   No transcript available for this recording
                 </span>
               ))
@@ -333,10 +340,10 @@ export const RecordingView: React.FC<RecordingViewProps> = ({
         </div>
 
         <div className="content-panel">
-          <h3>Summary</h3>
+          <h3 className="panel-header">Summary</h3>
           <textarea
             ref={summaryRef}
-            className="panel-content"
+            className="panel-content placeholder:text-placeholder placeholder:italic"
             data-testid="summary-textarea"
             placeholder="Click 'Summarize' at any time to generate or regenerate a summary"
             onChange={handleSummaryChange}
@@ -344,8 +351,11 @@ export const RecordingView: React.FC<RecordingViewProps> = ({
         </div>
       </div>
 
-      <div className="status-section">
-        <span className="status" data-testid="status-display">
+      <div className="px-2 py-1 bg-transparent text-center flex-shrink-0 h-6 flex items-center justify-center">
+        <span
+          className="text-xs text-text-secondary font-normal tracking-wide"
+          data-testid="status-display"
+        >
           {transcriptionError ?? uiStatus}
         </span>
       </div>

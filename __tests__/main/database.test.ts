@@ -1,94 +1,32 @@
+import 'reflect-metadata';
 import { container } from 'tsyringe';
 
 import { DatabaseService } from '../../src/main/database';
 import { DI_TOKENS } from '../../src/main/di-tokens';
 import { Recording } from '../../src/types/common';
+import {
+  resetTestContainer,
+  registerMock,
+} from '../test-helpers/container-setup';
 
 // Mock all dependencies
-jest.mock('fs');
+jest.mock('fs', () => ({
+  existsSync: jest.fn(() => true),
+  mkdirSync: jest.fn(),
+}));
+
+jest.mock('path', () => ({
+  join: jest.fn((...args) => args.join('/')),
+  dirname: jest.fn((p) => p.split('/').slice(0, -1).join('/')),
+}));
+
 jest.mock('electron', () => ({
   app: {
     getPath: jest.fn(() => '/mock/path'),
   },
 }));
 
-// Create a global mock database instance
-const mockDatabase = {
-  pragma: jest.fn(),
-  exec: jest.fn(),
-  prepare: jest.fn((sql: string) => {
-    // Mock COUNT queries during initialization
-    if (sql.includes('SELECT COUNT(*)')) {
-      return {
-        get: jest.fn(() => ({ count: 0 })),
-        run: jest.fn(),
-        all: jest.fn(),
-      };
-    }
-    // Mock INSERT statements during initialization
-    if (sql.includes('INSERT OR REPLACE INTO settings')) {
-      return {
-        get: jest.fn(),
-        run: jest.fn(),
-        all: jest.fn(),
-      };
-    }
-    // Mock all other prepare statements
-    return {
-      get: jest.fn(),
-      run: jest.fn(),
-      all: jest.fn(),
-    };
-  }),
-  transaction: jest.fn((fn) => {
-    // Return a function that can be called
-    const transactionFn = () => fn();
-    return transactionFn;
-  }),
-  close: jest.fn(),
-};
-
-// Reset mock implementations before each test
-beforeEach(() => {
-  jest.clearAllMocks();
-
-  // Reset the prepare mock to its default implementation
-  mockDatabase.prepare.mockImplementation((sql: string) => {
-    // Mock COUNT queries during initialization
-    if (sql.includes('SELECT COUNT(*)')) {
-      return {
-        get: jest.fn(() => ({ count: 0 })),
-        run: jest.fn(),
-        all: jest.fn(),
-      };
-    }
-    // Mock INSERT statements during initialization
-    if (sql.includes('INSERT OR REPLACE INTO settings')) {
-      return {
-        get: jest.fn(),
-        run: jest.fn(),
-        all: jest.fn(),
-      };
-    }
-    // Mock all other prepare statements
-    return {
-      get: jest.fn(),
-      run: jest.fn(),
-      all: jest.fn(),
-    };
-  });
-
-  // Reset transaction mock
-  mockDatabase.transaction.mockImplementation((fn) => {
-    // Return a function that can be called
-    const transactionFn = () => fn();
-    return transactionFn;
-  });
-});
-
-jest.mock('better-sqlite3', () => {
-  return jest.fn(() => mockDatabase);
-});
+jest.mock('better-sqlite3');
 
 const mockLogger = {
   info: jest.fn(),
@@ -97,42 +35,94 @@ const mockLogger = {
   debug: jest.fn(),
 };
 
+// Create a mock database instance
+let mockDbInstance: any;
+
 describe('DatabaseService', () => {
   let databaseService: DatabaseService;
 
   beforeEach(() => {
+    // Reset the container and mocks
+    resetTestContainer();
+    jest.clearAllMocks();
+
+    // Create fresh mock database instance
+    mockDbInstance = {
+      pragma: jest.fn(),
+      exec: jest.fn(),
+      prepare: jest.fn(),
+      transaction: jest.fn((fn: any) => fn),
+      close: jest.fn(),
+    };
+
+    // Set up default prepare mock behavior
+    mockDbInstance.prepare.mockImplementation((sql: string) => {
+      if (sql.includes('SELECT COUNT(*)')) {
+        return {
+          get: jest.fn(() => ({ count: 0 })),
+          run: jest.fn(),
+          all: jest.fn(),
+        };
+      }
+      if (sql.includes('INSERT OR REPLACE INTO settings')) {
+        return {
+          get: jest.fn(),
+          run: jest.fn(),
+          all: jest.fn(),
+        };
+      }
+      return {
+        get: jest.fn(),
+        run: jest.fn().mockReturnValue({ changes: 1 }),
+        all: jest.fn().mockReturnValue([]),
+      };
+    });
+
+    // Mock the Database constructor
+    const Database = jest.requireMock('better-sqlite3').default;
+    Database.mockReturnValue(mockDbInstance);
+
     // Register mocks in container
-    container.register(DI_TOKENS.Logger, { useValue: mockLogger as any });
+    registerMock(DI_TOKENS.Logger, mockLogger);
 
     databaseService = container.resolve(DatabaseService);
   });
 
   afterEach(() => {
-    container.clearInstances();
-    // Reset mock implementations to prevent test interference
-    mockDatabase.exec.mockReset();
-    mockDatabase.pragma.mockReset();
-    // Don't reset prepare mock as it needs to maintain its structure
+    resetTestContainer();
   });
 
   describe('initialization', () => {
     it('should set WAL mode', () => {
-      expect(mockDatabase.pragma).toHaveBeenCalledWith('journal_mode = WAL');
+      expect(mockDbInstance.pragma).toHaveBeenCalledWith('journal_mode = WAL');
     });
 
     it('should create required tables', () => {
-      expect(mockDatabase.exec).toHaveBeenCalledWith(
+      expect(mockDbInstance.exec).toHaveBeenCalledWith(
         expect.stringContaining('CREATE TABLE IF NOT EXISTS settings')
       );
-      expect(mockDatabase.exec).toHaveBeenCalledWith(
+      expect(mockDbInstance.exec).toHaveBeenCalledWith(
         expect.stringContaining('CREATE TABLE IF NOT EXISTS recordings')
       );
     });
 
     it('should handle initialization errors gracefully', () => {
       const initError = new Error('Database initialization failed');
-      mockDatabase.exec.mockImplementation(() => {
-        throw initError;
+
+      // Clear the container to force new instance
+      container.clearInstances();
+      container.register(DI_TOKENS.Logger, { useValue: mockLogger as any });
+
+      // Set up mock to throw error
+      const Database = jest.requireMock('better-sqlite3').default;
+      Database.mockReturnValueOnce({
+        pragma: jest.fn(),
+        exec: jest.fn(() => {
+          throw initError;
+        }),
+        prepare: jest.fn(),
+        transaction: jest.fn(),
+        close: jest.fn(),
       });
 
       expect(() => container.resolve(DatabaseService)).toThrow(initError);
@@ -140,8 +130,21 @@ describe('DatabaseService', () => {
 
     it('should handle pragma errors gracefully', () => {
       const pragmaError = new Error('Pragma failed');
-      mockDatabase.pragma.mockImplementation(() => {
-        throw pragmaError;
+
+      // Clear the container to force new instance
+      container.clearInstances();
+      container.register(DI_TOKENS.Logger, { useValue: mockLogger as any });
+
+      // Set up mock to throw error
+      const Database = jest.requireMock('better-sqlite3').default;
+      Database.mockReturnValueOnce({
+        pragma: jest.fn(() => {
+          throw pragmaError;
+        }),
+        exec: jest.fn(),
+        prepare: jest.fn(),
+        transaction: jest.fn(),
+        close: jest.fn(),
       });
 
       expect(() => container.resolve(DatabaseService)).toThrow(pragmaError);
@@ -151,7 +154,7 @@ describe('DatabaseService', () => {
   describe('setSetting', () => {
     it('should store string values directly', () => {
       const mockRun = jest.fn();
-      mockDatabase.prepare.mockReturnValue({
+      mockDbInstance.prepare.mockReturnValue({
         get: jest.fn(),
         run: mockRun,
         all: jest.fn(),
@@ -164,7 +167,7 @@ describe('DatabaseService', () => {
 
     it('should stringify non-string values', () => {
       const mockRun = jest.fn();
-      mockDatabase.prepare.mockReturnValue({
+      mockDbInstance.prepare.mockReturnValue({
         get: jest.fn(),
         run: mockRun,
         all: jest.fn(),
@@ -181,7 +184,7 @@ describe('DatabaseService', () => {
 
     it('should handle database errors during setting storage', () => {
       const dbError = new Error('Database write error');
-      mockDatabase.prepare.mockImplementation(() => {
+      mockDbInstance.prepare.mockImplementation(() => {
         throw dbError;
       });
 
@@ -192,7 +195,7 @@ describe('DatabaseService', () => {
 
     it('should handle null values', () => {
       const mockRun = jest.fn();
-      mockDatabase.prepare.mockReturnValue({
+      mockDbInstance.prepare.mockReturnValue({
         get: jest.fn(),
         run: mockRun,
         all: jest.fn(),
@@ -205,7 +208,7 @@ describe('DatabaseService', () => {
 
     it('should handle undefined values', () => {
       const mockRun = jest.fn();
-      mockDatabase.prepare.mockReturnValue({
+      mockDbInstance.prepare.mockReturnValue({
         get: jest.fn(),
         run: mockRun,
         all: jest.fn(),
@@ -228,7 +231,7 @@ describe('DatabaseService', () => {
         { key: 'autoStart', value: 'false' },
       ]);
 
-      mockDatabase.prepare.mockReturnValue({
+      mockDbInstance.prepare.mockReturnValue({
         get: jest.fn(),
         run: jest.fn(),
         all: mockAll,
@@ -252,7 +255,7 @@ describe('DatabaseService', () => {
         throw dbError;
       });
 
-      mockDatabase.prepare.mockReturnValue({
+      mockDbInstance.prepare.mockReturnValue({
         get: jest.fn(),
         run: jest.fn(),
         all: mockAll,
@@ -276,7 +279,7 @@ describe('DatabaseService', () => {
         { key: 'assemblyaiKey', value: 'test-key' },
       ]);
 
-      mockDatabase.prepare.mockReturnValue({
+      mockDbInstance.prepare.mockReturnValue({
         get: jest.fn(),
         run: jest.fn(),
         all: mockAll,
@@ -290,7 +293,7 @@ describe('DatabaseService', () => {
     it('should handle missing settings gracefully', () => {
       const mockAll = jest.fn().mockReturnValue([]);
 
-      mockDatabase.prepare.mockReturnValue({
+      mockDbInstance.prepare.mockReturnValue({
         get: jest.fn(),
         run: jest.fn(),
         all: mockAll,
@@ -322,7 +325,7 @@ describe('DatabaseService', () => {
     describe('saveRecording', () => {
       it('should save recording with provided timestamps', () => {
         const mockRun = jest.fn();
-        mockDatabase.prepare.mockReturnValue({
+        mockDbInstance.prepare.mockReturnValue({
           get: jest.fn(),
           run: mockRun,
           all: jest.fn(),
@@ -345,7 +348,7 @@ describe('DatabaseService', () => {
 
       it('should handle database errors during save', () => {
         const dbError = new Error('Save failed');
-        mockDatabase.prepare.mockImplementation(() => {
+        mockDbInstance.prepare.mockImplementation(() => {
           throw dbError;
         });
 
@@ -356,7 +359,7 @@ describe('DatabaseService', () => {
 
       it('should handle null values in recording', () => {
         const mockRun = jest.fn();
-        mockDatabase.prepare.mockReturnValue({
+        mockDbInstance.prepare.mockReturnValue({
           get: jest.fn(),
           run: mockRun,
           all: jest.fn(),
@@ -385,7 +388,7 @@ describe('DatabaseService', () => {
     describe('getRecording', () => {
       it('should return recording when found', () => {
         const mockGet = jest.fn().mockReturnValue(mockRecording);
-        mockDatabase.prepare.mockReturnValue({
+        mockDbInstance.prepare.mockReturnValue({
           get: mockGet,
           run: jest.fn(),
           all: jest.fn(),
@@ -399,7 +402,7 @@ describe('DatabaseService', () => {
 
       it('should return null when not found', () => {
         const mockGet = jest.fn().mockReturnValue(undefined);
-        mockDatabase.prepare.mockReturnValue({
+        mockDbInstance.prepare.mockReturnValue({
           get: mockGet,
           run: jest.fn(),
           all: jest.fn(),
@@ -412,7 +415,7 @@ describe('DatabaseService', () => {
 
       it('should handle database errors during retrieval', () => {
         const dbError = new Error('Retrieval failed');
-        mockDatabase.prepare.mockImplementation(() => {
+        mockDbInstance.prepare.mockImplementation(() => {
           throw dbError;
         });
 
@@ -424,7 +427,7 @@ describe('DatabaseService', () => {
       it('should return all recordings ordered by created_at DESC', () => {
         const recordings = [mockRecording];
         const mockAll = jest.fn().mockReturnValue(recordings);
-        mockDatabase.prepare.mockReturnValue({
+        mockDbInstance.prepare.mockReturnValue({
           get: jest.fn(),
           run: jest.fn(),
           all: mockAll,
@@ -437,7 +440,7 @@ describe('DatabaseService', () => {
 
       it('should handle database errors during retrieval', () => {
         const dbError = new Error('Retrieval failed');
-        mockDatabase.prepare.mockImplementation(() => {
+        mockDbInstance.prepare.mockImplementation(() => {
           throw dbError;
         });
 
@@ -446,7 +449,7 @@ describe('DatabaseService', () => {
 
       it('should return empty array when no recordings exist', () => {
         const mockAll = jest.fn().mockReturnValue([]);
-        mockDatabase.prepare.mockReturnValue({
+        mockDbInstance.prepare.mockReturnValue({
           get: jest.fn(),
           run: jest.fn(),
           all: mockAll,
@@ -461,7 +464,7 @@ describe('DatabaseService', () => {
     describe('updateRecording', () => {
       it('should update specified fields with current timestamp', () => {
         const mockRun = jest.fn();
-        mockDatabase.prepare.mockReturnValue({
+        mockDbInstance.prepare.mockReturnValue({
           get: jest.fn(),
           run: mockRun,
           all: jest.fn(),
@@ -487,7 +490,7 @@ describe('DatabaseService', () => {
 
       it('should handle database errors during update', () => {
         const dbError = new Error('Update failed');
-        mockDatabase.prepare.mockImplementation(() => {
+        mockDbInstance.prepare.mockImplementation(() => {
           throw dbError;
         });
 
@@ -500,7 +503,7 @@ describe('DatabaseService', () => {
 
       it('should handle partial updates', () => {
         const mockRun = jest.fn();
-        mockDatabase.prepare.mockReturnValue({
+        mockDbInstance.prepare.mockReturnValue({
           get: jest.fn(),
           run: mockRun,
           all: jest.fn(),
@@ -521,7 +524,7 @@ describe('DatabaseService', () => {
     describe('deleteRecording', () => {
       it('should delete recording and log success', () => {
         const mockRun = jest.fn();
-        mockDatabase.prepare.mockReturnValue({
+        mockDbInstance.prepare.mockReturnValue({
           get: jest.fn(),
           run: mockRun,
           all: jest.fn(),
@@ -534,7 +537,7 @@ describe('DatabaseService', () => {
 
       it('should handle database errors during deletion', () => {
         const dbError = new Error('Deletion failed');
-        mockDatabase.prepare.mockImplementation(() => {
+        mockDbInstance.prepare.mockImplementation(() => {
           throw dbError;
         });
 
@@ -560,7 +563,7 @@ describe('DatabaseService', () => {
       it('should search using FTS5 MATCH query', () => {
         const recordings = [mockRecording];
         const mockAll = jest.fn().mockReturnValue(recordings);
-        mockDatabase.prepare.mockReturnValue({
+        mockDbInstance.prepare.mockReturnValue({
           get: jest.fn(),
           run: jest.fn(),
           all: mockAll,
@@ -574,7 +577,7 @@ describe('DatabaseService', () => {
 
       it('should handle database errors during search', () => {
         const dbError = new Error('Search failed');
-        mockDatabase.prepare.mockImplementation(() => {
+        mockDbInstance.prepare.mockImplementation(() => {
           throw dbError;
         });
 
@@ -584,7 +587,7 @@ describe('DatabaseService', () => {
       it('should handle special characters in search query', () => {
         const recordings = [mockRecording];
         const mockAll = jest.fn().mockReturnValue(recordings);
-        mockDatabase.prepare.mockReturnValue({
+        mockDbInstance.prepare.mockReturnValue({
           get: jest.fn(),
           run: jest.fn(),
           all: mockAll,
@@ -613,12 +616,12 @@ describe('DatabaseService', () => {
     it('should close database connection and log', () => {
       databaseService.close();
 
-      expect(mockDatabase.close).toHaveBeenCalled();
+      expect(mockDbInstance.close).toHaveBeenCalled();
     });
 
     it('should handle close errors gracefully', () => {
       const closeError = new Error('Close failed');
-      mockDatabase.close.mockImplementation(() => {
+      mockDbInstance.close.mockImplementation(() => {
         throw closeError;
       });
 
@@ -629,22 +632,22 @@ describe('DatabaseService', () => {
   describe('transaction handling', () => {
     it('should use transactions for complex operations', () => {
       const mockTransaction = jest.fn((fn) => fn());
-      mockDatabase.transaction = mockTransaction;
+      mockDbInstance.transaction = mockTransaction;
 
       // Trigger a transaction (this would be in a real method that uses transactions)
       const transactionFn = jest.fn();
-      mockDatabase.transaction(transactionFn);
+      mockDbInstance.transaction(transactionFn);
 
       expect(mockTransaction).toHaveBeenCalledWith(transactionFn);
     });
 
     it('should handle transaction errors', () => {
       const transactionError = new Error('Transaction failed');
-      mockDatabase.transaction.mockImplementation(() => {
+      mockDbInstance.transaction.mockImplementation(() => {
         throw transactionError;
       });
 
-      expect(() => mockDatabase.transaction(() => {})).toThrow(
+      expect(() => mockDbInstance.transaction(() => {})).toThrow(
         transactionError
       );
     });

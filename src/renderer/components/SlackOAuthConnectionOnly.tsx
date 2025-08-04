@@ -58,10 +58,10 @@ export const SlackOAuthConnectionOnly: React.FC<
 
   if (!currentInstallation) {
     return (
-      <div className="slack-oauth-section">
+      <div className="text-sm">
         <button
           type="button"
-          className="btn-primary oauth-button"
+          className="btn-primary px-2.5 py-1 text-sm"
           onClick={() => {
             void handleConnect();
           }}
@@ -69,37 +69,23 @@ export const SlackOAuthConnectionOnly: React.FC<
         >
           {isConnecting ? 'Connecting...' : 'Connect to Slack'}
         </button>
-        {error && (
-          <div
-            className="error-message"
-            style={{ color: '#ff4444', fontSize: '12px', marginTop: '8px' }}
-          >
-            {error}
-          </div>
-        )}
+        {error && <div className="text-danger text-xs mt-1">{error}</div>}
       </div>
     );
   }
 
   return (
-    <div className="slack-oauth-section">
+    <div className="text-sm">
       <button
         type="button"
-        className="btn-primary oauth-button btn-danger"
+        className="btn-danger px-2 py-0.75 text-xs"
         onClick={() => {
           void handleDisconnect();
         }}
       >
         Disconnect from Slack
       </button>
-      {error && (
-        <div
-          className="error-message"
-          style={{ color: '#ff4444', fontSize: '12px', marginTop: '8px' }}
-        >
-          {error}
-        </div>
-      )}
+      {error && <div className="text-danger text-xs mt-1">{error}</div>}
     </div>
   );
 };

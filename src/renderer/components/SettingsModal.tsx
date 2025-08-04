@@ -93,7 +93,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ onClose }) => {
   const footer = (
     <>
       <button
-        className={`btn-secondary ${isDisabled ? 'disabled' : ''}`}
+        className={`btn-secondary ${isDisabled ? 'opacity-50 cursor-not-allowed' : ''}`}
         data-testid="cancel-settings-btn"
         onClick={handleCancel}
         disabled={isDisabled}
@@ -101,7 +101,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ onClose }) => {
         Cancel
       </button>
       <button
-        className={`btn-primary ${isDisabled ? 'disabled' : ''}`}
+        className={`btn-primary ${isDisabled ? 'opacity-50 cursor-not-allowed' : ''}`}
         data-testid="save-settings-btn"
         onClick={() => {
           void handleSave();
@@ -156,7 +156,12 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ onClose }) => {
       closeDisabled={isAssemblyAIKeyMissing}
     >
       <div className="form-group">
-        <label htmlFor="assemblyaiKey">AssemblyAI API Key (required):</label>
+        <label
+          htmlFor="assemblyaiKey"
+          className="block mb-1 text-sm font-medium text-text-primary"
+        >
+          AssemblyAI API Key (required):
+        </label>
         <input
           type="password"
           id="assemblyaiKey"
@@ -166,14 +171,16 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ onClose }) => {
             handleInputChange('assemblyaiKey', e.target.value);
           }}
           placeholder="Enter your AssemblyAI API key"
-          className={isAssemblyAIKeyMissing ? 'error' : ''}
+          className={`form-input ${isAssemblyAIKeyMissing ? 'border-danger' : ''}`}
         />
       </div>
 
       {!settings.slackInstallation && (
         <div className="form-group">
-          <label>Slack Credentials (optional):</label>
-          <div style={{ display: 'flex', gap: '8px' }}>
+          <label className="block mb-1 text-sm font-medium text-text-primary">
+            Slack Credentials (optional):
+          </label>
+          <div className="flex gap-2">
             <input
               type="text"
               id="slackClientId"
@@ -183,7 +190,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ onClose }) => {
                 setSlackClientId(e.target.value);
               }}
               placeholder="Client ID"
-              style={{ flex: 1 }}
+              className="form-input flex-1"
             />
             <input
               type="password"
@@ -194,7 +201,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ onClose }) => {
                 setSlackClientSecret(e.target.value);
               }}
               placeholder="Client Secret"
-              style={{ flex: 1 }}
+              className="form-input flex-1"
             />
           </div>
         </div>
@@ -203,7 +210,9 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ onClose }) => {
       {(Boolean(settings.slackInstallation) ||
         (slackClientId.trim() && slackClientSecret.trim())) && (
         <div className="form-group">
-          <label>Slack Connection:</label>
+          <label className="block mb-1 text-sm font-medium text-text-primary">
+            Slack Connection:
+          </label>
           <SlackOAuthConnectionOnly
             clientId={slackClientId}
             clientSecret={slackClientSecret}
