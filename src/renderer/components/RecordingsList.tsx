@@ -65,7 +65,7 @@ export const RecordingsList: React.FC<RecordingsListProps> = ({
         dispatch(navigateToNewRecording(recordingId));
       }
     } catch (error) {
-      console.error('Error creating new recording:', error);
+      window.logger.error('Error creating new recording:', error);
     }
   };
 
@@ -84,7 +84,7 @@ export const RecordingsList: React.FC<RecordingsListProps> = ({
       await deleteRecording(deleteModal.recordingId).unwrap();
       // RTK Query will automatically refetch the data
     } catch (error) {
-      console.error('Error deleting recording:', error);
+      window.logger.error('Error deleting recording:', error);
     } finally {
       setDeleteModal({ isOpen: false, recordingId: null });
     }

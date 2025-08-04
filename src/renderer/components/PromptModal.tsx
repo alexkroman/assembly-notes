@@ -45,7 +45,7 @@ export const PromptModal: React.FC<PromptModalProps> = ({ onClose }) => {
       window.dispatchEvent(new CustomEvent('prompts-updated'));
       onClose();
     } catch (error) {
-      console.error('Error saving prompts:', error);
+      window.logger.error('Error saving prompts:', error);
       dispatch(setStatus('Error saving prompts'));
     }
   };

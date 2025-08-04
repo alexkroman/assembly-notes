@@ -61,7 +61,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ onClose }) => {
       dispatch(setStatus('Settings saved successfully'));
       onClose();
     } catch (error) {
-      console.error('Error saving settings:', error);
+      window.logger.error('Error saving settings:', error);
       dispatch(setStatus('Error saving settings'));
     }
   };

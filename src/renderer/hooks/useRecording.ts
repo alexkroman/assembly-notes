@@ -93,7 +93,7 @@ export const useRecording = (recordingId: string | null) => {
     const handleSummary = (data: { text: string; recordingId?: string }) => {
       // Only apply summary if it's for the current recording
       if (data.recordingId && data.recordingId !== recordingId) {
-        console.warn(
+        window.logger.warn(
           `Ignoring summary for different recording: ${data.recordingId} !== ${recordingId ?? 'undefined'}`
         );
         return;
@@ -142,7 +142,7 @@ export const useRecording = (recordingId: string | null) => {
         await window.electronAPI.stopRecording();
       }
     } catch (error) {
-      console.error('Error toggling recording:', error);
+      window.logger.error('Error toggling recording:', error);
       dispatch(setStatus('Error toggling recording'));
       setIsStopping(false);
       setIsStarting(false);
@@ -154,7 +154,7 @@ export const useRecording = (recordingId: string | null) => {
       // Don't set isSummarizing here - let the event handlers manage it
       await window.electronAPI.summarizeTranscript();
     } catch (error) {
-      console.error('Error generating summary:', error);
+      window.logger.error('Error generating summary:', error);
       dispatch(setStatus('Error generating summary'));
       setIsSummarizing(false);
     }
@@ -180,7 +180,7 @@ export const useRecording = (recordingId: string | null) => {
         dispatch(setStatus(`Slack error: ${result.error ?? 'Unknown error'}`));
       }
     } catch (error) {
-      console.error('Error posting to Slack:', error);
+      window.logger.error('Error posting to Slack:', error);
       dispatch(setStatus('Error posting to Slack'));
     } finally {
       setIsPostingToSlack(false);

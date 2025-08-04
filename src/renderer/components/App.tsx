@@ -60,7 +60,10 @@ export const App: React.FC = () => {
         dispatch(setStatus('Stopping and going back to recordings'));
         await window.electronAPI.stopRecording();
       } catch (error) {
-        console.error('Error stopping recording before navigation:', error);
+        window.logger.error(
+          'Error stopping recording before navigation:',
+          error
+        );
         setIsStoppingForNavigation(false);
         dispatch(navigateToList());
         dispatch(setStatus(''));
