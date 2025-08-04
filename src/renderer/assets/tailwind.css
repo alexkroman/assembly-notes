@@ -40,7 +40,7 @@
   }
 
   .btn-primary {
-    @apply px-3 py-1.5 bg-[#28a745]/20 border border-[#28a745]/50 text-[#28a745] rounded-sm cursor-pointer font-medium transition-all duration-200;
+    @apply px-2.5 py-1 bg-[#28a745]/20 border border-[#28a745]/50 text-[#28a745] rounded-sm cursor-pointer text-xs font-medium transition-all duration-200 min-w-[80px] text-center;
   }
 
   .btn-primary:hover {
@@ -48,7 +48,7 @@
   }
 
   .btn-danger {
-    @apply px-3 py-1.5 bg-[#dc3545]/20 border border-[#dc3545]/50 text-[#dc3545] rounded-sm cursor-pointer font-medium transition-all duration-200;
+    @apply px-2.5 py-1 bg-[#dc3545]/20 border border-[#dc3545]/50 text-[#dc3545] rounded-sm cursor-pointer text-xs font-medium transition-all duration-200 min-w-[80px] text-center;
   }
 
   .btn-danger:hover {
@@ -56,7 +56,7 @@
   }
 
   .btn-secondary {
-    @apply px-4 py-2 bg-white/[0.09] border border-white/[0.18] text-white/[0.85] rounded-sm cursor-pointer font-medium transition-all duration-200;
+    @apply px-2.5 py-1 bg-white/[0.09] border border-white/[0.18] text-white/[0.85] rounded-sm cursor-pointer text-xs font-medium transition-all duration-200 min-w-[80px] text-center;
   }
 
   .btn-secondary:hover {
@@ -69,11 +69,11 @@
   }
 
   .modal-content {
-    @apply bg-[#1a1a1a] border border-white/[0.18] rounded-lg w-[400px] max-w-[90%] max-h-[80vh] flex flex-col overflow-hidden shadow-[0_4px_16px_rgba(0,0,0,0.4)];
+    @apply bg-[#1a1a1a] border border-white/[0.18] rounded-lg w-[400px] max-w-[90%] max-h-[85vh] flex flex-col overflow-hidden shadow-[0_4px_16px_rgba(0,0,0,0.4)];
   }
 
   .modal-content.large {
-    @apply w-[600px] h-[500px] max-w-[95%] max-h-[90vh];
+    @apply w-[550px] h-[450px] max-w-[95%] max-h-[90vh];
   }
 
   /* Panel components */
@@ -82,11 +82,11 @@
   }
 
   .panel-header {
-    @apply m-0 px-2 py-1 text-sm font-semibold text-white bg-white/[0.09] border-b border-white/[0.18] tracking-wide;
+    @apply m-0 px-2 py-1 text-xs font-semibold text-white bg-white/[0.09] border-b border-white/[0.18] tracking-wide;
   }
 
   .panel-content {
-    @apply flex-1 p-2 m-0 border-none bg-transparent text-white font-mono text-xs leading-snug resize-none whitespace-pre-wrap break-words overflow-y-auto;
+    @apply flex-1 p-2 m-0 border-none bg-transparent text-white font-mono text-[11px] leading-snug resize-none whitespace-pre-wrap break-words overflow-y-auto;
   }
 
   .panel-content:focus {
@@ -104,15 +104,15 @@
 
   /* Form components */
   .form-group {
-    @apply mb-3.5 bg-transparent;
+    @apply mb-2.5 bg-transparent;
   }
 
   .form-group label {
-    @apply block mb-1 text-base font-medium text-white/[0.85];
+    @apply block mb-0.5 text-xs font-medium text-white/[0.85];
   }
 
   .form-input {
-    @apply w-full p-2 bg-transparent border border-white/[0.12] rounded-sm text-white text-base outline-none transition-all duration-200 box-border;
+    @apply w-full p-1.5 bg-transparent border border-white/[0.12] rounded-sm text-white text-xs outline-none transition-all duration-200 box-border;
   }
 
   .form-input:focus {

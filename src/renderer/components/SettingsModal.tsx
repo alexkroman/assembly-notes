@@ -93,7 +93,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ onClose }) => {
   const footer = (
     <>
       <button
-        className={`px-4 py-2 bg-white/[0.09] border border-white/[0.18] text-white/[0.85] rounded-sm cursor-pointer font-medium transition-all duration-200 hover:bg-white/[0.12] hover:text-white ${isDisabled ? 'opacity-50 cursor-not-allowed' : ''}`}
+        className={`btn-secondary ${isDisabled ? 'opacity-50 cursor-not-allowed' : ''}`}
         data-testid="cancel-settings-btn"
         onClick={handleCancel}
         disabled={isDisabled}
@@ -101,7 +101,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ onClose }) => {
         Cancel
       </button>
       <button
-        className={`px-3 py-1.5 bg-[#28a745]/20 border border-[#28a745]/50 text-[#28a745] rounded-sm cursor-pointer font-medium transition-all duration-200 hover:bg-[#28a745]/30 ${isDisabled ? 'opacity-50 cursor-not-allowed' : ''}`}
+        className={`btn-primary ${isDisabled ? 'opacity-50 cursor-not-allowed' : ''}`}
         data-testid="save-settings-btn"
         onClick={() => {
           void handleSave();
@@ -158,7 +158,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ onClose }) => {
       <div className="form-group">
         <label
           htmlFor="assemblyaiKey"
-          className="block mb-1 text-sm font-medium text-white/[0.85]"
+          className="block mb-0.5 text-xs font-medium text-white/[0.85]"
         >
           AssemblyAI API Key (required):
         </label>
@@ -171,16 +171,16 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ onClose }) => {
             handleInputChange('assemblyaiKey', e.target.value);
           }}
           placeholder="Enter your AssemblyAI API key"
-          className={`w-full p-2 bg-transparent border border-white/[0.12] rounded-sm text-white text-base outline-none transition-all duration-200 box-border focus:border-white/[0.45] focus:bg-transparent ${isAssemblyAIKeyMissing ? 'border-[#dc3545]' : ''}`}
+          className={`form-input ${isAssemblyAIKeyMissing ? 'border-[#dc3545]' : ''}`}
         />
       </div>
 
       {!settings.slackInstallation && (
         <div className="form-group">
-          <label className="block mb-1 text-sm font-medium text-text-primary">
+          <label className="block mb-0.5 text-xs font-medium text-white/[0.85]">
             Slack Credentials (optional):
           </label>
-          <div className="flex gap-2">
+          <div className="flex gap-1.5">
             <input
               type="text"
               id="slackClientId"
@@ -190,7 +190,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ onClose }) => {
                 setSlackClientId(e.target.value);
               }}
               placeholder="Client ID"
-              className="w-full p-2 bg-transparent border border-white/[0.12] rounded-sm text-white text-base outline-none transition-all duration-200 box-border focus:border-white/[0.45] focus:bg-transparent flex-1"
+              className="form-input flex-1"
             />
             <input
               type="password"
@@ -201,7 +201,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ onClose }) => {
                 setSlackClientSecret(e.target.value);
               }}
               placeholder="Client Secret"
-              className="w-full p-2 bg-transparent border border-white/[0.12] rounded-sm text-white text-base outline-none transition-all duration-200 box-border focus:border-white/[0.45] focus:bg-transparent flex-1"
+              className="form-input flex-1"
             />
           </div>
         </div>
@@ -210,7 +210,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ onClose }) => {
       {(Boolean(settings.slackInstallation) ||
         (slackClientId.trim() && slackClientSecret.trim())) && (
         <div className="form-group">
-          <label className="block mb-1 text-sm font-medium text-text-primary">
+          <label className="block mb-0.5 text-xs font-medium text-white/[0.85]">
             Slack Connection:
           </label>
           <SlackOAuthConnectionOnly

@@ -103,18 +103,18 @@ export const RecordingsList: React.FC<RecordingsListProps> = ({
   return (
     <div
       id="recordingsListPage"
-      className="page active"
+      className="page active overflow-y-auto"
       data-testid="recordings-list"
     >
       <div className="px-1.5 py-1 bg-[#1a1a1a] sticky top-0 z-[100]">
         <div className="flex items-center gap-1.5 h-8">
-          <h1 className="m-0 text-base font-semibold text-white tracking-wide">
+          <h1 className="m-0 text-sm font-semibold text-white tracking-wide">
             Assembly Notes
           </h1>
           <div className="flex-1 max-w-[300px] mx-3">
             <input
               type="text"
-              className="w-full px-2 py-1 text-sm bg-white/[0.09] border border-white/[0.18] rounded-sm text-white h-8 box-border transition-all duration-200 placeholder:text-white/[0.35] focus:outline-none focus:border-white/[0.45] focus:bg-white/[0.12]"
+              className="w-full px-2 py-1 text-xs bg-white/[0.09] border border-white/[0.18] rounded-sm text-white h-8 box-border transition-all duration-200 placeholder:text-white/[0.35] focus:outline-none focus:border-white/[0.45] focus:bg-white/[0.12]"
               data-testid="search-input"
               placeholder="Search recordings..."
               value={searchQuery}
@@ -126,7 +126,7 @@ export const RecordingsList: React.FC<RecordingsListProps> = ({
           <div className="flex gap-1.5 ml-auto">
             <button
               type="button"
-              className={`px-3 h-8 rounded-sm bg-white/[0.12] border border-white/[0.24] text-white text-sm font-semibold cursor-pointer transition-all duration-200 flex items-center justify-center whitespace-nowrap flex-shrink-0 hover:bg-white/[0.05] ${isAssemblyAIKeyMissing || isRecordingActive ? 'opacity-50 cursor-not-allowed' : ''}`}
+              className={`px-3 h-8 rounded-sm bg-white/[0.12] border border-white/[0.24] text-white text-xs font-semibold cursor-pointer transition-all duration-200 flex items-center justify-center whitespace-nowrap flex-shrink-0 hover:bg-white/[0.05] ${isAssemblyAIKeyMissing || isRecordingActive ? 'opacity-50 cursor-not-allowed' : ''}`}
               data-testid="new-recording-btn"
               onClick={() => {
                 if (!isAssemblyAIKeyMissing && !isRecordingActive) {
@@ -144,7 +144,7 @@ export const RecordingsList: React.FC<RecordingsListProps> = ({
             </button>
             <button
               type="button"
-              className={`px-2 h-8 rounded-sm bg-white/[0.12] border border-white/[0.24] text-white text-base cursor-pointer transition-all duration-200 flex items-center justify-center whitespace-nowrap flex-shrink-0 min-w-[32px] hover:bg-white/[0.05] ${isRecordingActive ? 'opacity-50 cursor-not-allowed' : ''}`}
+              className={`px-2 h-8 rounded-sm bg-white/[0.12] border border-white/[0.24] text-white text-sm cursor-pointer transition-all duration-200 flex items-center justify-center whitespace-nowrap flex-shrink-0 min-w-[32px] hover:bg-white/[0.05] ${isRecordingActive ? 'opacity-50 cursor-not-allowed' : ''}`}
               data-testid="settings-button"
               onClick={() => {
                 if (!isRecordingActive) {
@@ -164,16 +164,18 @@ export const RecordingsList: React.FC<RecordingsListProps> = ({
         </div>
       </div>
 
-      <div className="flex-1 overflow-y-auto p-0">
+      <div className="flex-1">
         {error ? (
-          <div className="flex items-center justify-center h-[60vh]">
+          <div className="flex items-center justify-center py-20">
             <div className="text-center">
-              <h2 className="text-xl font-medium text-white mb-2">
+              <h2 className="text-lg font-medium text-white mb-2">
                 Error loading recordings
               </h2>
-              <p className="text-white/[0.70] mb-4">Please try again later</p>
+              <p className="text-sm text-white/[0.70] mb-4">
+                Please try again later
+              </p>
               <button
-                className="px-4 py-2 bg-white/[0.09] border border-white/[0.18] text-white/[0.85] rounded-sm cursor-pointer font-medium transition-all duration-200 hover:bg-white/[0.12] hover:text-white"
+                className="px-4 py-2 bg-white/[0.09] border border-white/[0.18] text-white/[0.85] rounded-sm cursor-pointer text-sm font-medium transition-all duration-200 hover:bg-white/[0.12] hover:text-white"
                 onClick={() => {
                   if (!shouldSearch) void refetchAll();
                 }}
@@ -183,31 +185,33 @@ export const RecordingsList: React.FC<RecordingsListProps> = ({
             </div>
           </div>
         ) : loading ? (
-          <div className="py-10 text-center text-white/[0.60]">
+          <div className="py-10 text-center text-sm text-white/[0.60]">
             Loading recordings...
           </div>
         ) : recordings.length === 0 ? (
-          <div className="flex flex-col items-center justify-center h-[60vh] text-white/[0.70] text-center gap-2">
+          <div className="flex flex-col items-center justify-center py-20 text-white/[0.70] text-center gap-2">
             <div>
               {searchQuery ? (
                 <>
-                  <h2 className="m-0 text-xl font-medium">
+                  <h2 className="m-0 text-lg font-medium">
                     No recordings found
                   </h2>
-                  <p className="m-0">
+                  <p className="m-0 text-sm">
                     No recordings match your search for "{searchQuery}"
                   </p>
                 </>
               ) : (
                 <>
-                  <h2 className="m-0 text-xl font-medium">No recordings yet</h2>
-                  <p className="m-0">Click "New Recording" to get started</p>
+                  <h2 className="m-0 text-lg font-medium">No recordings yet</h2>
+                  <p className="m-0 text-sm">
+                    Click "New Recording" to get started
+                  </p>
                 </>
               )}
             </div>
           </div>
         ) : (
-          <div className="flex flex-col gap-2 p-3">
+          <div className="flex flex-col gap-2 p-3 pb-4">
             {recordings.map((recording) => (
               <div
                 key={recording.id}
@@ -218,11 +222,11 @@ export const RecordingsList: React.FC<RecordingsListProps> = ({
                 }}
               >
                 <div className="flex justify-between items-center group/item">
-                  <h3 className="m-0 text-base font-medium text-white flex-1">
+                  <h3 className="m-0 text-sm font-medium text-white flex-1">
                     {recording.title ?? 'Untitled Recording'}
                   </h3>
                   <div className="flex items-center ml-auto">
-                    <span className="text-sm text-white/[0.60] transition-opacity duration-200 group-hover/item:opacity-0">
+                    <span className="text-xs text-white/[0.60] transition-opacity duration-200 group-hover/item:opacity-0">
                       {formatDate(recording.created_at)}
                     </span>
                     <button

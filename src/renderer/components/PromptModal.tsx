@@ -79,6 +79,17 @@ export const PromptModal: React.FC<PromptModalProps> = ({ onClose }) => {
     }
   };
 
+  // Check if prompt is modified from default
+  const isPromptModified = (index: number) => {
+    const defaultPrompt = DEFAULT_PROMPTS[index];
+    const currentPrompt = prompts[index];
+    if (!defaultPrompt || !currentPrompt) return false;
+    return (
+      currentPrompt.name !== defaultPrompt.name ||
+      currentPrompt.content !== defaultPrompt.content
+    );
+  };
+
   const footer = (
     <>
       <button className="btn-secondary" onClick={onClose} disabled={isSaving}>
@@ -91,7 +102,7 @@ export const PromptModal: React.FC<PromptModalProps> = ({ onClose }) => {
         }}
         disabled={isSaving}
       >
-        {isSaving ? 'Saving...' : 'Save Changes'}
+        {isSaving ? 'Saving...' : 'Save'}
       </button>
     </>
   );
@@ -118,31 +129,34 @@ export const PromptModal: React.FC<PromptModalProps> = ({ onClose }) => {
       size="large"
       testId="prompt-modal"
     >
-      <div className="flex flex-col gap-1 h-full">
-        <div className="flex gap-0.25 mb-1">
+      <div className="flex flex-col gap-0.5 h-full">
+        <div className="flex gap-0.25 mb-0.5">
           {prompts.map((prompt, index) => (
             <button
               key={index}
-              className={`px-1.5 py-0.5 text-xs font-medium bg-white/[0.06] border border-white/[0.12] rounded-sm text-white/[0.70] cursor-pointer transition-all duration-150 ease-in-out min-w-[24px] text-center hover:bg-white/[0.09] hover:text-white/[0.85] ${index === selectedIndex ? 'bg-[#28a745]/20 border-[#28a745]/50 text-white' : ''}`}
+              className={`px-1.25 py-0.25 text-xs font-medium rounded-sm cursor-pointer transition-all duration-150 ease-in-out min-w-[22px] text-center ${index === selectedIndex ? 'bg-[#28a745]/20 border-[#28a745]/50 text-white hover:bg-[#28a745]/30' : 'bg-white/[0.06] border border-white/[0.12] text-white/[0.70] hover:bg-white/[0.09] hover:text-white/[0.85]'}`}
               onClick={() => {
                 setSelectedIndex(index);
               }}
               title={prompt.name}
             >
               {index + 1}
+              {isPromptModified(index) && (
+                <span className="text-[8px] ml-0.5">•</span>
+              )}
             </button>
           ))}
         </div>
 
         {prompts[selectedIndex] && (
-          <div className="flex flex-col gap-1 flex-1">
-            <div className="grid grid-cols-[50px_1fr] gap-1.5 items-start">
-              <span className="text-xs font-medium text-white/[0.85] pt-0.75">
+          <div className="flex flex-col gap-1.5 flex-1">
+            <div className="flex flex-col gap-0.5">
+              <span className="text-xs font-medium text-white/[0.85]">
                 Name:
               </span>
               <input
                 type="text"
-                className="bg-white/[0.05] border border-white/[0.18] rounded-sm px-1.25 py-0.75 text-xs text-white focus:outline-none focus:border-[#28a745]/50 focus:bg-white/[0.12]"
+                className="bg-white/[0.05] border border-white/[0.18] rounded-sm px-1.25 py-0.5 text-xs text-white focus:outline-none focus:border-[#28a745]/50 focus:bg-white/[0.12]"
                 value={prompts[selectedIndex].name}
                 onChange={(e) => {
                   handleUpdatePrompt(selectedIndex, 'name', e.target.value);
@@ -151,13 +165,13 @@ export const PromptModal: React.FC<PromptModalProps> = ({ onClose }) => {
               />
             </div>
 
-            <div className="grid grid-cols-[50px_1fr] gap-1.5 items-start">
-              <span className="text-xs font-medium text-white/[0.85] pt-0.75">
+            <div className="flex flex-col gap-0.5 flex-1">
+              <span className="text-xs font-medium text-white/[0.85]">
                 Content:
               </span>
-              <div className="flex flex-col">
+              <div className="flex flex-col flex-1">
                 <textarea
-                  className="bg-white/[0.05] border border-white/[0.18] rounded-sm p-1 text-xs text-white resize-none min-h-[80px] font-mono leading-tight focus:outline-none focus:border-[#28a745]/50 focus:bg-white/[0.12]"
+                  className="bg-white/[0.05] border border-white/[0.18] rounded-sm p-1 text-xs text-white resize-none min-h-[35px] font-mono leading-tight focus:outline-none focus:border-[#28a745]/50 focus:bg-white/[0.12] flex-1"
                   value={prompts[selectedIndex].content}
                   onChange={(e) => {
                     handleUpdatePrompt(
@@ -167,22 +181,28 @@ export const PromptModal: React.FC<PromptModalProps> = ({ onClose }) => {
                     );
                   }}
                   placeholder="Enter prompt content..."
-                  rows={9}
+                  rows={3}
                   style={{ width: '100%' }}
                 />
-                <div className="mt-1">
-                  <a
-                    href="#"
-                    className="text-xs text-white/[0.60] no-underline inline-block hover:text-white/[0.70] hover:underline"
-                    onClick={(e) => {
-                      e.preventDefault();
-                      handleRevertToDefault();
-                    }}
-                    title="Revert to the default name and prompt for this slot"
-                  >
-                    Revert to default
-                  </a>
-                </div>
+                {DEFAULT_PROMPTS[selectedIndex] &&
+                  (prompts[selectedIndex].name !==
+                    DEFAULT_PROMPTS[selectedIndex].name ||
+                    prompts[selectedIndex].content !==
+                      DEFAULT_PROMPTS[selectedIndex].content) && (
+                    <div className="mt-1 flex items-center gap-1">
+                      <button
+                        className="px-2 py-0.5 text-[10px] bg-white/[0.06] border border-white/[0.12] rounded-sm text-white/[0.60] cursor-pointer transition-all duration-200 hover:bg-white/[0.09] hover:text-white/[0.85] hover:border-white/[0.18] flex items-center gap-1"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          handleRevertToDefault();
+                        }}
+                        title="Reset this prompt to its default name and content"
+                      >
+                        <span className="text-xs">↺</span>
+                        Reset to default
+                      </button>
+                    </div>
+                  )}
               </div>
             </div>
           </div>

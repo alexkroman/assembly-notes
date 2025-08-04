@@ -64,7 +64,7 @@ export const ChannelModal: React.FC<ChannelModalProps> = ({ onClose }) => {
           </button>
         }
       >
-        <div className="no-connection-message">
+        <div className="text-sm text-white/[0.70]">
           <p>
             No Slack workspace connected. Please connect to Slack in Settings
             first.
@@ -98,14 +98,10 @@ export const ChannelModal: React.FC<ChannelModalProps> = ({ onClose }) => {
       size="large"
       testId="channel-modal"
     >
-      <div className="form-group" style={{ marginBottom: '12px' }}>
+      <div className="form-group">
         <label
           htmlFor="slack-channels-textarea"
-          style={{
-            fontSize: '14px',
-            display: 'block',
-            marginBottom: '8px',
-          }}
+          className="block mb-1 text-sm font-medium text-white/[0.85]"
         >
           Favorite Channels (comma-separated):
         </label>
@@ -116,26 +112,10 @@ export const ChannelModal: React.FC<ChannelModalProps> = ({ onClose }) => {
             handleChannelListChange(e.target.value);
           }}
           placeholder="general, random, team-updates"
-          rows={4}
-          style={{
-            width: '100%',
-            padding: '8px',
-            fontSize: '14px',
-            border: '1px solid rgba(255, 255, 255, 0.18)',
-            borderRadius: '4px',
-            resize: 'vertical',
-            fontFamily: 'inherit',
-            backgroundColor: 'rgba(255, 255, 255, 0.05)',
-            color: '#ffffff',
-          }}
+          rows={3}
+          className="form-input resize-vertical"
         />
-        <div
-          style={{
-            fontSize: '12px',
-            color: 'rgba(255, 255, 255, 0.6)',
-            marginTop: '4px',
-          }}
-        >
+        <div className="text-xs text-white/[0.60] mt-1">
           Enter channel names without # symbol. Bot must be invited to private
           channels.
         </div>

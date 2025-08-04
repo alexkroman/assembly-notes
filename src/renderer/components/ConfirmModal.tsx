@@ -52,10 +52,10 @@ export const ConfirmModal: React.FC<ConfirmModalProps> = ({
       }}
     >
       <div className="modal-content">
-        <div className="flex items-center justify-between px-3 py-2 border-b border-white/[0.12] bg-transparent">
-          <h2 className="m-0 text-base font-semibold text-white">{title}</h2>
+        <div className="flex items-center justify-between px-2 py-1.5 border-b border-white/[0.12] bg-white/[0.04]">
+          <h2 className="m-0 text-sm font-semibold text-white">{title}</h2>
           <button
-            className="bg-transparent border-none text-white/[0.70] text-xl cursor-pointer p-0 w-6 h-6 flex items-center justify-center rounded-sm transition-all duration-200 hover:bg-white/[0.09] hover:text-white"
+            className="bg-transparent border-none text-white/[0.70] text-lg cursor-pointer p-0 w-5 h-5 flex items-center justify-center rounded-sm transition-all duration-200 hover:bg-white/[0.09] hover:text-white"
             data-testid="close-confirm-modal-btn"
             onClick={onCancel}
           >
@@ -63,13 +63,13 @@ export const ConfirmModal: React.FC<ConfirmModalProps> = ({
           </button>
         </div>
 
-        <div className="px-3 py-2.5 overflow-y-auto flex-1">
-          <p className="m-0 text-base text-white/[0.85]">{message}</p>
+        <div className="px-2 py-2 overflow-y-auto flex-1 bg-black/[0.15]">
+          <p className="m-0 text-sm text-white/[0.85]">{message}</p>
         </div>
 
-        <div className="flex justify-end gap-1.5 px-3 py-2 border-t border-white/[0.12] bg-transparent">
+        <div className="flex justify-end gap-1 px-2 py-1.5 border-t border-white/[0.12] bg-white/[0.03]">
           <button
-            className="px-4 py-2 bg-white/[0.09] border border-white/[0.18] text-white/[0.85] rounded-sm cursor-pointer font-medium transition-all duration-200 hover:bg-white/[0.12] hover:text-white"
+            className="btn-secondary"
             data-testid="cancel-confirm-btn"
             onClick={onCancel}
           >
@@ -77,9 +77,7 @@ export const ConfirmModal: React.FC<ConfirmModalProps> = ({
           </button>
           <button
             className={
-              confirmVariant === 'danger'
-                ? 'px-3 py-1.5 bg-[#dc3545]/20 border border-[#dc3545]/50 text-[#dc3545] rounded-sm cursor-pointer font-medium transition-all duration-200 hover:bg-[#dc3545]/30'
-                : 'px-3 py-1.5 bg-[#28a745]/20 border border-[#28a745]/50 text-[#28a745] rounded-sm cursor-pointer font-medium transition-all duration-200 hover:bg-[#28a745]/30'
+              confirmVariant === 'danger' ? 'btn-danger' : 'btn-primary'
             }
             data-testid="confirm-btn"
             onClick={onConfirm}
