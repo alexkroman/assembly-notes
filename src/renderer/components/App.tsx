@@ -12,6 +12,7 @@ import { PromptModal } from './PromptModal';
 import { RecordingsList } from './RecordingsList';
 import { RecordingView } from './RecordingView';
 import { SettingsModal } from './SettingsModal';
+import { useGetSettingsQuery } from '../store/api/apiSlice.js';
 
 export const App: React.FC = () => {
   const dispatch = useAppDispatch();
@@ -21,23 +22,16 @@ export const App: React.FC = () => {
   const { status } = useAppSelector(
     (state: { recording: { status: string } }) => state.recording
   );
+  const { data: settings } = useGetSettingsQuery(undefined);
   const isRecording = status === 'recording';
   const [isStoppingForNavigation, setIsStoppingForNavigation] = useState(false);
 
   useEffect(() => {
-    const checkInitialSetup = async () => {
-      try {
-        const settings = await window.electronAPI.getSettings();
-        if (!(settings.assemblyaiKey || '').trim()) {
-          dispatch(setActiveModal('settings'));
-        }
-      } catch (error) {
-        console.error('Error checking initial setup:', error);
-      }
-    };
-
-    void checkInitialSetup();
-  }, [dispatch]);
+    // Check if settings are loaded and AssemblyAI key is missing
+    if (settings && !(settings.assemblyaiKey || '').trim()) {
+      dispatch(setActiveModal('settings'));
+    }
+  }, [settings, dispatch]);
 
   useEffect(() => {
     const handleStopAudioCapture = () => {

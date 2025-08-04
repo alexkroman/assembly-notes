@@ -1,15 +1,10 @@
-import { PayloadAction, createAsyncThunk, createSlice } from '@reduxjs/toolkit';
-import { container } from 'tsyringe';
+import { PayloadAction, createSlice } from '@reduxjs/toolkit';
 
 import type {
   FullSettingsState,
-  PromptTemplate,
   SettingsState,
   SlackInstallation,
 } from '../../../types/index.js';
-import { DI_TOKENS } from '../../di-tokens.js';
-import type { SettingsService } from '../../services/settingsService.js';
-import { handleAsyncThunk } from '../helpers/asyncThunkHelpers.js';
 
 // Helper function to safely update computed properties
 const updateComputedProperties = (
@@ -24,48 +19,6 @@ const updateComputedProperties = (
   }
 };
 
-// Async thunks for settings operations
-export const fetchSettings = createAsyncThunk('settings/fetchSettings', () => {
-  const settingsService = container.resolve<SettingsService>(
-    DI_TOKENS.SettingsService
-  );
-
-  return settingsService.getSettings();
-});
-
-export const saveSettings = createAsyncThunk(
-  'settings/saveSettings',
-  (updates: Partial<FullSettingsState>) => {
-    const settingsService = container.resolve<SettingsService>(
-      DI_TOKENS.SettingsService
-    );
-    settingsService.updateSettings(updates);
-    return settingsService.getSettings();
-  }
-);
-
-export const savePrompt = createAsyncThunk(
-  'settings/savePrompt',
-  (promptSettings: { summaryPrompt: string }) => {
-    const settingsService = container.resolve<SettingsService>(
-      DI_TOKENS.SettingsService
-    );
-    settingsService.updateSettings(promptSettings);
-    return settingsService.getSettings();
-  }
-);
-
-export const savePrompts = createAsyncThunk(
-  'settings/savePrompts',
-  (prompts: PromptTemplate[]) => {
-    const settingsService = container.resolve<SettingsService>(
-      DI_TOKENS.SettingsService
-    );
-    settingsService.updateSettings({ prompts });
-    return settingsService.getSettings();
-  }
-);
-
 const initialState: SettingsState = {
   assemblyaiKey: '',
   slackChannels: '',
@@ -76,7 +29,6 @@ const initialState: SettingsState = {
   autoStart: false,
   loading: false,
   error: null,
-  theme: 'dark',
   // Add computed properties for safe trim operations
   hasAssemblyAIKey: false,
   hasSlackConfigured: false,
@@ -117,49 +69,9 @@ const settingsSlice = createSlice({
     setAutoStart: (state, action: PayloadAction<boolean>) => {
       state.autoStart = action.payload;
     },
-    setTheme: (state, action: PayloadAction<'light' | 'dark'>) => {
-      state.theme = action.payload;
-    },
     clearError: (state) => {
       state.error = null;
     },
-  },
-  extraReducers: (builder) => {
-    // Fetch settings
-    handleAsyncThunk(builder, fetchSettings, {
-      onFulfilled: (state, action) => {
-        Object.assign(state, action.payload);
-        updateComputedProperties(
-          state,
-          action.payload as Partial<SettingsState>
-        );
-      },
-      errorMessage: 'Failed to fetch settings',
-    });
-
-    // Save settings
-    handleAsyncThunk(builder, saveSettings, {
-      onFulfilled: (state, action) => {
-        Object.assign(state, action.payload);
-        updateComputedProperties(
-          state,
-          action.payload as Partial<SettingsState>
-        );
-      },
-      errorMessage: 'Failed to save settings',
-    });
-
-    // Save prompt
-    builder.addCase(savePrompt.fulfilled, (state, action) => {
-      Object.assign(state, action.payload);
-      updateComputedProperties(state, action.payload);
-    });
-
-    // Save prompts
-    builder.addCase(savePrompts.fulfilled, (state, action) => {
-      Object.assign(state, action.payload);
-      updateComputedProperties(state, action.payload);
-    });
   },
 });
 
@@ -170,7 +82,6 @@ export const {
   setSlackInstallation,
   setSummaryPrompt,
   setAutoStart,
-  setTheme,
   clearError,
 } = settingsSlice.actions;
 

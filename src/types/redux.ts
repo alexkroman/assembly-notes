@@ -85,7 +85,6 @@ export interface FullSettingsState {
 export interface SettingsState extends FullSettingsState {
   loading: boolean;
   error: string | null;
-  theme: 'light' | 'dark';
   // Computed properties for safe trim operations
   hasAssemblyAIKey: boolean;
   hasSlackConfigured: boolean;

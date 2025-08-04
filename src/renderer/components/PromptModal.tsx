@@ -1,26 +1,26 @@
 import React, { useState, useEffect } from 'react';
 
+import { Modal } from './Modal.js';
 import { DEFAULT_PROMPTS } from '../../constants/defaultPrompts.js';
 import type { PromptModalProps } from '../../types/components.js';
 import type { PromptTemplate } from '../../types/index.js';
 import { useAppDispatch } from '../hooks/redux';
 import { setStatus } from '../store';
-import { Modal } from './Modal.js';
+import {
+  useGetSettingsQuery,
+  useUpdatePromptsMutation,
+} from '../store/api/apiSlice.js';
 
 export const PromptModal: React.FC<PromptModalProps> = ({ onClose }) => {
+  const { data: settings, isLoading, error } = useGetSettingsQuery(undefined);
+  const [updatePrompts, { isLoading: isSaving }] = useUpdatePromptsMutation();
   const [prompts, setPrompts] = useState<PromptTemplate[]>([]);
   const [selectedIndex, setSelectedIndex] = useState(0);
   const dispatch = useAppDispatch();
 
   useEffect(() => {
-    void loadPrompts();
-  }, []);
-
-  const loadPrompts = async () => {
-    try {
-      const settings = await window.electronAPI.getSettings();
-      const loadedPrompts =
-        (settings as { prompts?: PromptTemplate[] }).prompts ?? [];
+    if (settings) {
+      const loadedPrompts = settings.prompts;
 
       // Ensure we always have exactly 5 prompts
       const finalPrompts: PromptTemplate[] = [];
@@ -30,17 +30,17 @@ export const PromptModal: React.FC<PromptModalProps> = ({ onClose }) => {
           finalPrompts.push(prompt);
         }
       }
-
       setPrompts(finalPrompts);
       setSelectedIndex(0);
-    } catch (error) {
-      console.error('Error loading prompts:', error);
+    } else if (error) {
+      // Fallback to default prompts if loading fails
+      setPrompts(DEFAULT_PROMPTS);
     }
-  };
+  }, [settings, error]);
 
   const handleSave = async () => {
     try {
-      await window.electronAPI.savePrompts(prompts);
+      await updatePrompts(prompts).unwrap();
       dispatch(setStatus('Prompts saved successfully'));
       window.dispatchEvent(new CustomEvent('prompts-updated'));
       onClose();
@@ -81,7 +81,7 @@ export const PromptModal: React.FC<PromptModalProps> = ({ onClose }) => {
 
   const footer = (
     <>
-      <button className="btn-secondary" onClick={onClose}>
+      <button className="btn-secondary" onClick={onClose} disabled={isSaving}>
         Cancel
       </button>
       <button
@@ -89,11 +89,26 @@ export const PromptModal: React.FC<PromptModalProps> = ({ onClose }) => {
         onClick={() => {
           void handleSave();
         }}
+        disabled={isSaving}
       >
-        Save Changes
+        {isSaving ? 'Saving...' : 'Save Changes'}
       </button>
     </>
   );
+
+  if (isLoading) {
+    return (
+      <Modal
+        title="Manage Prompts"
+        onClose={onClose}
+        footer={null}
+        size="large"
+        testId="prompt-modal"
+      >
+        <div>Loading prompts...</div>
+      </Modal>
+    );
+  }
 
   return (
     <Modal

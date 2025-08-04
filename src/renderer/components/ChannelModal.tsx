@@ -4,10 +4,12 @@ import type { ChannelModalProps } from '../../types/components.js';
 import { useAppDispatch, useAppSelector } from '../hooks/redux';
 import { setStatus } from '../store';
 import { Modal } from './Modal.js';
+import { useUpdateSettingsMutation } from '../store/api/apiSlice.js';
 
 export const ChannelModal: React.FC<ChannelModalProps> = ({ onClose }) => {
   const settings = useAppSelector((state) => state.settings);
   const dispatch = useAppDispatch();
+  const [updateSettings] = useUpdateSettingsMutation();
   const [localChannelValue, setLocalChannelValue] = useState<string>('');
 
   const currentInstallation = settings.slackInstallation;
@@ -31,9 +33,9 @@ export const ChannelModal: React.FC<ChannelModalProps> = ({ onClose }) => {
 
     try {
       // Save the channels
-      await window.electronAPI.saveSettings({
+      await updateSettings({
         slackChannels: localChannelValue,
-      });
+      }).unwrap();
 
       const channelCount = localChannelValue.trim()
         ? localChannelValue

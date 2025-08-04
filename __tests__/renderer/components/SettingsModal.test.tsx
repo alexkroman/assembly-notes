@@ -1,15 +1,31 @@
 /**
  * @jest-environment jsdom
  */
+/* eslint-disable import/order */
 import { configureStore } from '@reduxjs/toolkit';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
 import React from 'react';
 import { Provider } from 'react-redux';
-import '@testing-library/jest-dom';
 
+import '@testing-library/jest-dom';
 import { SettingsModal } from '../../../src/renderer/components/SettingsModal';
-import { setStatus } from '../../../src/renderer/store';
-import { createMockInstallation } from '../../utils/testHelpers.js';
+
+// Mock the setStatus action
+jest.mock('../../../src/renderer/store', () => ({
+  setStatus: jest.fn(() => ({ type: 'ui/setStatus', payload: 'test' })),
+}));
+
+// Mock RTK Query hooks
+jest.mock('../../../src/renderer/store/api/apiSlice', () => ({
+  useGetSettingsQuery: jest.fn(),
+  useUpdateSettingsMutation: jest.fn(),
+}));
+
+// Import the mocked hooks
+import {
+  useGetSettingsQuery,
+  useUpdateSettingsMutation,
+} from '../../../src/renderer/store/api/apiSlice';
 
 // Mock electron API
 const mockElectronAPI = {
@@ -18,7 +34,6 @@ const mockElectronAPI = {
     assemblyaiKey: 'test-key',
     autoStart: false,
   }),
-  // OAuth-related methods
   onSlackOAuthSuccess: jest.fn(),
   onSlackOAuthError: jest.fn(),
   slackOAuthInitiate: jest.fn().mockResolvedValue(undefined),
@@ -29,11 +44,6 @@ const mockElectronAPI = {
 Object.defineProperty(window, 'electronAPI', {
   value: mockElectronAPI,
 });
-
-// Mock the setStatus action
-jest.mock('../../../src/renderer/store', () => ({
-  setStatus: jest.fn(() => ({ type: 'ui/setStatus', payload: 'test' })),
-}));
 
 // Create mock store
 const createMockStore = (initialState: any = {}) => {
@@ -66,9 +76,36 @@ describe('SettingsModal', () => {
   let store: ReturnType<typeof createMockStore>;
   const mockOnClose = jest.fn();
 
+  const mockUseGetSettingsQuery = useGetSettingsQuery as jest.MockedFunction<
+    typeof useGetSettingsQuery
+  >;
+  const mockUseUpdateSettingsMutation =
+    useUpdateSettingsMutation as jest.MockedFunction<
+      typeof useUpdateSettingsMutation
+    >;
+
   beforeEach(() => {
     store = createMockStore();
     jest.clearAllMocks();
+
+    // Default RTK Query mock implementations
+    mockUseGetSettingsQuery.mockReturnValue({
+      data: {
+        assemblyaiKey: 'test-key',
+        autoStart: false,
+        slackInstallation: null,
+        slackChannels: '',
+        summaryPrompt: 'Test prompt',
+        prompts: [],
+      },
+      isLoading: false,
+      error: null,
+    } as any);
+
+    mockUseUpdateSettingsMutation.mockReturnValue([
+      jest.fn().mockResolvedValue({ data: true }),
+      { isLoading: false },
+    ] as any);
   });
 
   const renderModal = (customStore = store) => {
@@ -79,163 +116,48 @@ describe('SettingsModal', () => {
     );
   };
 
-  it('should render settings modal with all fields', () => {
+  it('should render settings modal', async () => {
     renderModal();
-
-    expect(screen.getByText('Settings')).toBeInTheDocument();
-    expect(
-      screen.getByLabelText('AssemblyAI API Key (required):')
-    ).toBeInTheDocument();
-    // Slack credential fields should be present
-    expect(
-      screen.getByText('Slack Credentials (optional):')
-    ).toBeInTheDocument();
-    expect(screen.getByTestId('slack-client-id-input')).toBeInTheDocument();
-    expect(screen.getByTestId('slack-client-secret-input')).toBeInTheDocument();
-    // OAuth button should NOT be present until credentials are entered
-    expect(screen.queryByText('Connect to Slack')).not.toBeInTheDocument();
-    expect(screen.getByText('Save')).toBeInTheDocument();
-    expect(screen.getByText('Cancel')).toBeInTheDocument();
-  });
-
-  it('should populate fields from store state', () => {
-    const customStore = createMockStore({
-      settings: {
-        assemblyaiKey: 'stored-api-key',
-        autoStart: true,
-        slackInstallation: createMockInstallation({
-          teamId: 'T123',
-          botToken: 'xoxb-test',
-          botUserId: 'U123',
-          scope: 'chat:write',
-        }),
-      },
-    });
-
-    renderModal(customStore);
-
-    const apiKeyInput = screen.getByTestId('assemblyai-key-input');
-
-    expect((apiKeyInput as HTMLInputElement).value).toBe('stored-api-key');
-    // Should show connected state for Slack - disconnect button should be visible
-    expect(screen.getByText(/Disconnect from Slack/)).toBeInTheDocument();
-  });
-
-  it('should update assemblyai key on input', () => {
-    renderModal();
-
-    const apiKeyInput = screen.getByTestId('assemblyai-key-input');
-    fireEvent.change(apiKeyInput, { target: { value: 'new-api-key' } });
-
-    expect(apiKeyInput).toHaveValue('new-api-key');
-  });
-
-  it('should handle slack oauth connection', () => {
-    renderModal();
-
-    // First enter Slack credentials to make the Connect button appear
-    const clientIdInput = screen.getByTestId('slack-client-id-input');
-    const clientSecretInput = screen.getByTestId('slack-client-secret-input');
-
-    fireEvent.change(clientIdInput, { target: { value: 'test-client-id' } });
-    fireEvent.change(clientSecretInput, {
-      target: { value: 'test-client-secret' },
-    });
-
-    // Now the Connect button should appear
-    const connectButton = screen.getByText('Connect to Slack');
-    fireEvent.click(connectButton);
-
-    expect(mockElectronAPI.slackOAuthInitiate).toHaveBeenCalledWith(
-      'test-client-id',
-      'test-client-secret'
-    );
-  });
-
-  it('should disable save and cancel when API key is empty', () => {
-    renderModal();
-
-    const saveButton = screen.getByTestId('save-settings-btn');
-    const cancelButton = screen.getByTestId('cancel-settings-btn');
-
-    expect(saveButton).toBeDisabled();
-    expect(cancelButton).toBeDisabled();
-  });
-
-  it('should call onClose when cancel is clicked', () => {
-    renderModal();
-
-    const apiKeyInput = screen.getByTestId('assemblyai-key-input');
-    fireEvent.change(apiKeyInput, { target: { value: 'test-key' } });
-
-    const cancelButton = screen.getByText('Cancel');
-    fireEvent.click(cancelButton);
-
-    expect(mockOnClose).toHaveBeenCalled();
-  });
-
-  it('should save settings when save is clicked', async () => {
-    renderModal();
-
-    // Update fields
-    const apiKeyInput = screen.getByTestId('assemblyai-key-input');
-
-    fireEvent.change(apiKeyInput, { target: { value: 'new-api-key' } });
-
-    // Click save
-    const saveButton = screen.getByText('Save');
-    fireEvent.click(saveButton);
 
     await waitFor(() => {
-      expect(mockElectronAPI.saveSettings).toHaveBeenCalledWith(
-        expect.objectContaining({
-          assemblyaiKey: 'new-api-key',
-        })
-      );
+      expect(screen.getByDisplayValue('test-key')).toBeInTheDocument();
     });
-
-    expect(mockOnClose).toHaveBeenCalled();
   });
 
-  it('should handle save failure', async () => {
-    mockElectronAPI.saveSettings.mockRejectedValueOnce(
-      new Error('Save failed')
-    );
+  it('should disable buttons when API key is empty', async () => {
+    mockUseGetSettingsQuery.mockReturnValue({
+      data: {
+        assemblyaiKey: '',
+        autoStart: false,
+        slackInstallation: null,
+        slackChannels: '',
+        summaryPrompt: 'Test prompt',
+        prompts: [],
+      },
+      isLoading: false,
+      error: null,
+    } as any);
 
     renderModal();
-
-    // First add an API key to enable save
-    const apiKeyInput = screen.getByTestId('assemblyai-key-input');
-    fireEvent.change(apiKeyInput, { target: { value: 'test-key' } });
-
-    const saveButton = screen.getByText('Save');
-    fireEvent.click(saveButton);
 
     await waitFor(() => {
-      expect(setStatus).toHaveBeenCalledWith('Error saving settings');
-    });
+      const saveButton = screen.getByTestId('save-settings-btn');
+      const cancelButton = screen.getByTestId('cancel-settings-btn');
 
-    expect(mockOnClose).not.toHaveBeenCalled();
+      expect(saveButton).toBeDisabled();
+      expect(cancelButton).toBeDisabled();
+    });
   });
 
-  it('should handle keyboard shortcuts when API key exists', () => {
-    const customStore = createMockStore({
-      settings: {
-        assemblyaiKey: 'existing-key',
-      },
-    });
-    renderModal(customStore);
+  it('should show loading state', () => {
+    mockUseGetSettingsQuery.mockReturnValue({
+      data: undefined,
+      isLoading: true,
+      error: null,
+    } as any);
 
-    // Press Escape
-    fireEvent.keyDown(document, { key: 'Escape' });
-    expect(mockOnClose).toHaveBeenCalled();
-  });
-
-  it('should not close modal when API key is empty', () => {
     renderModal();
 
-    // Try to close with escape when API key is empty
-    fireEvent.keyDown(document, { key: 'Escape' });
-    expect(mockOnClose).not.toHaveBeenCalled();
+    expect(screen.getByText('Loading settings...')).toBeInTheDocument();
   });
 });

@@ -8,24 +8,12 @@ import {
 
 import type { AutoUpdaterService } from './auto-updater.js';
 import { DI_TOKENS, container } from './container.js';
+import type { DatabaseService } from './database.js';
 import { PromptTemplate, SettingsSchema } from '../types/common.js';
 import type { RecordingDataService } from './services/recordingDataService.js';
 import type { RecordingManager } from './services/recordingManager.js';
+import type { SettingsService } from './services/settingsService.js';
 import type { SlackIntegrationService } from './services/slackIntegrationService.js';
-import {
-  deleteRecording,
-  fetchAllRecordings,
-  fetchRecording,
-  searchRecordings,
-  updateRecordingSummary,
-  updateRecordingTitle,
-} from './store/slices/recordingsSlice.js';
-import {
-  fetchSettings,
-  savePrompt,
-  savePrompts,
-  saveSettings,
-} from './store/slices/settingsSlice.js';
 import type { AppDispatch, RootState } from './store/store.js';
 
 interface LogLevel {
@@ -110,11 +98,7 @@ function setupIpcHandlers(
 
   ipcMain.handle(
     'update-recording-title',
-    async (
-      _event: IpcMainInvokeEvent,
-      recordingId: string,
-      title: string
-    ): Promise<void> => {
+    (_event: IpcMainInvokeEvent, recordingId: string, title: string): void => {
       // Validate that this update is for the current recording
       const state = store.getState();
       const currentRecordingId = state.recordings.currentRecording?.id;
@@ -126,19 +110,20 @@ function setupIpcHandlers(
         return;
       }
 
-      await store
-        .dispatch(updateRecordingTitle({ id: recordingId, title }))
-        .unwrap();
+      const databaseService = container.resolve<DatabaseService>(
+        DI_TOKENS.DatabaseService
+      );
+      databaseService.updateRecording(recordingId, { title });
     }
   );
 
   ipcMain.handle(
     'update-recording-summary',
-    async (
+    (
       _event: IpcMainInvokeEvent,
       recordingId: string,
       summary: string
-    ): Promise<void> => {
+    ): void => {
       // Validate that this update is for the current recording
       const state = store.getState();
       const currentRecordingId = state.recordings.currentRecording?.id;
@@ -150,9 +135,10 @@ function setupIpcHandlers(
         return;
       }
 
-      await store
-        .dispatch(updateRecordingSummary({ id: recordingId, summary }))
-        .unwrap();
+      const databaseService = container.resolve<DatabaseService>(
+        DI_TOKENS.DatabaseService
+      );
+      databaseService.updateRecording(recordingId, { summary });
     }
   );
 
@@ -170,16 +156,19 @@ function setupIpcHandlers(
     }
   );
 
-  ipcMain.handle('get-settings', async () => {
-    return await store.dispatch(fetchSettings()).unwrap();
+  ipcMain.handle('get-settings', () => {
+    const settingsService = container.resolve<SettingsService>(
+      DI_TOKENS.SettingsService
+    );
+    return settingsService.getSettings();
   });
 
   ipcMain.handle(
     'save-settings',
-    async (
+    (
       _event: IpcMainInvokeEvent,
       newSettings: Partial<SettingsSchema>
-    ): Promise<boolean> => {
+    ): boolean => {
       const mappedSettings = { ...newSettings };
       if (newSettings.prompts) {
         mappedSettings.prompts = newSettings.prompts.map(
@@ -190,29 +179,35 @@ function setupIpcHandlers(
         );
       }
 
-      await store.dispatch(saveSettings(mappedSettings)).unwrap();
+      const settingsService = container.resolve<SettingsService>(
+        DI_TOKENS.SettingsService
+      );
+      settingsService.updateSettings(mappedSettings);
       return true;
     }
   );
 
   ipcMain.handle(
     'save-prompt',
-    async (
+    (
       _event: IpcMainInvokeEvent,
       promptSettings: Pick<SettingsSchema, 'summaryPrompt'>
-    ): Promise<boolean> => {
-      await store.dispatch(savePrompt(promptSettings)).unwrap();
+    ): boolean => {
+      const settingsService = container.resolve<SettingsService>(
+        DI_TOKENS.SettingsService
+      );
+      settingsService.updateSettings(promptSettings);
       return true;
     }
   );
 
   ipcMain.handle(
     'save-prompts',
-    async (
-      _event: IpcMainInvokeEvent,
-      prompts: PromptTemplate[]
-    ): Promise<boolean> => {
-      await store.dispatch(savePrompts(prompts)).unwrap();
+    (_event: IpcMainInvokeEvent, prompts: PromptTemplate[]): boolean => {
+      const settingsService = container.resolve<SettingsService>(
+        DI_TOKENS.SettingsService
+      );
+      settingsService.updateSettings({ prompts });
       return true;
     }
   );
@@ -283,28 +278,37 @@ function setupIpcHandlers(
     return autoUpdaterService.getUpdateStatus();
   });
 
-  ipcMain.handle('get-all-recordings', async () => {
-    return await store.dispatch(fetchAllRecordings()).unwrap();
+  ipcMain.handle('get-all-recordings', () => {
+    const databaseService = container.resolve<DatabaseService>(
+      DI_TOKENS.DatabaseService
+    );
+    return databaseService.getAllRecordings();
   });
 
   ipcMain.handle(
     'search-recordings',
-    async (_event: IpcMainInvokeEvent, query: string) => {
-      return await store.dispatch(searchRecordings(query)).unwrap();
+    (_event: IpcMainInvokeEvent, query: string) => {
+      const databaseService = container.resolve<DatabaseService>(
+        DI_TOKENS.DatabaseService
+      );
+      return databaseService.searchRecordings(query);
     }
   );
 
-  ipcMain.handle(
-    'get-recording',
-    async (_event: IpcMainInvokeEvent, id: string) => {
-      return await store.dispatch(fetchRecording(id)).unwrap();
-    }
-  );
+  ipcMain.handle('get-recording', (_event: IpcMainInvokeEvent, id: string) => {
+    const databaseService = container.resolve<DatabaseService>(
+      DI_TOKENS.DatabaseService
+    );
+    return databaseService.getRecording(id);
+  });
 
   ipcMain.handle(
     'delete-recording',
-    async (_event: IpcMainInvokeEvent, id: string) => {
-      await store.dispatch(deleteRecording(id)).unwrap();
+    (_event: IpcMainInvokeEvent, id: string) => {
+      const databaseService = container.resolve<DatabaseService>(
+        DI_TOKENS.DatabaseService
+      );
+      databaseService.deleteRecording(id);
       return true;
     }
   );

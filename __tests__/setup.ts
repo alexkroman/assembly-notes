@@ -39,3 +39,12 @@ if (typeof global !== 'undefined') {
     debug: jest.fn(),
   };
 }
+
+// Test setup is done in individual test files as needed
+
+// Mock ResizeObserver
+(global as any).ResizeObserver = jest.fn().mockImplementation(() => ({
+  observe: jest.fn(),
+  unobserve: jest.fn(),
+  disconnect: jest.fn(),
+}));

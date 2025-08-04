@@ -1,24 +1,42 @@
 import React, { useEffect, useState } from 'react';
 
-import type { SettingsModalProps } from '../../types/components.js';
-import type { SettingsState } from '../../types/redux.js';
-import { useAppDispatch, useAppSelector } from '../hooks/redux.js';
-import { setStatus } from '../store';
 import { Modal } from './Modal.js';
 import { SlackOAuthConnectionOnly } from './SlackOAuthConnectionOnly.js';
+import type { SettingsModalProps } from '../../types/components.js';
+import type { FullSettingsState } from '../../types/redux.js';
+import { useAppDispatch } from '../hooks/redux.js';
+import { setStatus } from '../store';
+import {
+  useGetSettingsQuery,
+  useUpdateSettingsMutation,
+} from '../store/api/apiSlice.js';
 import '../../types/global.d.ts';
 
 export const SettingsModal: React.FC<SettingsModalProps> = ({ onClose }) => {
-  const reduxSettings = useAppSelector((state) => state.settings);
-  const [settings, setSettings] = useState<SettingsState>(reduxSettings);
+  const {
+    data: fetchedSettings,
+    isLoading,
+    error,
+  } = useGetSettingsQuery(undefined);
+  const [updateSettings, { isLoading: isSaving }] = useUpdateSettingsMutation();
+  const [settings, setSettings] = useState<FullSettingsState>({
+    assemblyaiKey: '',
+    slackChannels: '',
+    slackInstallation: null,
+    summaryPrompt: 'Summarize the key points from this meeting transcript:',
+    prompts: [],
+    autoStart: false,
+  });
   const [slackClientId, setSlackClientId] = useState('');
   const [slackClientSecret, setSlackClientSecret] = useState('');
   const dispatch = useAppDispatch();
 
   useEffect(() => {
-    // Update local state when Redux state changes
-    setSettings(reduxSettings);
-  }, [reduxSettings]);
+    // Update local state when settings are fetched
+    if (fetchedSettings) {
+      setSettings(fetchedSettings);
+    }
+  }, [fetchedSettings]);
 
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
@@ -39,7 +57,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ onClose }) => {
     }
 
     try {
-      await window.electronAPI.saveSettings(settings);
+      await updateSettings(settings).unwrap();
       dispatch(setStatus('Settings saved successfully'));
       onClose();
     } catch (error) {
@@ -49,10 +67,10 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ onClose }) => {
   };
 
   const handleInputChange = (
-    field: keyof SettingsState,
+    field: keyof FullSettingsState,
     value: string | boolean
   ) => {
-    setSettings((prev: SettingsState) => ({ ...prev, [field]: value }));
+    setSettings((prev: FullSettingsState) => ({ ...prev, [field]: value }));
   };
 
   const handleCancel = () => {
@@ -70,29 +88,62 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ onClose }) => {
   };
 
   const isAssemblyAIKeyMissing = !(settings.assemblyaiKey || '').trim();
+  const isDisabled = isAssemblyAIKeyMissing || isSaving;
 
   const footer = (
     <>
       <button
-        className={`btn-secondary ${isAssemblyAIKeyMissing ? 'disabled' : ''}`}
+        className={`btn-secondary ${isDisabled ? 'disabled' : ''}`}
         data-testid="cancel-settings-btn"
         onClick={handleCancel}
-        disabled={isAssemblyAIKeyMissing}
+        disabled={isDisabled}
       >
         Cancel
       </button>
       <button
-        className={`btn-primary ${isAssemblyAIKeyMissing ? 'disabled' : ''}`}
+        className={`btn-primary ${isDisabled ? 'disabled' : ''}`}
         data-testid="save-settings-btn"
         onClick={() => {
           void handleSave();
         }}
-        disabled={isAssemblyAIKeyMissing}
+        disabled={isDisabled}
       >
-        Save
+        {isSaving ? 'Saving...' : 'Save'}
       </button>
     </>
   );
+
+  if (isLoading) {
+    return (
+      <Modal
+        title="Settings"
+        onClose={handleClose}
+        footer={null}
+        size="large"
+        testId="settings-modal"
+        bodyTestId="slack-settings"
+        closeDisabled={true}
+      >
+        <div>Loading settings...</div>
+      </Modal>
+    );
+  }
+
+  if (error) {
+    return (
+      <Modal
+        title="Settings"
+        onClose={handleClose}
+        footer={null}
+        size="large"
+        testId="settings-modal"
+        bodyTestId="slack-settings"
+        closeDisabled={false}
+      >
+        <div>Error loading settings. Please try again.</div>
+      </Modal>
+    );
+  }
 
   return (
     <Modal

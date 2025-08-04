@@ -1,6 +1,7 @@
 import { configureStore } from '@reduxjs/toolkit';
 import { stateSyncEnhancer } from 'electron-redux/es/renderer.js';
 
+// Import API slice
 // Import slice reducers
 import recordingReducer from './slices/recordingSlice.js';
 import recordingsReducer from './slices/recordingsSlice.js';
@@ -15,6 +16,7 @@ import uiReducer, {
   setStatus,
 } from './slices/uiSlice.js';
 import updateReducer from './slices/updateSlice.js';
+import { apiSlice } from './store/api/apiSlice.js';
 
 // --- Store Configuration ---
 
@@ -27,15 +29,18 @@ export function createRendererStore() {
       settings: settingsReducer,
       update: updateReducer,
       ui: uiReducer,
+      [apiSlice.reducerPath]: apiSlice.reducer,
     },
     enhancers: (getDefaultEnhancers) =>
       getDefaultEnhancers().concat(stateSyncEnhancer()),
     middleware: (getDefaultMiddleware) =>
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-return
       getDefaultMiddleware({
         serializableCheck: {
           ignoredActions: ['persist/PERSIST'],
         },
-      }),
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      }).concat(apiSlice.middleware) as any,
   });
 
   return store;

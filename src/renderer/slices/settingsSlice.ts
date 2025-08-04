@@ -12,7 +12,6 @@ const initialState: SettingsState = {
   autoStart: false,
   loading: false,
   error: null,
-  theme: 'dark',
   hasAssemblyAIKey: false,
   hasSlackConfigured: false,
 };

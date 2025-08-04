@@ -1,10 +1,14 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 
 import type { RecordingsListProps } from '../../types/components.js';
-import type { Recording } from '../../types/index.js';
 import { useAppDispatch, useAppSelector } from '../hooks/redux';
 import { navigateToNewRecording, setActiveModal } from '../store';
 import { ConfirmModal } from './ConfirmModal';
+import {
+  useGetAllRecordingsQuery,
+  useSearchRecordingsQuery,
+  useDeleteRecordingMutation,
+} from '../store/api/apiSlice.js';
 import '../../types/global.d.ts';
 
 export const RecordingsList: React.FC<RecordingsListProps> = ({
@@ -13,57 +17,46 @@ export const RecordingsList: React.FC<RecordingsListProps> = ({
   const dispatch = useAppDispatch();
   const settings = useAppSelector((state) => state.settings);
   const recordingStatus = useAppSelector((state) => state.recording.status);
-  const [recordings, setRecordings] = useState<Recording[]>([]);
-  const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [deleteModal, setDeleteModal] = useState<{
     isOpen: boolean;
     recordingId: string | null;
   }>({ isOpen: false, recordingId: null });
+
+  // Use conditional queries based on search state
+  const shouldSearch = searchQuery.trim().length > 0;
+
+  const {
+    data: allRecordings = [],
+    isLoading: isLoadingAll,
+    error: allRecordingsError,
+    refetch: refetchAll,
+  } = useGetAllRecordingsQuery(undefined, {
+    skip: shouldSearch,
+  });
+
+  const {
+    data: searchResults = [],
+    isLoading: isSearching,
+    error: searchError,
+  } = useSearchRecordingsQuery(searchQuery, {
+    skip: !shouldSearch,
+  });
+
+  const [deleteRecording] = useDeleteRecordingMutation();
+
+  // Determine which data to display
+  const recordings = shouldSearch ? searchResults : allRecordings;
+  const loading = shouldSearch ? isSearching : isLoadingAll;
+  const error = shouldSearch ? searchError : allRecordingsError;
+
   // Check if recording is active (starting, recording, or stopping)
   const isRecordingActive =
     recordingStatus === 'starting' ||
     recordingStatus === 'recording' ||
     recordingStatus === 'stopping';
 
-  useEffect(() => {
-    void loadRecordings();
-  }, []);
-
-  useEffect(() => {
-    const searchDebounced = setTimeout(() => {
-      void searchRecordings();
-    }, 300);
-
-    return () => {
-      clearTimeout(searchDebounced);
-    };
-  }, [searchQuery]);
-
-  const loadRecordings = async () => {
-    try {
-      setLoading(true);
-      const allRecordings = await window.electronAPI.getAllRecordings();
-      setRecordings(allRecordings as Recording[]);
-    } catch (error) {
-      console.error('Error loading recordings:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const searchRecordings = async () => {
-    try {
-      setLoading(true);
-      const searchResults =
-        await window.electronAPI.searchRecordings(searchQuery);
-      setRecordings(searchResults as Recording[]);
-    } catch (error) {
-      console.error('Error searching recordings:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
+  // No useEffect needed - RTK Query handles data fetching automatically
 
   const handleNewRecording = async () => {
     try {
@@ -88,8 +81,8 @@ export const RecordingsList: React.FC<RecordingsListProps> = ({
     if (!deleteModal.recordingId) return;
 
     try {
-      await window.electronAPI.deleteRecording(deleteModal.recordingId);
-      await loadRecordings(); // Refresh the list
+      await deleteRecording(deleteModal.recordingId).unwrap();
+      // RTK Query will automatically refetch the data
     } catch (error) {
       console.error('Error deleting recording:', error);
     } finally {
@@ -170,7 +163,21 @@ export const RecordingsList: React.FC<RecordingsListProps> = ({
       </div>
 
       <div className="list-container">
-        {loading ? (
+        {error ? (
+          <div className="error-state">
+            <div className="error-content">
+              <h2>Error loading recordings</h2>
+              <p>Please try again later</p>
+              <button
+                onClick={() => {
+                  if (!shouldSearch) void refetchAll();
+                }}
+              >
+                Retry
+              </button>
+            </div>
+          </div>
+        ) : loading ? (
           <div className="loading">Loading recordings...</div>
         ) : recordings.length === 0 ? (
           <div className="empty-state">
