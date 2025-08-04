@@ -4,7 +4,6 @@ import type {
   TranscriptSegment,
   TranscriptionState,
 } from '../../../types/redux.js';
-import { createResetHandler } from '../helpers/commonReducers.js';
 
 const initialState: TranscriptionState = {
   currentTranscript: '',
@@ -43,7 +42,7 @@ const transcriptionSlice = createSlice({
       state.error = action.payload;
       state.isTranscribing = false;
     },
-    clearTranscription: createResetHandler(initialState),
+    clearTranscription: () => initialState,
     clearTranscriptionError: (state) => {
       state.error = null;
     },
