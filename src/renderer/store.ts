@@ -18,7 +18,6 @@ import uiReducer, {
   setShowChannelModal,
   setShowPromptModal,
   setShowSettingsModal,
-  setShowUpdateModal,
   setStatus,
 } from './slices/uiSlice.js';
 
@@ -446,7 +445,6 @@ export {
   setShowChannelModal,
   setShowPromptModal,
   setShowSettingsModal,
-  setShowUpdateModal,
   setStatus,
 };
 

@@ -7,7 +7,6 @@ import {
   setShowChannelModal,
   setShowPromptModal,
   setShowSettingsModal,
-  setShowUpdateModal,
   setStatus,
 } from '../store';
 import { ChannelModal } from './ChannelModal';
@@ -15,7 +14,6 @@ import { PromptModal } from './PromptModal';
 import { RecordingsList } from './RecordingsList';
 import { RecordingView } from './RecordingView';
 import { SettingsModal } from './SettingsModal';
-import { UpdateModal } from './UpdateModal';
 
 export const App: React.FC = () => {
   const dispatch = useAppDispatch();
@@ -25,12 +23,10 @@ export const App: React.FC = () => {
     showSettingsModal,
     showPromptModal,
     showChannelModal,
-    showUpdateModal,
   } = useAppSelector((state) => state.ui);
   const { status } = useAppSelector(
     (state: { recording: { status: string } }) => state.recording
   );
-  const updateState = useAppSelector((state) => state.update);
   const isRecording = status === 'recording';
   const [isStoppingForNavigation, setIsStoppingForNavigation] = useState(false);
 
@@ -48,13 +44,6 @@ export const App: React.FC = () => {
 
     void checkInitialSetup();
   }, [dispatch]);
-
-  // Show update modal when update is available
-  useEffect(() => {
-    if (updateState.available && !showUpdateModal) {
-      dispatch(setShowUpdateModal(true));
-    }
-  }, [updateState.available, showUpdateModal, dispatch]);
 
   useEffect(() => {
     const handleStopAudioCapture = () => {
@@ -143,8 +132,6 @@ export const App: React.FC = () => {
           }}
         />
       )}
-
-      <UpdateModal />
     </div>
   );
 };
