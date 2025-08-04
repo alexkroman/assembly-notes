@@ -16,7 +16,6 @@ import {
   stopRecording,
   updateConnectionStatus,
 } from '../store/slices/recordingSlice.js';
-import { updateCurrentRecordingSummary } from '../store/slices/recordingsSlice.js';
 import {
   addTranscriptSegment,
   updateTranscriptBuffer,
@@ -287,13 +286,11 @@ export class RecordingManager {
           recordingId: currentRecordingId,
         });
 
-        // Update Redux state immediately for UI responsiveness (no database write)
+        // Save to database and update Redux state via RecordingDataService
         if (currentRecordingId) {
           this.logger.info(
-            `Updating Redux state for summary on recording: ${currentRecordingId}`
+            `Saving summary for recording: ${currentRecordingId}`
           );
-          this.store.dispatch(updateCurrentRecordingSummary(summary));
-          // Also save to database via RecordingDataService
           this.recordingDataService.saveSummary(currentRecordingId, summary);
         }
       }
