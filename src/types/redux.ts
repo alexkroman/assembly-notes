@@ -1,5 +1,7 @@
 // Redux state types extracted from store slices
 
+import type { EntityState } from '@reduxjs/toolkit';
+
 import type {
   PromptTemplate,
   Recording,
@@ -27,8 +29,7 @@ export interface RecordingState {
 }
 
 // Recordings slice state
-export interface RecordingsState {
-  recordings: Recording[];
+export interface RecordingsState extends EntityState<Recording, string> {
   currentRecording: Recording | null;
   searchResults: Recording[];
   searchQuery: string;

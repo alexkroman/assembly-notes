@@ -1,9 +1,31 @@
-import { createSlice, PayloadAction } from '@reduxjs/toolkit';
+import {
+  createSlice,
+  PayloadAction,
+  createEntityAdapter,
+} from '@reduxjs/toolkit';
 
-import type { Recording, RecordingsState } from '../../../types/index.js';
+import type { Recording } from '../../../types/index.js';
+import type { RootState } from '../store.js';
 
-const initialState: RecordingsState = {
-  recordings: [],
+const recordingsAdapter = createEntityAdapter<Recording>({
+  sortComparer: (a, b) => b.created_at - a.created_at,
+});
+
+type RecordingsState = ReturnType<typeof recordingsAdapter.getInitialState> & {
+  currentRecording: Recording | null;
+  searchResults: Recording[];
+  searchQuery: string;
+  loading: {
+    fetchAll: boolean;
+    search: boolean;
+    fetchOne: boolean;
+    update: boolean;
+    delete: boolean;
+  };
+  error: string | null;
+};
+
+const initialState: RecordingsState = recordingsAdapter.getInitialState({
   currentRecording: null,
   searchResults: [],
   searchQuery: '',
@@ -15,7 +37,7 @@ const initialState: RecordingsState = {
     delete: false,
   },
   error: null,
-};
+});
 
 const recordingsSlice = createSlice({
   name: 'recordings',
@@ -46,5 +68,11 @@ export const {
   setCurrentRecording,
   updateCurrentRecordingSummary,
 } = recordingsSlice.actions;
+
+export const {
+  selectAll: selectAllRecordings,
+  selectById: selectRecordingById,
+  selectIds: selectRecordingIds,
+} = recordingsAdapter.getSelectors((state: RootState) => state.recordings);
 
 export default recordingsSlice.reducer;
