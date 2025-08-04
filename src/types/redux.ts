@@ -93,14 +93,13 @@ export interface SettingsState extends FullSettingsState {
 
 // UI slice state (renderer)
 export type Page = 'list' | 'recording';
+export type ModalType = 'settings' | 'prompt' | 'channel' | null;
 
 export interface UIState {
   currentPage: Page;
   currentRecordingId: string | null;
   isNewRecording: boolean;
-  showSettingsModal: boolean;
-  showPromptModal: boolean;
-  showChannelModal: boolean;
+  activeModal: ModalType;
   status: string;
 }
 

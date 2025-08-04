@@ -1,6 +1,7 @@
 import { PayloadAction, createAsyncThunk, createSlice } from '@reduxjs/toolkit';
 
 import type { RecordingState } from '../../../types/redux.js';
+import { createResetHandler } from '../helpers/commonReducers.js';
 import { RootState } from '../store.js';
 
 const initialState: RecordingState = {
@@ -77,7 +78,7 @@ const recordingSlice = createSlice({
         state.error = null;
       }
     },
-    reset: () => initialState,
+    reset: createResetHandler(initialState),
   },
   extraReducers: (builder) => {
     builder

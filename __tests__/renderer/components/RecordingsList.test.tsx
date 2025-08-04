@@ -10,7 +10,7 @@ import '@testing-library/jest-dom';
 import { RecordingsList } from '../../../src/renderer/components/RecordingsList';
 import {
   navigateToNewRecording,
-  setShowSettingsModal,
+  setActiveModal,
 } from '../../../src/renderer/store';
 import { Recording } from '../../../src/types/common';
 
@@ -20,9 +20,9 @@ jest.mock('../../../src/renderer/store', () => ({
     type: 'ui/navigateToNewRecording',
     payload: id,
   })),
-  setShowSettingsModal: jest.fn((show) => ({
-    type: 'ui/setShowSettingsModal',
-    payload: show,
+  setActiveModal: jest.fn((modal) => ({
+    type: 'ui/setActiveModal',
+    payload: modal,
   })),
 }));
 
@@ -353,6 +353,6 @@ describe('RecordingsList', () => {
     const settingsButton = screen.getByTestId('settings-button');
     fireEvent.click(settingsButton);
 
-    expect(setShowSettingsModal).toHaveBeenCalledWith(true);
+    expect(setActiveModal).toHaveBeenCalledWith('settings');
   });
 });

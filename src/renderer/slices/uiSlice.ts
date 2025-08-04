@@ -1,14 +1,12 @@
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
 
-import type { UIState } from '../../types/redux.js';
+import type { UIState, ModalType } from '../../types/redux.js';
 
 const initialState: UIState = {
   currentPage: 'list',
   currentRecordingId: null,
   isNewRecording: false,
-  showSettingsModal: false,
-  showPromptModal: false,
-  showChannelModal: false,
+  activeModal: null,
   status: '',
 };
 
@@ -34,14 +32,11 @@ const uiSlice = createSlice({
       state.currentRecordingId = null;
       state.isNewRecording = false;
     },
-    setShowSettingsModal: (state, action: PayloadAction<boolean>) => {
-      state.showSettingsModal = action.payload;
+    setActiveModal: (state, action: PayloadAction<ModalType>) => {
+      state.activeModal = action.payload;
     },
-    setShowPromptModal: (state, action: PayloadAction<boolean>) => {
-      state.showPromptModal = action.payload;
-    },
-    setShowChannelModal: (state, action: PayloadAction<boolean>) => {
-      state.showChannelModal = action.payload;
+    closeModal: (state) => {
+      state.activeModal = null;
     },
     setStatus: (state, action: PayloadAction<string>) => {
       state.status = action.payload;
@@ -53,9 +48,8 @@ export const {
   navigateToRecording,
   navigateToNewRecording,
   navigateToList,
-  setShowSettingsModal,
-  setShowPromptModal,
-  setShowChannelModal,
+  setActiveModal,
+  closeModal,
   setStatus,
 } = uiSlice.actions;
 

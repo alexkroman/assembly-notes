@@ -9,6 +9,7 @@ import type {
 } from '../../../types/index.js';
 import { DI_TOKENS } from '../../di-tokens.js';
 import type { SettingsService } from '../../services/settingsService.js';
+import { handleAsyncThunk } from '../helpers/asyncThunkHelpers.js';
 
 // Helper function to safely update computed properties
 const updateComputedProperties = (
@@ -125,50 +126,38 @@ const settingsSlice = createSlice({
   },
   extraReducers: (builder) => {
     // Fetch settings
-    builder
-      .addCase(fetchSettings.pending, (state) => {
-        state.loading = true;
-        state.error = null;
-      })
-      .addCase(fetchSettings.fulfilled, (state, action) => {
-        state.loading = false;
+    handleAsyncThunk(builder, fetchSettings, {
+      onFulfilled: (state, action) => {
         Object.assign(state, action.payload);
-        // Update computed properties
-        updateComputedProperties(state, action.payload);
-      })
-      .addCase(fetchSettings.rejected, (state, action) => {
-        state.loading = false;
-        state.error = action.error.message ?? 'Failed to fetch settings';
-      });
+        updateComputedProperties(
+          state,
+          action.payload as Partial<SettingsState>
+        );
+      },
+      errorMessage: 'Failed to fetch settings',
+    });
 
     // Save settings
-    builder
-      .addCase(saveSettings.pending, (state) => {
-        state.loading = true;
-        state.error = null;
-      })
-      .addCase(saveSettings.fulfilled, (state, action) => {
-        state.loading = false;
+    handleAsyncThunk(builder, saveSettings, {
+      onFulfilled: (state, action) => {
         Object.assign(state, action.payload);
-        // Update computed properties
-        updateComputedProperties(state, action.payload);
-      })
-      .addCase(saveSettings.rejected, (state, action) => {
-        state.loading = false;
-        state.error = action.error.message ?? 'Failed to save settings';
-      });
+        updateComputedProperties(
+          state,
+          action.payload as Partial<SettingsState>
+        );
+      },
+      errorMessage: 'Failed to save settings',
+    });
 
     // Save prompt
     builder.addCase(savePrompt.fulfilled, (state, action) => {
       Object.assign(state, action.payload);
-      // Update computed properties
       updateComputedProperties(state, action.payload);
     });
 
     // Save prompts
     builder.addCase(savePrompts.fulfilled, (state, action) => {
       Object.assign(state, action.payload);
-      // Update computed properties
       updateComputedProperties(state, action.payload);
     });
   },

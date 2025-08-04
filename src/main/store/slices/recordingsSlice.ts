@@ -4,6 +4,7 @@ import { container } from 'tsyringe';
 import type { Recording, RecordingsState } from '../../../types/index.js';
 import type { DatabaseService } from '../../database.js';
 import { DI_TOKENS } from '../../di-tokens.js';
+import { updateEntityInArrays } from '../helpers/updateHelpers.js';
 
 // Async thunks for database operations
 export const fetchAllRecordings = createAsyncThunk(
@@ -161,25 +162,14 @@ const recordingsSlice = createSlice({
         state.loading.update = false;
         const { id, title } = action.payload;
 
-        // Update in recordings list
-        const recordingIndex = state.recordings.findIndex((r) => r.id === id);
-        if (recordingIndex !== -1 && state.recordings[recordingIndex]) {
-          state.recordings[recordingIndex].title = title;
-          state.recordings[recordingIndex].updated_at = Date.now();
-        }
-
-        // Update current recording if it matches
-        if (state.currentRecording?.id === id) {
-          state.currentRecording.title = title;
-          state.currentRecording.updated_at = Date.now();
-        }
-
-        // Update in search results
-        const searchIndex = state.searchResults.findIndex((r) => r.id === id);
-        if (searchIndex !== -1 && state.searchResults[searchIndex]) {
-          state.searchResults[searchIndex].title = title;
-          state.searchResults[searchIndex].updated_at = Date.now();
-        }
+        updateEntityInArrays(
+          { id, changes: { title } as Partial<Recording> },
+          state.recordings,
+          state.currentRecording && state.currentRecording.id === id
+            ? [state.currentRecording]
+            : [],
+          state.searchResults
+        );
       })
       .addCase(updateRecordingTitle.rejected, (state, action) => {
         state.loading.update = false;
@@ -197,25 +187,14 @@ const recordingsSlice = createSlice({
         state.loading.update = false;
         const { id, summary } = action.payload;
 
-        // Update in recordings list
-        const recordingIndex = state.recordings.findIndex((r) => r.id === id);
-        if (recordingIndex !== -1 && state.recordings[recordingIndex]) {
-          state.recordings[recordingIndex].summary = summary;
-          state.recordings[recordingIndex].updated_at = Date.now();
-        }
-
-        // Update current recording if it matches
-        if (state.currentRecording?.id === id) {
-          state.currentRecording.summary = summary;
-          state.currentRecording.updated_at = Date.now();
-        }
-
-        // Update in search results
-        const searchIndex = state.searchResults.findIndex((r) => r.id === id);
-        if (searchIndex !== -1 && state.searchResults[searchIndex]) {
-          state.searchResults[searchIndex].summary = summary;
-          state.searchResults[searchIndex].updated_at = Date.now();
-        }
+        updateEntityInArrays(
+          { id, changes: { summary } as Partial<Recording> },
+          state.recordings,
+          state.currentRecording && state.currentRecording.id === id
+            ? [state.currentRecording]
+            : [],
+          state.searchResults
+        );
       })
       .addCase(updateRecordingSummary.rejected, (state, action) => {
         state.loading.update = false;

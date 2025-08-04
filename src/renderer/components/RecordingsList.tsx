@@ -3,7 +3,7 @@ import React, { useEffect, useState } from 'react';
 import type { RecordingsListProps } from '../../types/components.js';
 import type { Recording } from '../../types/index.js';
 import { useAppDispatch, useAppSelector } from '../hooks/redux';
-import { navigateToNewRecording, setShowSettingsModal } from '../store';
+import { navigateToNewRecording, setActiveModal } from '../store';
 import { ConfirmModal } from './ConfirmModal';
 import '../../types/global.d.ts';
 
@@ -153,7 +153,7 @@ export const RecordingsList: React.FC<RecordingsListProps> = ({
               data-testid="settings-button"
               onClick={() => {
                 if (!isRecordingActive) {
-                  dispatch(setShowSettingsModal(true));
+                  dispatch(setActiveModal('settings'));
                 }
               }}
               disabled={isRecordingActive}

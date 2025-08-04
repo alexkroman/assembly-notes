@@ -4,9 +4,7 @@ import { useAppDispatch, useAppSelector } from '../hooks/redux';
 import {
   navigateToList,
   navigateToRecording,
-  setShowChannelModal,
-  setShowPromptModal,
-  setShowSettingsModal,
+  setActiveModal,
   setStatus,
 } from '../store';
 import { ChannelModal } from './ChannelModal';
@@ -17,13 +15,9 @@ import { SettingsModal } from './SettingsModal';
 
 export const App: React.FC = () => {
   const dispatch = useAppDispatch();
-  const {
-    currentPage,
-    currentRecordingId,
-    showSettingsModal,
-    showPromptModal,
-    showChannelModal,
-  } = useAppSelector((state) => state.ui);
+  const { currentPage, currentRecordingId, activeModal } = useAppSelector(
+    (state) => state.ui
+  );
   const { status } = useAppSelector(
     (state: { recording: { status: string } }) => state.recording
   );
@@ -35,7 +29,7 @@ export const App: React.FC = () => {
       try {
         const settings = await window.electronAPI.getSettings();
         if (!(settings.assemblyaiKey || '').trim()) {
-          dispatch(setShowSettingsModal(true));
+          dispatch(setActiveModal('settings'));
         }
       } catch (error) {
         console.error('Error checking initial setup:', error);
@@ -99,36 +93,36 @@ export const App: React.FC = () => {
               void handleNavigateToList();
             }}
             onShowPromptModal={() => {
-              dispatch(setShowPromptModal(true));
+              dispatch(setActiveModal('prompt'));
             }}
             onShowChannelModal={() => {
-              dispatch(setShowChannelModal(true));
+              dispatch(setActiveModal('channel'));
             }}
             isStoppingForNavigation={isStoppingForNavigation}
           />
         </div>
       )}
 
-      {showSettingsModal && (
+      {activeModal === 'settings' && (
         <SettingsModal
           onClose={() => {
-            dispatch(setShowSettingsModal(false));
+            dispatch(setActiveModal(null));
           }}
         />
       )}
 
-      {showPromptModal && (
+      {activeModal === 'prompt' && (
         <PromptModal
           onClose={() => {
-            dispatch(setShowPromptModal(false));
+            dispatch(setActiveModal(null));
           }}
         />
       )}
 
-      {showChannelModal && (
+      {activeModal === 'channel' && (
         <ChannelModal
           onClose={() => {
-            dispatch(setShowChannelModal(false));
+            dispatch(setActiveModal(null));
           }}
         />
       )}

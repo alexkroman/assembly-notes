@@ -1,6 +1,7 @@
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
 
 import { UpdateInfo, ProgressInfo, UpdateState } from '../../../types/index.js';
+import { createResetHandler } from '../helpers/commonReducers.js';
 
 const initialState: UpdateState = {
   checking: false,
@@ -47,15 +48,7 @@ const updateSlice = createSlice({
       state.downloading = false;
       state.error = action.payload;
     },
-    resetUpdate: (state) => {
-      state.checking = false;
-      state.available = false;
-      state.downloading = false;
-      state.progress = 0;
-      state.downloaded = false;
-      state.error = null;
-      state.updateInfo = null;
-    },
+    resetUpdate: createResetHandler(initialState),
   },
 });
 

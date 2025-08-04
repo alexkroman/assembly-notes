@@ -15,9 +15,8 @@ import uiReducer, {
   navigateToList,
   navigateToNewRecording,
   navigateToRecording,
-  setShowChannelModal,
-  setShowPromptModal,
-  setShowSettingsModal,
+  setActiveModal,
+  closeModal,
   setStatus,
 } from './slices/uiSlice.js';
 
@@ -442,9 +441,8 @@ export {
   navigateToList,
   navigateToNewRecording,
   navigateToRecording,
-  setShowChannelModal,
-  setShowPromptModal,
-  setShowSettingsModal,
+  setActiveModal,
+  closeModal,
   setStatus,
 };
 
