@@ -45,12 +45,6 @@ const mockMainWindow = {
   webContents: { send: jest.fn() },
 } as unknown as BrowserWindow;
 
-const mockDatabase = {
-  saveRecording: jest.fn(),
-  getRecording: jest.fn(),
-  updateRecording: jest.fn(),
-} as any;
-
 const mockTranscriptionService = {
   createConnections: jest.fn(),
   sendAudio: jest.fn(),
@@ -61,6 +55,11 @@ const mockTranscriptionService = {
 
 const mockSummarizationService = {
   summarizeTranscript: jest.fn(),
+} as any;
+
+const mockRecordingDataService = {
+  saveCurrentTranscription: jest.fn(),
+  saveSummary: jest.fn(),
 } as any;
 
 describe('RecordingManager', () => {
@@ -83,7 +82,9 @@ describe('RecordingManager', () => {
     });
     container.register(DI_TOKENS.Logger, { useValue: mockLogger as any });
     container.register(DI_TOKENS.MainWindow, { useValue: mockMainWindow });
-    container.register(DI_TOKENS.DatabaseService, { useValue: mockDatabase });
+    container.register(DI_TOKENS.RecordingDataService, {
+      useValue: mockRecordingDataService,
+    });
     container.register(DI_TOKENS.TranscriptionService, {
       useValue: mockTranscriptionService,
     });
@@ -275,105 +276,6 @@ describe('RecordingManager', () => {
       recordingManager.sendSystemAudio(audioData);
 
       expect(mockTranscriptionService.sendAudio).not.toHaveBeenCalled();
-    });
-  });
-
-  describe('getCurrentTranscript', () => {
-    it('should return current transcript from store', () => {
-      const transcript = recordingManager.getCurrentTranscript();
-
-      expect(transcript).toBe('Test transcript content');
-    });
-  });
-
-  describe('newRecording', () => {
-    it('should generate a new recording ID', async () => {
-      const recordingId = await recordingManager.newRecording();
-
-      expect(recordingId).toMatch(/^recording_\d+_[a-z0-9]+$/);
-      expect(mockDatabase.saveRecording).toHaveBeenCalledWith(
-        expect.objectContaining({
-          id: recordingId,
-          title: 'New Recording',
-        })
-      );
-      expect(mockStore.dispatch).toHaveBeenCalled();
-    });
-
-    it('should stop existing recording before creating new one', async () => {
-      mockStore.getState.mockReturnValue({
-        ...mockStore.getState(),
-        recording: { status: 'recording' },
-      });
-
-      // Mock stopTranscription to avoid complex setup
-      jest.spyOn(recordingManager, 'stopTranscription').mockResolvedValue(true);
-
-      await recordingManager.newRecording();
-
-      expect(recordingManager.stopTranscription).toHaveBeenCalled();
-    });
-
-    it('should handle database errors gracefully', async () => {
-      mockDatabase.saveRecording.mockImplementation(() => {
-        throw new Error('Database error');
-      });
-
-      const result = await recordingManager.newRecording();
-
-      expect(result).toBeNull();
-      expect(mockLogger.error).toHaveBeenCalledWith(
-        'Failed to create new recording:',
-        expect.any(Error)
-      );
-    });
-  });
-
-  describe('loadRecording', () => {
-    it('should load recording from database', () => {
-      const mockRecording = {
-        id: 'test-id',
-        title: 'Test Recording',
-        transcript: 'Test transcript',
-        created_at: Date.now(),
-        updated_at: Date.now(),
-      };
-      mockDatabase.getRecording.mockReturnValue(mockRecording);
-
-      const result = recordingManager.loadRecording('test-id');
-
-      expect(result).toBe(true);
-      expect(mockDatabase.getRecording).toHaveBeenCalledWith('test-id');
-      expect(mockStore.dispatch).toHaveBeenCalledWith(
-        expect.objectContaining({
-          payload: mockRecording,
-        })
-      );
-    });
-
-    it('should handle missing recording', () => {
-      mockDatabase.getRecording.mockReturnValue(null);
-
-      const result = recordingManager.loadRecording('missing-id');
-
-      expect(result).toBe(false);
-      expect(mockLogger.warn).toHaveBeenCalledWith(
-        'Recording not found: missing-id'
-      );
-    });
-
-    it('should handle database errors', () => {
-      mockDatabase.getRecording.mockImplementation(() => {
-        throw new Error('Database error');
-      });
-
-      const result = recordingManager.loadRecording('test-id');
-
-      expect(result).toBe(false);
-      expect(mockLogger.error).toHaveBeenCalledWith(
-        'Failed to load recording test-id:',
-        expect.any(Error)
-      );
     });
   });
 

@@ -1,11 +1,11 @@
 import { Store } from '@reduxjs/toolkit';
 import { container } from 'tsyringe';
 
-import { DI_TOKENS } from '../../../src/main/di-tokens';
+import { DI_TOKENS } from '../../../src/main/di-tokens.js';
 import {
   IHttpClient,
   SlackService,
-} from '../../../src/main/services/slackService';
+} from '../../../src/main/services/slackService.js';
 import { createMockInstallation } from '../../utils/testHelpers.js';
 
 // Mock HTTP client

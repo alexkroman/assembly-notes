@@ -9,9 +9,9 @@ import {
 import type { AutoUpdaterService } from './auto-updater.js';
 import { DI_TOKENS, container } from './container.js';
 import { PromptTemplate, SettingsSchema } from '../types/common.js';
+import type { RecordingDataService } from './services/recordingDataService.js';
 import type { RecordingManager } from './services/recordingManager.js';
-import type { SlackOAuthService } from './services/slackOAuthService.js';
-import type { SlackService } from './services/slackService.js';
+import type { SlackIntegrationService } from './services/slackIntegrationService.js';
 import {
   deleteRecording,
   fetchAllRecordings,
@@ -42,9 +42,11 @@ function setupIpcHandlers(
   const recordingManager = container.resolve<RecordingManager>(
     DI_TOKENS.RecordingManager
   );
-  const slackService = container.resolve<SlackService>(DI_TOKENS.SlackService);
-  const slackOAuthService = container.resolve<SlackOAuthService>(
-    DI_TOKENS.SlackOAuthService
+  const recordingDataService = container.resolve<RecordingDataService>(
+    DI_TOKENS.RecordingDataService
+  );
+  const slackIntegrationService = container.resolve<SlackIntegrationService>(
+    DI_TOKENS.SlackIntegrationService
   );
   const autoUpdaterService = container.resolve<AutoUpdaterService>(
     DI_TOKENS.AutoUpdaterService
@@ -95,14 +97,14 @@ function setupIpcHandlers(
     return await recordingManager.stopTranscription();
   });
 
-  ipcMain.handle('new-recording', async (): Promise<string | null> => {
-    return await recordingManager.newRecording();
+  ipcMain.handle('new-recording', (): string | null => {
+    return recordingDataService.newRecording();
   });
 
   ipcMain.handle(
     'load-recording',
     (_event: IpcMainInvokeEvent, recordingId: string): boolean => {
-      return recordingManager.loadRecording(recordingId);
+      return recordingDataService.loadRecording(recordingId);
     }
   );
 
@@ -222,7 +224,7 @@ function setupIpcHandlers(
       message: string,
       channelId?: string
     ): Promise<{ success: boolean; error?: string }> => {
-      return await slackService.postMessage(message, channelId);
+      return await slackIntegrationService.postMessage(message, channelId);
     }
   );
 
@@ -234,20 +236,14 @@ function setupIpcHandlers(
       clientId: string,
       clientSecret: string
     ): Promise<void> => {
-      const slackOAuthService = container.resolve<SlackOAuthService>(
-        DI_TOKENS.SlackOAuthService
-      );
-      await slackOAuthService.initiateOAuth(clientId, clientSecret);
+      await slackIntegrationService.initiateOAuth(clientId, clientSecret);
     }
   );
 
   ipcMain.handle(
     'slack-oauth-remove-installation',
     (_event: IpcMainInvokeEvent): void => {
-      const slackOAuthService = container.resolve<SlackOAuthService>(
-        DI_TOKENS.SlackOAuthService
-      );
-      slackOAuthService.removeInstallation();
+      slackIntegrationService.removeInstallation();
     }
   );
 
@@ -314,7 +310,7 @@ function setupIpcHandlers(
   );
 
   ipcMain.handle('slack-oauth-get-current', () => {
-    return slackOAuthService.getCurrentInstallation();
+    return slackIntegrationService.getCurrentInstallation();
   });
 
   ipcMain.handle('slack-oauth-validate-channels', (): void => {

@@ -1,7 +1,7 @@
 import { container } from 'tsyringe';
 
-import { DI_TOKENS } from '../../../src/main/di-tokens';
-import { SlackOAuthService } from '../../../src/main/services/slackOAuthService';
+import { DI_TOKENS } from '../../../src/main/di-tokens.js';
+import { SlackOAuthService } from '../../../src/main/services/slackOAuthService.js';
 import {
   createMockSettings,
   createMockInstallation,

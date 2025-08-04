@@ -1,0 +1,130 @@
+import 'reflect-metadata';
+import { Store } from '@reduxjs/toolkit';
+import Logger from 'electron-log';
+import { injectable, inject } from 'tsyringe';
+import { v4 as uuidv4 } from 'uuid';
+
+import { DatabaseService } from '../database.js';
+import { DI_TOKENS } from '../di-tokens.js';
+import {
+  setCurrentRecording,
+  updateCurrentRecordingSummary,
+} from '../store/slices/recordingsSlice.js';
+import {
+  loadExistingTranscript,
+  clearTranscription,
+} from '../store/slices/transcriptionSlice.js';
+import { RootState, AppDispatch } from '../store/store.js';
+
+@injectable()
+export class RecordingDataService {
+  constructor(
+    @inject(DI_TOKENS.Store)
+    private store: Store<RootState> & { dispatch: AppDispatch },
+    @inject(DI_TOKENS.DatabaseService) private database: DatabaseService,
+    @inject(DI_TOKENS.Logger) private logger: typeof Logger
+  ) {}
+
+  newRecording(): string | null {
+    const title = 'New Recording';
+
+    const recordingId = uuidv4();
+    const timestamp = Date.now();
+
+    try {
+      this.database.createRecording({
+        id: recordingId,
+        title,
+        timestamp,
+        summary: null,
+        transcript: '',
+      });
+
+      // Create the recording object that matches the Recording type
+      const newRecording = {
+        id: recordingId,
+        title,
+        transcript: '',
+        created_at: timestamp,
+        updated_at: timestamp,
+      };
+
+      this.store.dispatch(setCurrentRecording(newRecording));
+      this.logger.info(`Created new recording with ID: ${recordingId}`);
+      return recordingId;
+    } catch (error) {
+      this.logger.error(`Failed to create recording: ${String(error)}`);
+      return null;
+    }
+  }
+
+  loadRecording(recordingId: string): boolean {
+    try {
+      const recording = this.database.getRecordingById(recordingId);
+      if (!recording) {
+        this.logger.warn(`Recording ${recordingId} not found`);
+        return false;
+      }
+
+      this.store.dispatch(setCurrentRecording(recording));
+
+      if (recording.transcript) {
+        this.store.dispatch(loadExistingTranscript(recording.transcript));
+      } else {
+        this.store.dispatch(clearTranscription());
+      }
+
+      this.logger.info(`Loaded recording: ${recordingId}`);
+      return true;
+    } catch (error) {
+      this.logger.error(
+        `Failed to load recording ${recordingId}: ${String(error)}`
+      );
+      return false;
+    }
+  }
+
+  saveCurrentTranscription(): void {
+    const state = this.store.getState();
+    const currentRecordingId = state.recordings.currentRecording?.id;
+    const transcription = state.transcription.currentTranscript;
+
+    if (!currentRecordingId) {
+      this.logger.warn('No current recording to save');
+      return;
+    }
+
+    const fullTranscript = transcription;
+
+    try {
+      this.database.updateRecordingTranscript(
+        currentRecordingId,
+        fullTranscript
+      );
+      // Transcript is saved to database, no need to update store
+      this.logger.info(`Saved transcript for recording: ${currentRecordingId}`);
+    } catch (error) {
+      this.logger.error(`Failed to save transcript: ${String(error)}`);
+    }
+  }
+
+  saveSummary(recordingId: string, summary: string): void {
+    try {
+      this.database.updateRecordingSummary(recordingId, summary);
+      this.store.dispatch(updateCurrentRecordingSummary(summary));
+      this.logger.info(`Saved summary for recording: ${recordingId}`);
+    } catch (error) {
+      this.logger.error(`Failed to save summary: ${String(error)}`);
+    }
+  }
+
+  getRecordingTranscript(recordingId: string): string | null {
+    try {
+      const recording = this.database.getRecordingById(recordingId);
+      return recording?.transcript ?? null;
+    } catch (error) {
+      this.logger.error(`Failed to get recording transcript: ${String(error)}`);
+      return null;
+    }
+  }
+}

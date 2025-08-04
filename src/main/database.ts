@@ -370,6 +370,44 @@ class DatabaseService {
     }
   }
 
+  // Convenience methods for RecordingDataService
+  createRecording(recording: {
+    id: string;
+    title: string;
+    timestamp: number;
+    summary: string | null;
+    transcript: string;
+  }): void {
+    const recordingData: Omit<Recording, 'created_at' | 'updated_at'> & {
+      created_at?: number;
+      updated_at?: number;
+    } = {
+      id: recording.id,
+      title: recording.title,
+      transcript: recording.transcript,
+      created_at: recording.timestamp,
+      updated_at: recording.timestamp,
+    };
+
+    if (recording.summary !== null) {
+      recordingData.summary = recording.summary;
+    }
+
+    this.saveRecording(recordingData);
+  }
+
+  getRecordingById(id: string): Recording | null {
+    return this.getRecording(id);
+  }
+
+  updateRecordingTranscript(id: string, transcript: string): void {
+    this.updateRecording(id, { transcript });
+  }
+
+  updateRecordingSummary(id: string, summary: string): void {
+    this.updateRecording(id, { summary });
+  }
+
   close(): void {
     this.db.close();
   }

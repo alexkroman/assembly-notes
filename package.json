@@ -1,6 +1,6 @@
 {
   "name": "assembly-notes",
-  "productName": "Assembly-Notes",
+  "productName": "Assembly Notes",
   "description": "Assembly Notes",
   "keywords": [],
   "main": "./dist/main/main.js",
@@ -57,6 +57,7 @@
   },
   "dependencies": {
     "@reduxjs/toolkit": "^2.8.2",
+    "@types/uuid": "^10.0.0",
     "assemblyai": "^4.14.2",
     "better-sqlite3": "^12.2.0",
     "dotenv": "^17.2.1",
@@ -68,7 +69,8 @@
     "react-dom": "^19.1.1",
     "react-redux": "^9.2.0",
     "reflect-metadata": "^0.2.2",
-    "tsyringe": "^4.10.0"
+    "tsyringe": "^4.10.0",
+    "uuid": "^11.1.0"
   },
   "devDependencies": {
     "@commitlint/cli": "^19.8.1",

@@ -1,6 +1,6 @@
 {
   "appId": "com.alexkroman.assembly-notes",
-  "productName": "Assembly-Notes",
+  "productName": "Assembly Notes",
   "artifactName": "Assembly-Notes-${os}-${arch}.${ext}",
   "forceCodeSigning": false,
   "publish": {

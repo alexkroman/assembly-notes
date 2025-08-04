@@ -1,4 +1,4 @@
-name: Build & Release Assembly-Notes
+name: Build & Release Assembly Notes
 
 on:
   push:
