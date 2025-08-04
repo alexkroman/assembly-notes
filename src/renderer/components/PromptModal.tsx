@@ -123,7 +123,7 @@ export const PromptModal: React.FC<PromptModalProps> = ({ onClose }) => {
           {prompts.map((prompt, index) => (
             <button
               key={index}
-              className={`px-1.5 py-0.5 text-xs font-medium bg-surface border border-border rounded-sm text-text-secondary cursor-pointer transition-all duration-150 ease-in-out min-w-[24px] text-center hover:bg-surface-hover hover:text-text-primary ${index === selectedIndex ? 'bg-success-bg border-success-border text-foreground' : ''}`}
+              className={`px-1.5 py-0.5 text-xs font-medium bg-white/[0.06] border border-white/[0.12] rounded-sm text-white/[0.70] cursor-pointer transition-all duration-150 ease-in-out min-w-[24px] text-center hover:bg-white/[0.09] hover:text-white/[0.85] ${index === selectedIndex ? 'bg-[#28a745]/20 border-[#28a745]/50 text-white' : ''}`}
               onClick={() => {
                 setSelectedIndex(index);
               }}
@@ -137,12 +137,12 @@ export const PromptModal: React.FC<PromptModalProps> = ({ onClose }) => {
         {prompts[selectedIndex] && (
           <div className="flex flex-col gap-1 flex-1">
             <div className="grid grid-cols-[50px_1fr] gap-1.5 items-start">
-              <span className="text-xs font-medium text-text-primary pt-0.75">
+              <span className="text-xs font-medium text-white/[0.85] pt-0.75">
                 Name:
               </span>
               <input
                 type="text"
-                className="bg-surface-input border border-light rounded-sm px-1.25 py-0.75 text-xs text-foreground focus:outline-none focus:border-success-border focus:bg-surface-active"
+                className="bg-white/[0.05] border border-white/[0.18] rounded-sm px-1.25 py-0.75 text-xs text-white focus:outline-none focus:border-[#28a745]/50 focus:bg-white/[0.12]"
                 value={prompts[selectedIndex].name}
                 onChange={(e) => {
                   handleUpdatePrompt(selectedIndex, 'name', e.target.value);
@@ -152,12 +152,12 @@ export const PromptModal: React.FC<PromptModalProps> = ({ onClose }) => {
             </div>
 
             <div className="grid grid-cols-[50px_1fr] gap-1.5 items-start">
-              <span className="text-xs font-medium text-text-primary pt-0.75">
+              <span className="text-xs font-medium text-white/[0.85] pt-0.75">
                 Content:
               </span>
               <div className="flex flex-col">
                 <textarea
-                  className="bg-surface-input border border-light rounded-sm p-1 text-xs text-foreground resize-none min-h-[80px] font-mono leading-tight focus:outline-none focus:border-success-border focus:bg-surface-active"
+                  className="bg-white/[0.05] border border-white/[0.18] rounded-sm p-1 text-xs text-white resize-none min-h-[80px] font-mono leading-tight focus:outline-none focus:border-[#28a745]/50 focus:bg-white/[0.12]"
                   value={prompts[selectedIndex].content}
                   onChange={(e) => {
                     handleUpdatePrompt(
@@ -173,7 +173,7 @@ export const PromptModal: React.FC<PromptModalProps> = ({ onClose }) => {
                 <div className="mt-1">
                   <a
                     href="#"
-                    className="text-xs text-text-subtle no-underline inline-block hover:text-text-secondary hover:underline"
+                    className="text-xs text-white/[0.60] no-underline inline-block hover:text-white/[0.70] hover:underline"
                     onClick={(e) => {
                       e.preventDefault();
                       handleRevertToDefault();

@@ -52,12 +52,10 @@ export const ConfirmModal: React.FC<ConfirmModalProps> = ({
       }}
     >
       <div className="modal-content">
-        <div className="flex items-center justify-between px-3 py-2 border-b border-border bg-transparent">
-          <h2 className="m-0 text-base font-semibold text-foreground">
-            {title}
-          </h2>
+        <div className="flex items-center justify-between px-3 py-2 border-b border-white/[0.12] bg-transparent">
+          <h2 className="m-0 text-base font-semibold text-white">{title}</h2>
           <button
-            className="bg-transparent border-none text-text-secondary text-xl cursor-pointer p-0 w-6 h-6 flex items-center justify-center rounded-sm transition-all duration-200 hover:bg-surface-hover hover:text-foreground"
+            className="bg-transparent border-none text-white/[0.70] text-xl cursor-pointer p-0 w-6 h-6 flex items-center justify-center rounded-sm transition-all duration-200 hover:bg-white/[0.09] hover:text-white"
             data-testid="close-confirm-modal-btn"
             onClick={onCancel}
           >
@@ -66,12 +64,12 @@ export const ConfirmModal: React.FC<ConfirmModalProps> = ({
         </div>
 
         <div className="px-3 py-2.5 overflow-y-auto flex-1">
-          <p className="m-0 text-base text-text-primary">{message}</p>
+          <p className="m-0 text-base text-white/[0.85]">{message}</p>
         </div>
 
-        <div className="flex justify-end gap-1.5 px-3 py-2 border-t border-border bg-transparent">
+        <div className="flex justify-end gap-1.5 px-3 py-2 border-t border-white/[0.12] bg-transparent">
           <button
-            className="btn-secondary"
+            className="px-4 py-2 bg-white/[0.09] border border-white/[0.18] text-white/[0.85] rounded-sm cursor-pointer font-medium transition-all duration-200 hover:bg-white/[0.12] hover:text-white"
             data-testid="cancel-confirm-btn"
             onClick={onCancel}
           >
@@ -79,7 +77,9 @@ export const ConfirmModal: React.FC<ConfirmModalProps> = ({
           </button>
           <button
             className={
-              confirmVariant === 'danger' ? 'btn-danger' : 'btn-primary'
+              confirmVariant === 'danger'
+                ? 'px-3 py-1.5 bg-[#dc3545]/20 border border-[#dc3545]/50 text-[#dc3545] rounded-sm cursor-pointer font-medium transition-all duration-200 hover:bg-[#dc3545]/30'
+                : 'px-3 py-1.5 bg-[#28a745]/20 border border-[#28a745]/50 text-[#28a745] rounded-sm cursor-pointer font-medium transition-all duration-200 hover:bg-[#28a745]/30'
             }
             data-testid="confirm-btn"
             onClick={onConfirm}

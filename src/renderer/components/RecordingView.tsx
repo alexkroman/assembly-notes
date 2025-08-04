@@ -144,16 +144,16 @@ export const RecordingView: React.FC<RecordingViewProps> = ({
 
   const getButtonClass = () => {
     let baseClass =
-      'px-2 py-1 text-xs font-semibold rounded-sm cursor-pointer transition-all duration-200 h-7 tracking-wide bg-surface-active border border-medium text-foreground hover:bg-surface-input';
+      'px-2 py-1 text-xs font-semibold rounded-sm cursor-pointer transition-all duration-200 h-7 tracking-wide bg-white/[0.12] border border-white/[0.24] text-white hover:bg-white/[0.05]';
     if (isRecording)
       baseClass =
-        'px-2 py-1 text-xs font-semibold rounded-sm cursor-pointer transition-all duration-200 h-7 tracking-wide bg-danger-bg border-danger-border text-danger hover:bg-danger-hover';
+        'px-2 py-1 text-xs font-semibold rounded-sm cursor-pointer transition-all duration-200 h-7 tracking-wide bg-[#dc3545]/20 border-[#dc3545]/50 text-[#dc3545] hover:bg-[#dc3545]/30';
     if (isStopping || isStoppingForNavigation)
       baseClass =
-        'px-2 py-1 text-xs font-semibold rounded-sm cursor-not-allowed transition-all duration-200 h-7 tracking-wide bg-warning-bg border-warning-border text-warning opacity-80';
+        'px-2 py-1 text-xs font-semibold rounded-sm cursor-not-allowed transition-all duration-200 h-7 tracking-wide bg-[#ffc107]/20 border-[#ffc107]/50 text-[#ffc107] opacity-80';
     if (isStarting)
       baseClass =
-        'px-2 py-1 text-xs font-semibold rounded-sm cursor-pointer transition-all duration-200 h-7 tracking-wide bg-surface-active border border-medium text-foreground hover:bg-surface-input';
+        'px-2 py-1 text-xs font-semibold rounded-sm cursor-pointer transition-all duration-200 h-7 tracking-wide bg-white/[0.12] border border-white/[0.24] text-white hover:bg-white/[0.05]';
     return baseClass;
   };
 
@@ -170,10 +170,10 @@ export const RecordingView: React.FC<RecordingViewProps> = ({
       className="page active"
       data-testid="recording-view"
     >
-      <div className="flex items-center px-2 py-0.75 bg-background flex-shrink-0 h-7">
+      <div className="flex items-center px-2 py-1 bg-[#1a1a1a] flex-shrink-0 h-7">
         <button
           type="button"
-          className="text-sm px-2 py-1 text-text-primary bg-transparent border border-light rounded-sm cursor-pointer font-medium transition-all duration-200 hover:bg-surface-hover hover:text-foreground hover:border-medium"
+          className="text-sm text-white/70 hover:text-white transition-colors duration-200"
           data-testid="back-to-list-btn"
           onClick={onNavigateToList}
           disabled={isStoppingForNavigation}
@@ -182,10 +182,10 @@ export const RecordingView: React.FC<RecordingViewProps> = ({
         </button>
       </div>
 
-      <div className="px-2 py-1 bg-background flex justify-start items-center flex-shrink-0 h-8">
+      <div className="px-2 py-1 pt-2 bg-[#1a1a1a] flex justify-start items-center flex-shrink-0 h-10">
         <input
           type="text"
-          className="text-lg font-semibold px-2.5 py-1.5 bg-surface border border-light rounded-sm text-foreground w-80 flex-shrink-0 text-left transition-all duration-200 m-0 cursor-text hover:bg-surface-hover hover:border-medium focus:outline-none focus:border-heavy focus:bg-surface-active focus:shadow-focus placeholder:text-placeholder"
+          className="text-lg font-semibold px-2.5 py-1.5 bg-white/[0.06] border border-white/[0.18] rounded-sm text-white w-80 h-8 flex-shrink-0 text-left transition-all duration-200 m-0 cursor-text hover:bg-white/[0.09] hover:border-white/[0.24] focus:outline-none focus:border-white/[0.45] focus:bg-white/[0.12] focus:shadow-[0_0_0_2px_rgba(255,255,255,0.1)] placeholder:text-white/[0.35]"
           data-testid="recording-title-input"
           placeholder="Recording title..."
           value={recordingTitle}
@@ -212,7 +212,7 @@ export const RecordingView: React.FC<RecordingViewProps> = ({
           )}
 
           <select
-            className="px-2 py-1 text-xs bg-surface-hover border border-light rounded-sm text-foreground min-w-[90px] h-7 overflow-hidden text-ellipsis whitespace-nowrap transition-all duration-200 hover:bg-surface-active hover:border-medium focus:outline-none focus:border-heavy focus:bg-surface-active"
+            className="px-2 py-1 text-xs bg-white/[0.09] border border-white/[0.18] rounded-sm text-white min-w-[90px] h-7 overflow-hidden text-ellipsis whitespace-nowrap transition-all duration-200 hover:bg-white/[0.12] hover:border-white/[0.24] focus:outline-none focus:border-white/[0.45] focus:bg-white/[0.12]"
             data-testid="prompt-btn"
             value={selectedPromptIndex}
             onChange={(e) => {
@@ -233,7 +233,7 @@ export const RecordingView: React.FC<RecordingViewProps> = ({
 
           <button
             type="button"
-            className="px-2 py-1 text-xs font-semibold rounded-sm cursor-pointer transition-all duration-200 h-7 tracking-wide w-[100px] bg-surface-hover border border-light text-text-primary hover:bg-surface-active hover:text-foreground disabled:text-text-muted disabled:cursor-not-allowed disabled:opacity-50"
+            className="px-2 py-1 text-xs font-semibold rounded-sm cursor-pointer transition-all duration-200 h-7 tracking-wide w-[100px] bg-white/[0.09] border border-white/[0.18] text-white/[0.85] hover:bg-white/[0.12] hover:text-white disabled:text-white/[0.45] disabled:cursor-not-allowed disabled:opacity-50"
             data-testid="summarize-btn"
             onClick={() => {
               void handleSummarize();
@@ -264,7 +264,7 @@ export const RecordingView: React.FC<RecordingViewProps> = ({
           {hasSlackConfigured && (
             <>
               <select
-                className="px-2 py-1 text-xs bg-surface-hover border border-light rounded-sm text-foreground min-w-[90px] h-7 overflow-hidden text-ellipsis whitespace-nowrap transition-all duration-200 hover:bg-surface-active hover:border-medium focus:outline-none focus:border-heavy focus:bg-surface-active"
+                className="px-2 py-1 text-xs bg-white/[0.09] border border-white/[0.18] rounded-sm text-white min-w-[90px] h-7 overflow-hidden text-ellipsis whitespace-nowrap transition-all duration-200 hover:bg-white/[0.12] hover:border-white/[0.24] focus:outline-none focus:border-white/[0.45] focus:bg-white/[0.12]"
                 data-testid="channel-btn"
                 value={selectedChannelId}
                 onChange={(e) => {
@@ -286,7 +286,7 @@ export const RecordingView: React.FC<RecordingViewProps> = ({
 
               <button
                 type="button"
-                className="px-2 py-1 text-xs font-semibold rounded-sm cursor-pointer transition-all duration-200 h-7 tracking-wide w-20 bg-surface-hover border border-light text-text-primary hover:bg-surface-active hover:text-foreground disabled:text-text-muted disabled:cursor-not-allowed disabled:opacity-50"
+                className="px-2 py-1 text-xs font-semibold rounded-sm cursor-pointer transition-all duration-200 h-7 tracking-wide w-20 bg-white/[0.09] border border-white/[0.18] text-white/[0.85] hover:bg-white/[0.12] hover:text-white disabled:text-white/[0.45] disabled:cursor-not-allowed disabled:opacity-50"
                 onClick={() => {
                   void handlePostToSlack(summary, selectedChannelId);
                 }}
@@ -303,7 +303,7 @@ export const RecordingView: React.FC<RecordingViewProps> = ({
         </div>
       </div>
 
-      <div className="flex flex-1 gap-1.5 px-1.5 py-1 pb-0.5 min-h-0 overflow-hidden bg-background">
+      <div className="flex flex-1 gap-1.5 px-1.5 py-1 pb-0.5 min-h-0 overflow-hidden bg-[#1a1a1a]">
         <div className="content-panel">
           <h3 className="panel-header">Transcript</h3>
           <pre
@@ -315,7 +315,7 @@ export const RecordingView: React.FC<RecordingViewProps> = ({
             {isNewRecording ? (
               <>
                 {(transcript || '').trim() || (
-                  <span className="text-placeholder italic">
+                  <span className="text-white/[0.35] italic">
                     {recordingId
                       ? ''
                       : 'Click "Record" to begin transcribing audio from your microphone and system'}
@@ -343,7 +343,7 @@ export const RecordingView: React.FC<RecordingViewProps> = ({
           <h3 className="panel-header">Summary</h3>
           <textarea
             ref={summaryRef}
-            className="panel-content placeholder:text-placeholder placeholder:italic"
+            className="panel-content placeholder:text-white/[0.35] placeholder:italic"
             data-testid="summary-textarea"
             placeholder="Click 'Summarize' at any time to generate or regenerate a summary"
             onChange={handleSummaryChange}
