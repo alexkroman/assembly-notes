@@ -1,76 +1,60 @@
 // Type definitions for actions synchronized from main process
-// These are used to satisfy TypeScript's type checking while maintaining compatibility
-// with electron-redux's string-based action synchronization
+// These use createAction for better type safety and to avoid magic strings
 
-import type { PayloadAction } from '@reduxjs/toolkit';
+import { createAction } from '@reduxjs/toolkit';
 
-import type { Recording, UpdateInfo } from '../../types/common.js';
+import type { UpdateInfo } from '../../types/common.js';
 import type { SettingsState, TranscriptSegment } from '../../types/redux.js';
-
-// Helper type to create action creators that accept string types
-interface StringActionCreator<T = void> {
-  (payload: T): PayloadAction<T>;
-  type: string;
-}
 
 // Recording action creators
 export const recordingActions = {
-  startRejected: {
-    type: 'recording/start/rejected',
-  } as StringActionCreator<string>,
-  setError: { type: 'recording/setError' } as StringActionCreator<string>,
-  updateConnectionStatus: {
-    type: 'recording/updateConnectionStatus',
-  } as StringActionCreator<{
+  startPending: createAction('recording/start/pending'),
+  startFulfilled: createAction('recording/start/fulfilled'),
+  startRejected: createAction<string>('recording/start/rejected'),
+  stopPending: createAction('recording/stop/pending'),
+  stopFulfilled: createAction('recording/stop/fulfilled'),
+  setError: createAction<string>('recording/setError'),
+  updateConnectionStatus: createAction<{
     stream: 'microphone' | 'system';
     connected: boolean;
-  }>,
+  }>('recording/updateConnectionStatus'),
 };
 
 // Transcription action creators
 export const transcriptionActions = {
-  addTranscriptSegment: {
-    type: 'transcription/addTranscriptSegment',
-  } as StringActionCreator<TranscriptSegment>,
-  updateTranscriptBuffer: {
-    type: 'transcription/updateTranscriptBuffer',
-  } as StringActionCreator<{
+  addTranscriptSegment: createAction<TranscriptSegment>(
+    'transcription/addTranscriptSegment'
+  ),
+  updateTranscriptBuffer: createAction<{
     source?: 'microphone' | 'system';
     text?: string;
-  }>,
-  setTranscriptionError: {
-    type: 'transcription/setTranscriptionError',
-  } as StringActionCreator<string>,
-  loadExistingTranscript: {
-    type: 'transcription/loadExistingTranscript',
-  } as StringActionCreator<string>,
+  }>('transcription/updateTranscriptBuffer'),
+  setTranscriptionError: createAction<string>(
+    'transcription/setTranscriptionError'
+  ),
+  loadExistingTranscript: createAction<string>(
+    'transcription/loadExistingTranscript'
+  ),
+  clearTranscription: createAction('transcription/clearTranscription'),
 };
 
-// Recordings action creators
-export const recordingsActions = {
-  setCurrentRecording: {
-    type: 'recordings/setCurrentRecording',
-  } as StringActionCreator<Recording | null>,
-  updateCurrentRecordingSummary: {
-    type: 'recordings/updateCurrentRecordingSummary',
-  } as StringActionCreator<string>,
-};
+// Recordings actions are now defined in the slice itself
 
 // Update action creators
 export const updateActions = {
-  updateAvailable: {
-    type: 'update/updateAvailable',
-  } as StringActionCreator<UpdateInfo>,
-  updateProgress: {
-    type: 'update/updateProgress',
-  } as StringActionCreator<{ percent: number }>,
-  downloadComplete: {
-    type: 'update/downloadComplete',
-  } as StringActionCreator<UpdateInfo>,
-  setError: { type: 'update/setError' } as StringActionCreator<string>,
+  updateAvailable: createAction<UpdateInfo>('update/updateAvailable'),
+  updateNotAvailable: createAction('update/updateNotAvailable'),
+  updateProgress: createAction<{ percent: number }>('update/updateProgress'),
+  downloadComplete: createAction<UpdateInfo>('update/downloadComplete'),
+  startChecking: createAction('update/startChecking'),
+  startDownloading: createAction('update/startDownloading'),
+  resetUpdate: createAction('update/resetUpdate'),
+  setError: createAction<string>('update/setError'),
 };
 
-// Settings action matcher type
-export interface SettingsAction extends PayloadAction<Partial<SettingsState>> {
-  type: string;
-}
+// Settings action creators
+export const settingsActions = {
+  updateSettings: createAction<Partial<SettingsState>>(
+    'settings/updateSettings'
+  ),
+};

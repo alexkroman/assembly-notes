@@ -1,6 +1,6 @@
-import { createSlice } from '@reduxjs/toolkit';
+import { createSlice, type PayloadAction } from '@reduxjs/toolkit';
 
-import type { SettingsAction } from './syncActionTypes.js';
+import { settingsActions } from './syncActionTypes.js';
 import type { SettingsState } from '../../types/redux.js';
 
 const initialState: SettingsState = {
@@ -21,18 +21,8 @@ const settingsSlice = createSlice({
   initialState,
   reducers: {},
   extraReducers: (builder) => {
-    // This matcher handles all settings update actions efficiently
-    builder.addMatcher(
-      (action): action is SettingsAction => {
-        const actionType = (action as { type?: string }).type;
-        return (
-          typeof actionType === 'string' &&
-          actionType.startsWith('settings/') &&
-          (actionType.endsWith('/fulfilled') ||
-            actionType.endsWith('/updateSettings'))
-        );
-      },
-      (state, action) => {
+    builder
+      .addCase(settingsActions.updateSettings, (state, action) => {
         Object.assign(state, action.payload);
         state.loading = false;
         state.error = null;
@@ -44,8 +34,34 @@ const settingsSlice = createSlice({
             (action.payload.assemblyaiKey ?? '').trim()
           );
         }
-      }
-    );
+      })
+      // Handle async settings actions
+      .addMatcher(
+        (action: {
+          type: unknown;
+        }): action is PayloadAction<Partial<SettingsState>> => {
+          return (
+            typeof action.type === 'string' &&
+            action.type.startsWith('settings/') &&
+            action.type.endsWith('/fulfilled')
+          );
+        },
+        (state, action) => {
+          Object.assign(state, action.payload);
+          state.loading = false;
+          state.error = null;
+          if (action.payload.slackInstallation !== undefined) {
+            state.hasSlackConfigured = Boolean(
+              action.payload.slackInstallation
+            );
+          }
+          if (action.payload.assemblyaiKey !== undefined) {
+            state.hasAssemblyAIKey = Boolean(
+              (action.payload.assemblyaiKey ?? '').trim()
+            );
+          }
+        }
+      );
   },
 });
 

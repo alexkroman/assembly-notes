@@ -1,4 +1,4 @@
-import { createSlice, PayloadAction } from '@reduxjs/toolkit';
+import { createSlice } from '@reduxjs/toolkit';
 
 import { recordingActions } from './syncActionTypes.js';
 import type { RecordingState } from '../../types/redux.js';
@@ -17,46 +17,31 @@ const recordingSlice = createSlice({
   reducers: {}, // No local reducers needed if all actions come from main process
   extraReducers: (builder) => {
     builder
-      .addCase('recording/start/pending', (state) => {
+      .addCase(recordingActions.startPending, (state) => {
         state.status = 'starting';
         state.error = null;
       })
-      .addCase('recording/start/fulfilled', (state) => {
+      .addCase(recordingActions.startFulfilled, (state) => {
         state.status = 'recording';
       })
-      .addCase(
-        recordingActions.startRejected.type,
-        (state, action: PayloadAction<string>) => {
-          state.status = 'error';
-          state.error = action.payload;
-        }
-      )
-      .addCase('recording/stop/pending', (state) => {
+      .addCase(recordingActions.startRejected, (state, action) => {
+        state.status = 'error';
+        state.error = action.payload;
+      })
+      .addCase(recordingActions.stopPending, (state) => {
         state.status = 'stopping';
       })
-      .addCase('recording/stop/fulfilled', (state) => {
+      .addCase(recordingActions.stopFulfilled, (state) => {
         state.status = 'idle';
         state.connectionStatus = { microphone: false, system: false };
       })
-      .addCase(
-        recordingActions.setError.type,
-        (state, action: PayloadAction<string>) => {
-          state.error = action.payload;
-        }
-      )
-      .addCase(
-        recordingActions.updateConnectionStatus.type,
-        (
-          state,
-          action: PayloadAction<{
-            stream: 'microphone' | 'system';
-            connected: boolean;
-          }>
-        ) => {
-          state.connectionStatus[action.payload.stream] =
-            action.payload.connected;
-        }
-      );
+      .addCase(recordingActions.setError, (state, action) => {
+        state.error = action.payload;
+      })
+      .addCase(recordingActions.updateConnectionStatus, (state, action) => {
+        state.connectionStatus[action.payload.stream] =
+          action.payload.connected;
+      });
   },
 });
 

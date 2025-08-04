@@ -4,7 +4,6 @@ import {
   createEntityAdapter,
 } from '@reduxjs/toolkit';
 
-import { recordingsActions } from './syncActionTypes.js';
 import type { Recording } from '../../types/common.js';
 
 const recordingsAdapter = createEntityAdapter<Recording>({
@@ -42,24 +41,18 @@ const initialState: RecordingsState = recordingsAdapter.getInitialState({
 const recordingsSlice = createSlice({
   name: 'recordings',
   initialState,
-  reducers: {},
-  extraReducers: (builder) => {
-    builder
-      .addCase(
-        recordingsActions.setCurrentRecording.type,
-        (state, action: PayloadAction<Recording | null>) => {
-          state.currentRecording = action.payload;
-        }
-      )
-      .addCase(
-        recordingsActions.updateCurrentRecordingSummary.type,
-        (state, action: PayloadAction<string>) => {
-          if (state.currentRecording) {
-            state.currentRecording.summary = action.payload;
-          }
-        }
-      );
+  reducers: {
+    setCurrentRecording(state, action: PayloadAction<Recording | null>) {
+      state.currentRecording = action.payload;
+    },
+    updateCurrentRecordingSummary(state, action: PayloadAction<string>) {
+      if (state.currentRecording) {
+        state.currentRecording.summary = action.payload;
+      }
+    },
   },
 });
 
+export const { setCurrentRecording, updateCurrentRecordingSummary } =
+  recordingsSlice.actions;
 export default recordingsSlice.reducer;
