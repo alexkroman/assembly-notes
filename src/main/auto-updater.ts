@@ -85,7 +85,6 @@ export class AutoUpdaterService {
     autoUpdater.on('checking-for-update', () => {
       this.logger.info('Checking for update...');
       this.logger.debug('AutoUpdater config:', {
-        feedURL: autoUpdater.getFeedURL(),
         forceDevUpdateConfig: autoUpdater.forceDevUpdateConfig,
         allowDowngrade: autoUpdater.allowDowngrade,
       });
@@ -156,7 +155,6 @@ export class AutoUpdaterService {
 
     const state = {
       isUpdaterActive: autoUpdater.isUpdaterActive(),
-      feedURL: autoUpdater.getFeedURL(),
       forceDevUpdateConfig: autoUpdater.forceDevUpdateConfig,
     };
 
