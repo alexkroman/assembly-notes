@@ -6,6 +6,7 @@ import { v4 as uuidv4 } from 'uuid';
 
 import { DatabaseService } from '../database.js';
 import { DI_TOKENS } from '../di-tokens.js';
+import { stopRecording } from '../store/slices/recordingSlice.js';
 import {
   setCurrentRecording,
   updateCurrentRecordingSummary,
@@ -25,8 +26,21 @@ export class RecordingDataService {
     @inject(DI_TOKENS.Logger) private logger: typeof Logger
   ) {}
 
-  newRecording(): string | null {
+  async newRecording(): Promise<string | null> {
     const title = 'New Recording';
+
+    // Clear existing transcription state first
+    this.store.dispatch(clearTranscription());
+
+    // Check if there's an ongoing recording and stop it
+    const state = this.store.getState();
+    if (
+      state.recording.status === 'recording' ||
+      state.recording.status === 'starting'
+    ) {
+      this.logger.info('Stopping ongoing recording before creating new one');
+      await this.store.dispatch(stopRecording());
+    }
 
     const recordingId = uuidv4();
     const timestamp = Date.now();

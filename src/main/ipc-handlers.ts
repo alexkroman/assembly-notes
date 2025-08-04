@@ -97,8 +97,8 @@ function setupIpcHandlers(
     return await recordingManager.stopTranscription();
   });
 
-  ipcMain.handle('new-recording', (): string | null => {
-    return recordingDataService.newRecording();
+  ipcMain.handle('new-recording', async (): Promise<string | null> => {
+    return await recordingDataService.newRecording();
   });
 
   ipcMain.handle(
