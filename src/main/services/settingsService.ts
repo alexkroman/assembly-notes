@@ -53,12 +53,10 @@ export class SettingsService {
       }
     });
 
-    // Update Redux store with the new settings
-    const updatedSettings = this.getSettings();
-    this.logger.info('Dispatching updated settings to Redux:', {
-      slackInstallation: updatedSettings.slackInstallation,
-    });
-    this.store.dispatch(updateSettings(updatedSettings));
+    // Update Redux store with only the specific settings that were changed
+    // This preserves any unsaved settings that might be in the Redux state
+    this.logger.info('Dispatching partial settings update to Redux:', updates);
+    this.store.dispatch(updateSettings(updates));
   }
 
   getAssemblyAIKey(): string {
