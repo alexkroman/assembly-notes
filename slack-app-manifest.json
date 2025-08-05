@@ -12,7 +12,7 @@
     }
   },
   "oauth_config": {
-    "redirect_urls": ["http://localhost:3000/auth/slack/callback"],
+    "redirect_urls": ["https://localhost:3000/auth/slack/callback"],
     "scopes": {
       "bot": [
         "channels:read",

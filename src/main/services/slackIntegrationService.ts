@@ -19,7 +19,7 @@ interface SlackApiResponse {
 }
 
 // Slack OAuth configuration
-const SLACK_REDIRECT_URI = 'http://localhost:3000/auth/slack/callback';
+const SLACK_REDIRECT_URI = 'https://localhost:3000/auth/slack/callback';
 
 interface SlackOAuthResponse {
   ok: boolean;
@@ -223,7 +223,7 @@ export class SlackIntegrationService {
       });
 
       this.oauthServer.listen(3000, 'localhost', () => {
-        this.logger.info('OAuth server started on http://localhost:3000');
+        this.logger.info('OAuth server started on https://localhost:3000');
         resolve();
       });
 
