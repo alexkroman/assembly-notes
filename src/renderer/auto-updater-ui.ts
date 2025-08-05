@@ -26,7 +26,7 @@ function createUpdateDialog(info: UpdateInfo): void {
   body.className = 'modal-body';
 
   const message = document.createElement('p');
-  message.textContent = `A new version (${String(info.version)}) is available. Would you like to download and install it?`;
+  message.textContent = `A new version (${info.version}) is available. Would you like to download and install it?`;
 
   body.appendChild(message);
 
@@ -167,7 +167,7 @@ function handleUpdateAvailable(info: UpdateInfo): void {
 }
 
 function handleDownloadProgress(progress: Partial<DownloadProgress>): void {
-  const percent = Math.round(Number(progress.percent ?? 0));
+  const percent = Math.round(progress.percent ?? 0);
   const dialog = (
     window as Window & { currentUpdateDialog?: HTMLElement | null }
   ).currentUpdateDialog;

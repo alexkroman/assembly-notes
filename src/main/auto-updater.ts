@@ -96,7 +96,7 @@ export class AutoUpdaterService {
       // Serialize the date to avoid Redux warnings
       const serializedInfo = {
         ...info,
-        releaseDate: info.releaseDate ? info.releaseDate.toString() : '',
+        releaseDate: info.releaseDate || '',
       };
       this.store.dispatch(updateAvailable(serializedInfo));
       this.mainWindow.webContents.send('update-available', serializedInfo);
@@ -135,7 +135,7 @@ export class AutoUpdaterService {
       // Serialize the date to avoid Redux warnings
       const serializedInfo = {
         ...info,
-        releaseDate: info.releaseDate ? info.releaseDate.toString() : '',
+        releaseDate: info.releaseDate || '',
       };
       this.store.dispatch(downloadComplete(serializedInfo));
       this.mainWindow.webContents.send('update-downloaded', serializedInfo);
