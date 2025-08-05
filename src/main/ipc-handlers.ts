@@ -257,6 +257,19 @@ function setupIpcHandlers(
   ipcMain.handle('install-update', async (): Promise<void> => {
     try {
       logger.info('IPC: install-update requested');
+      const state = store.getState();
+
+      // If already downloading or downloaded, don't start another download
+      if (state.update.downloading) {
+        logger.info('Update already downloading, skipping duplicate download');
+        return;
+      }
+
+      if (state.update.downloaded) {
+        logger.info('Update already downloaded, skipping duplicate download');
+        return;
+      }
+
       await import('electron-updater').then(({ autoUpdater }) => {
         return autoUpdater.downloadUpdate();
       });

@@ -1,188 +1,70 @@
+import React from 'react';
+import { createRoot } from 'react-dom/client';
+
 import type { UpdateInfo, DownloadProgress } from '../types/index.js';
+import { UpdateModal } from './components/UpdateModal.js';
 
-function createUpdateDialog(info: UpdateInfo): void {
-  const dialog = document.createElement('div');
-  dialog.className = 'modal-overlay';
+let updateModalRoot: ReturnType<typeof createRoot> | null = null;
+let currentUpdateInfo: UpdateInfo | null = null;
+let downloadProgress: number | null = null;
+let isDownloading = false;
+let isReadyToInstall = false;
 
-  // Create dialog content safely
-  const content = document.createElement('div');
-  content.className = 'modal-content';
-
-  const header = document.createElement('div');
-  header.className = 'modal-header';
-
-  const title = document.createElement('h2');
-  title.textContent = 'Update Available';
-
-  const closeBtn = document.createElement('button');
-  closeBtn.className = 'modal-close';
-  closeBtn.id = 'closeUpdate';
-  closeBtn.textContent = '×';
-
-  header.appendChild(title);
-  header.appendChild(closeBtn);
-
-  const body = document.createElement('div');
-  body.className = 'modal-body';
-
-  const message = document.createElement('p');
-  message.textContent = `A new version (${info.version}) is available. Would you like to download and install it?`;
-
-  body.appendChild(message);
-
-  const footer = document.createElement('div');
-  footer.className = 'modal-footer';
-
-  const skipBtn = document.createElement('button');
-  skipBtn.id = 'skipUpdate';
-  skipBtn.className = 'btn-secondary';
-  skipBtn.textContent = 'Skip';
-
-  const installBtn = document.createElement('button');
-  installBtn.id = 'installUpdate';
-  installBtn.className = 'btn-primary';
-  installBtn.textContent = 'Install Update';
-
-  footer.appendChild(skipBtn);
-  footer.appendChild(installBtn);
-
-  content.appendChild(header);
-  content.appendChild(body);
-  content.appendChild(footer);
-  dialog.appendChild(content);
-
-  document.body.appendChild(dialog);
-
-  const installBtnElement = document.getElementById('installUpdate');
-  const skipBtnElement = document.getElementById('skipUpdate');
-  const closeBtnElement = document.getElementById('closeUpdate');
-
-  if (installBtnElement) {
-    installBtnElement.onclick = () => {
-      void window.electronAPI.installUpdate();
-      updateDialogProgress(dialog, 'Downloading update...', 0);
-    };
+function renderUpdateModal(isOpen: boolean): void {
+  if (!updateModalRoot) {
+    const container = document.createElement('div');
+    container.id = 'update-modal-root';
+    document.body.appendChild(container);
+    updateModalRoot = createRoot(container);
   }
 
-  if (skipBtnElement) {
-    skipBtnElement.onclick = () => {
-      dialog.remove();
-    };
-  }
+  const handleClose = () => {
+    renderUpdateModal(false);
+  };
 
-  if (closeBtnElement) {
-    closeBtnElement.onclick = () => {
-      dialog.remove();
-    };
-  }
+  const handleInstall = () => {
+    void window.electronAPI.installUpdate();
+    isDownloading = true;
+    downloadProgress = 0;
+    renderUpdateModal(true);
+  };
 
-  (
-    window as Window & { currentUpdateDialog?: HTMLElement }
-  ).currentUpdateDialog = dialog;
-}
+  const handleQuitAndInstall = () => {
+    void window.electronAPI.quitAndInstall();
+  };
 
-function updateDialogProgress(
-  dialog: HTMLElement,
-  message: string,
-  percent: number | null = null,
-  showQuitButton = false
-): void {
-  const content = dialog.querySelector('.modal-content');
-  if (!content) return;
-
-  // Clear existing content
-  content.innerHTML = '';
-
-  const progressText =
-    percent !== null ? ` (${String(Math.round(percent))}%)` : '';
-
-  if (showQuitButton) {
-    const header = document.createElement('div');
-    header.className = 'modal-header';
-
-    const title = document.createElement('h2');
-    title.textContent = 'Update Ready';
-    header.appendChild(title);
-
-    const body = document.createElement('div');
-    body.className = 'modal-body';
-
-    const messageP = document.createElement('p');
-    messageP.textContent = message;
-    body.appendChild(messageP);
-
-    const footer = document.createElement('div');
-    footer.className = 'modal-footer';
-
-    const quitBtn = document.createElement('button');
-    quitBtn.id = 'quitAndReopen';
-    quitBtn.className = 'btn-primary';
-    quitBtn.textContent = 'Quit and Reopen';
-
-    quitBtn.onclick = async () => {
-      try {
-        quitBtn.textContent = 'Restarting...';
-        quitBtn.disabled = true;
-        await window.electronAPI.quitAndInstall();
-      } catch (error) {
-        window.logger.error('Failed to quit and install:', error);
-        quitBtn.textContent = 'Retry';
-        quitBtn.disabled = false;
-
-        // Show error message
-        const errorMsg = document.createElement('p');
-        errorMsg.style.color = 'red';
-        errorMsg.textContent =
-          'Failed to restart. Please try again or restart manually.';
-        body.appendChild(errorMsg);
-      }
-    };
-
-    footer.appendChild(quitBtn);
-    content.appendChild(header);
-    content.appendChild(body);
-    content.appendChild(footer);
-  } else {
-    const header = document.createElement('div');
-    header.className = 'modal-header';
-
-    const title = document.createElement('h2');
-    title.textContent = 'Updating...';
-    header.appendChild(title);
-
-    const body = document.createElement('div');
-    body.className = 'modal-body';
-
-    const messageP = document.createElement('p');
-    messageP.textContent = `${message}${progressText}`;
-    body.appendChild(messageP);
-
-    content.appendChild(header);
-    content.appendChild(body);
-  }
+  updateModalRoot.render(
+    React.createElement(UpdateModal, {
+      isOpen,
+      onClose: handleClose,
+      updateInfo: currentUpdateInfo,
+      onInstall: handleInstall,
+      downloadProgress,
+      isDownloading,
+      isReadyToInstall,
+      onQuitAndInstall: handleQuitAndInstall,
+    })
+  );
 }
 
 function handleUpdateAvailable(info: UpdateInfo): void {
-  createUpdateDialog(info);
+  currentUpdateInfo = info;
+  isDownloading = false;
+  isReadyToInstall = false;
+  downloadProgress = null;
+  renderUpdateModal(true);
 }
 
 function handleDownloadProgress(progress: Partial<DownloadProgress>): void {
-  const percent = Math.round(progress.percent ?? 0);
-  const dialog = (
-    window as Window & { currentUpdateDialog?: HTMLElement | null }
-  ).currentUpdateDialog;
-  if (dialog) {
-    updateDialogProgress(dialog, 'Downloading update...', percent);
-  }
+  downloadProgress = Math.round(progress.percent ?? 0);
+  renderUpdateModal(true);
 }
 
 function handleUpdateDownloaded(_info: UpdateInfo): void {
-  const dialog = (
-    window as Window & { currentUpdateDialog?: HTMLElement | null }
-  ).currentUpdateDialog;
-  if (dialog) {
-    updateDialogProgress(dialog, 'Update ready to install!', null, true);
-  }
+  isDownloading = false;
+  isReadyToInstall = true;
+  downloadProgress = null;
+  renderUpdateModal(true);
 }
 
 export function initAutoUpdaterUI(): void {

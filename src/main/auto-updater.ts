@@ -65,8 +65,8 @@ export class AutoUpdaterService {
       // Allow downgrade for testing
       autoUpdater.allowDowngrade = true;
 
-      // Auto download updates
-      autoUpdater.autoDownload = true;
+      // Don't auto download updates - wait for user confirmation
+      autoUpdater.autoDownload = false;
 
       // Don't check for staged rollout
       autoUpdater.disableWebInstaller = true;
@@ -76,6 +76,9 @@ export class AutoUpdaterService {
         allowDowngrade: autoUpdater.allowDowngrade,
         autoDownload: autoUpdater.autoDownload,
       });
+    } else {
+      // Production configuration
+      autoUpdater.autoDownload = false; // Don't auto download - wait for user confirmation
     }
 
     this.setupEventHandlers();
