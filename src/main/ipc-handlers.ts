@@ -270,9 +270,9 @@ function setupIpcHandlers(
         return;
       }
 
-      await import('electron-updater').then(({ autoUpdater }) => {
-        return autoUpdater.downloadUpdate();
-      });
+      const pkg = await import('electron-updater');
+      const { autoUpdater } = pkg.default;
+      await autoUpdater.downloadUpdate();
     } catch (error) {
       logger.error('IPC Handler: install-update error:', error);
       throw error;

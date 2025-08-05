@@ -83,8 +83,29 @@ function handleUpdateDownloaded(_info: UpdateInfo): void {
   renderUpdateModal(true);
 }
 
+function handleUpdateError(error: string): void {
+  window.logger.error('Update error:', error);
+
+  // If error during download, show error in modal
+  if (isDownloading) {
+    isDownloading = false;
+    downloadProgress = null;
+    // Check for common error types and provide user-friendly messages
+    if (error.includes('sha512 checksum mismatch')) {
+      restartError = 'Download verification failed. Please try again.';
+    } else if (error.includes('net::ERR_')) {
+      restartError =
+        'Network error during download. Please check your connection and try again.';
+    } else {
+      restartError = `Update failed: ${error}`;
+    }
+    renderUpdateModal(true);
+  }
+}
+
 export function initAutoUpdaterUI(): void {
   window.electronAPI.onUpdateAvailable(handleUpdateAvailable);
   window.electronAPI.onDownloadProgress(handleDownloadProgress);
   window.electronAPI.onUpdateDownloaded(handleUpdateDownloaded);
+  window.electronAPI.onUpdateError(handleUpdateError);
 }

@@ -52,17 +52,27 @@ export const UpdateModal: React.FC<UpdateModalProps> = ({
           ? ` (${String(Math.round(downloadProgress))}%)`
           : '';
       return (
-        <p className="text-white/[0.85] text-xs">
-          Downloading update...{progressText}
-        </p>
+        <>
+          <p className="text-white/[0.85] text-xs">
+            Downloading update...{progressText}
+          </p>
+          {restartError && (
+            <p className="text-[#dc3545] text-xs mt-2">{restartError}</p>
+          )}
+        </>
       );
     }
 
     return (
-      <p className="text-white/[0.85] text-xs">
-        A new version ({updateInfo?.version}) is available. Would you like to
-        download and install it?
-      </p>
+      <>
+        <p className="text-white/[0.85] text-xs">
+          A new version ({updateInfo?.version}) is available. Would you like to
+          download and install it?
+        </p>
+        {restartError && (
+          <p className="text-[#dc3545] text-xs mt-2">{restartError}</p>
+        )}
+      </>
     );
   };
 

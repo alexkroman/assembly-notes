@@ -52,8 +52,7 @@
     "setup": "./scripts/setup-env.sh",
     "prepare": "husky",
     "dev:update-server": "node scripts/update-server.js",
-    "test:autoupdate": "npm run build:all && node scripts/test-autoupdate.js",
-    "test:autoupdate:built": "USE_LOCAL_UPDATE_SERVER=true UPDATE_FEED_URL=http://localhost:8000 open release/mac-arm64/Assembly-Notes.app"
+    "test:autoupdate": "USE_LOCAL_UPDATE_SERVER=true UPDATE_FEED_URL=http://localhost:8000 open release/mac-arm64/Assembly\\ Notes.app"
   },
   "dependencies": {
     "@reduxjs/toolkit": "^2.8.2",
