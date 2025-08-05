@@ -37,7 +37,7 @@ export class AssemblyAIFactory implements IAssemblyAIFactory {
   async createClient(apiKey: string): Promise<IAssemblyAIClient> {
     // This will be mocked in tests
     const { AssemblyAI } = await import('assemblyai');
-    return new AssemblyAI({ apiKey });
+    return new AssemblyAI({ apiKey }) as IAssemblyAIClient;
   }
 }
 

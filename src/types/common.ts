@@ -81,3 +81,6 @@ export type Settings = SettingsSchema;
 
 // Alias for ProgressInfo to match preload usage
 export type DownloadProgress = ProgressInfo;
+
+// Re-export TranscriptSegment from redux types for convenience
+export type { TranscriptSegment } from './redux.js';
