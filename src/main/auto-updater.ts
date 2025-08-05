@@ -1,5 +1,5 @@
 import type { Store } from '@reduxjs/toolkit';
-import { BrowserWindow } from 'electron';
+import { app, BrowserWindow } from 'electron';
 import type { ProgressInfo, UpdateInfo } from 'electron-updater';
 import pkg from 'electron-updater';
 import { injectable, inject } from 'tsyringe';
@@ -71,6 +71,9 @@ export class AutoUpdaterService {
       // Don't check for staged rollout
       autoUpdater.disableWebInstaller = true;
 
+      // Ensure app restarts after update
+      autoUpdater.autoInstallOnAppQuit = true;
+
       this.logger.info('AutoUpdater configured for local testing', {
         forceDevUpdateConfig: autoUpdater.forceDevUpdateConfig,
         allowDowngrade: autoUpdater.allowDowngrade,
@@ -79,6 +82,7 @@ export class AutoUpdaterService {
     } else {
       // Production configuration
       autoUpdater.autoDownload = false; // Don't auto download - wait for user confirmation
+      autoUpdater.autoInstallOnAppQuit = true; // Ensure app restarts after update
     }
 
     this.setupEventHandlers();
@@ -135,6 +139,7 @@ export class AutoUpdaterService {
 
     autoUpdater.on('update-downloaded', (info: UpdateInfo) => {
       this.logger.info('Update downloaded:', info);
+
       // Serialize the date to avoid Redux warnings
       const serializedInfo = {
         ...info,
@@ -198,9 +203,24 @@ export class AutoUpdaterService {
     return this.store.getState().update;
   }
 
+  // Download the available update
+  async downloadUpdate(): Promise<void> {
+    this.logger.info('Downloading update...');
+    await autoUpdater.downloadUpdate();
+  }
+
   // Quit and install the downloaded update
   quitAndInstall(): void {
     this.logger.info('Quitting and installing update...');
-    autoUpdater.quitAndInstall();
+
+    // On macOS, we need to focus the app before quitting to ensure proper restart
+    if (process.platform === 'darwin') {
+      app.focus({ steal: true });
+    }
+
+    // Quit and install with restart
+    // First param (isSilent): false - show installation progress
+    // Second param (forceRunAfter): true - restart app after installation
+    autoUpdater.quitAndInstall(false, true);
   }
 }

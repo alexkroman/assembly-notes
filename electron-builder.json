@@ -1,6 +1,6 @@
 {
   "appId": "com.alexkroman.assembly-notes",
-  "productName": "Assembly Notes",
+  "productName": "Assembly-Notes",
   "artifactName": "Assembly-Notes-${os}-${arch}.${ext}",
   "forceCodeSigning": false,
   "publish": {
@@ -68,6 +68,6 @@
     "icon": "build/icons/png",
     "category": "Office",
     "synopsis": "Real-time transcription and meeting notes",
-    "description": "Assembly Notes provides real-time transcription of microphone and system audio with AI-generated meeting summaries."
+    "description": "Assembly-Notes provides real-time transcription of microphone and system audio with AI-generated meeting summaries."
   }
 }

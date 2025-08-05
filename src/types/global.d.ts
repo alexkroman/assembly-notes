@@ -88,6 +88,7 @@ declare global {
         callback: (progress: DownloadProgress) => void
       ) => void;
       onUpdateDownloaded: (callback: (info: UpdateInfo) => void) => void;
+      onUpdateError: (callback: (error: string) => void) => void;
 
       // Recording management
       getAllRecordings: () => Promise<unknown[]>;
