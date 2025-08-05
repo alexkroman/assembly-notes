@@ -1,3 +1,13 @@
+// Helper function to escape HTML entities
+function escapeHtml(unsafe) {
+  return String(unsafe)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
+}
+
 export default async function handler(req, res) {
   // Enable CORS
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -14,11 +24,13 @@ export default async function handler(req, res) {
     const { code, error } = req.query;
 
     if (error) {
+      // Escape the error message to prevent XSS
+      const safeError = escapeHtml(error);
       return res.status(200).send(`
         <html>
           <body style="font-family: Arial, sans-serif; text-align: center; padding: 50px;">
             <h1>❌ OAuth Error</h1>
-            <p>Error: ${error}</p>
+            <p>Error: ${safeError}</p>
             <p>Please close this window and try again.</p>
           </body>
         </html>
@@ -26,16 +38,13 @@ export default async function handler(req, res) {
     }
 
     if (code) {
+      // Don't include the code in the HTML at all - the Electron app intercepts before page loads
       return res.status(200).send(`
         <html>
           <body style="font-family: Arial, sans-serif; text-align: center; padding: 50px;">
             <h1>✅ Successfully connected to Slack!</h1>
             <p>You can close this window and return to Assembly Notes.</p>
             <script>
-              // Send the code back to the opener window if available
-              if (window.opener) {
-                window.opener.postMessage({ type: 'slack-oauth-code', code: '${code}' }, '*');
-              }
               // Try to close the window
               setTimeout(() => window.close(), 2000);
             </script>

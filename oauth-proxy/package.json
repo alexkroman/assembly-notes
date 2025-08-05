@@ -9,10 +9,10 @@
     "dev": "vercel dev",
     "deploy": "vercel --prod"
   },
-  "dependencies": {
-    "@vercel/node": "^3.0.0"
-  },
   "engines": {
     "node": "20.x"
+  },
+  "dependencies": {
+    "@vercel/node": "^5.3.11"
   }
 }
