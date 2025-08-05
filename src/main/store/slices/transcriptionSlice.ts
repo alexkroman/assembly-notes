@@ -21,15 +21,11 @@ const transcriptionSlice = createSlice({
   reducers: {
     addTranscriptSegment: (state, action: PayloadAction<TranscriptSegment>) => {
       state.segments.push(action.payload);
-      if (action.payload.isFinal) {
-        // Append the new final transcript to the existing transcript
-        const newText = action.payload.text.trim();
-        if (newText) {
-          state.currentTranscript = state.currentTranscript
-            ? `${state.currentTranscript} ${newText}`
-            : newText;
-        }
-      }
+      // Rebuild the transcript from all final segments to prevent corruption
+      state.currentTranscript = state.segments
+        .filter((seg) => seg.isFinal)
+        .map((seg) => seg.text)
+        .join(' ');
     },
     updateTranscriptBuffer: (
       state,
