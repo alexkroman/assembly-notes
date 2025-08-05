@@ -9,6 +9,8 @@ let currentUpdateInfo: UpdateInfo | null = null;
 let downloadProgress: number | null = null;
 let isDownloading = false;
 let isReadyToInstall = false;
+let isRestarting = false;
+let restartError: string | null = null;
 
 function renderUpdateModal(isOpen: boolean): void {
   if (!updateModalRoot) {
@@ -29,8 +31,18 @@ function renderUpdateModal(isOpen: boolean): void {
     renderUpdateModal(true);
   };
 
-  const handleQuitAndInstall = () => {
-    void window.electronAPI.quitAndInstall();
+  const handleQuitAndInstall = async () => {
+    try {
+      isRestarting = true;
+      restartError = null;
+      renderUpdateModal(true); // Re-render to show "Restarting..." state
+      await window.electronAPI.quitAndInstall();
+    } catch (error) {
+      window.logger.error('Failed to quit and install:', error);
+      isRestarting = false;
+      restartError = 'Failed to restart. Please try again or restart manually.';
+      renderUpdateModal(true); // Re-render to show error state
+    }
   };
 
   updateModalRoot.render(
@@ -43,6 +55,8 @@ function renderUpdateModal(isOpen: boolean): void {
       isDownloading,
       isReadyToInstall,
       onQuitAndInstall: handleQuitAndInstall,
+      isRestarting,
+      restartError,
     })
   );
 }
@@ -52,6 +66,8 @@ function handleUpdateAvailable(info: UpdateInfo): void {
   isDownloading = false;
   isReadyToInstall = false;
   downloadProgress = null;
+  isRestarting = false;
+  restartError = null;
   renderUpdateModal(true);
 }
 

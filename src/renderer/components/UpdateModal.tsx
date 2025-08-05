@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 
 import { Modal } from './Modal.js';
 import type { UpdateInfo } from '../../types/index.js';
@@ -11,7 +11,9 @@ interface UpdateModalProps {
   downloadProgress: number | null;
   isDownloading: boolean;
   isReadyToInstall: boolean;
-  onQuitAndInstall: () => void;
+  onQuitAndInstall: () => void | Promise<void>;
+  isRestarting?: boolean;
+  restartError?: string | null;
 }
 
 export const UpdateModal: React.FC<UpdateModalProps> = ({
@@ -23,16 +25,9 @@ export const UpdateModal: React.FC<UpdateModalProps> = ({
   isDownloading,
   isReadyToInstall,
   onQuitAndInstall,
+  isRestarting = false,
+  restartError = null,
 }) => {
-  const [isRestarting, setIsRestarting] = useState(false);
-  const [restartError, setRestartError] = useState<string | null>(null);
-
-  const handleQuitAndInstall = () => {
-    setIsRestarting(true);
-    setRestartError(null);
-    onQuitAndInstall();
-  };
-
   const getTitle = () => {
     if (isReadyToInstall) return 'Update Ready';
     if (isDownloading) return 'Updating...';
@@ -76,7 +71,7 @@ export const UpdateModal: React.FC<UpdateModalProps> = ({
       return (
         <button
           className="btn-primary"
-          onClick={handleQuitAndInstall}
+          onClick={() => void onQuitAndInstall()}
           disabled={isRestarting}
         >
           {isRestarting ? 'Restarting...' : 'Quit and Reopen'}
