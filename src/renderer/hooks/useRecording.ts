@@ -224,7 +224,7 @@ export const useRecording = (recordingId: string | null) => {
       // Debounce database update
       titleDebounceRef.current = setTimeout(() => {
         void updateTitle({ id: currentRecordingId, title });
-      }, 500); // Wait 500ms after user stops typing
+      }, 300); // Wait 300ms after user stops typing
     },
     [recordingId, updateTitle]
   );
@@ -247,7 +247,7 @@ export const useRecording = (recordingId: string | null) => {
       // Debounce database update
       summaryDebounceRef.current = setTimeout(() => {
         void updateSummary({ id: currentRecordingId, summary: summaryText });
-      }, 500); // Wait 500ms after user stops typing
+      }, 300); // Wait 300ms after user stops typing
     },
     [recordingId, updateSummary]
   );
