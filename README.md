@@ -1,6 +1,6 @@
 # Assembly Notes
 
-![Assembly Notes Screenshot](docs/screenshots/screenshot.gif)
+![Assembly Notes Screenshot](docs/screenshots/demo.gif)
 [![Latest Release](https://img.shields.io/github/v/release/alexkroman/assembly-notes?style=for-the-badge&logo=github)](https://github.com/alexkroman/assembly-notes/releases/latest)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg?style=for-the-badge)](https://opensource.org/licenses/MIT)
 [![Platform](https://img.shields.io/badge/platform-macOS%20%7C%20Windows%20%7C%20Linux-blue?style=for-the-badge)](https://github.com/alexkroman/assembly-notes/releases/latest)
