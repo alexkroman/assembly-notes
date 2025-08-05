@@ -1,6 +1,6 @@
 # Assembly Notes
 
-![Assembly Notes Screenshot](docs/screenshots/screenshot.png)
+![Assembly Notes Screenshot](docs/screenshots/screenshot.gif)
 
 Real-time meeting transcription and AI-powered summaries. Captures both microphone and system audio, transcribes with AssemblyAI, and posts summaries to Slack.
 
