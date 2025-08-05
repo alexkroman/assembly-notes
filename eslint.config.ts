@@ -18,6 +18,7 @@ export default tseslint.config(
       'vite.config.js',
       'scripts/**',
       'docs/**',
+      'oauth-proxy/**',
     ],
   },
 

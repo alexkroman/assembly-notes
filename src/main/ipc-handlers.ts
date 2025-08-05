@@ -238,12 +238,8 @@ function setupIpcHandlers(
   // Slack OAuth handlers
   ipcMain.handle(
     'slack-oauth-initiate',
-    async (
-      _event: IpcMainInvokeEvent,
-      clientId: string,
-      clientSecret: string
-    ): Promise<void> => {
-      await slackIntegrationService.initiateOAuth(clientId, clientSecret);
+    async (_event: IpcMainInvokeEvent): Promise<void> => {
+      await slackIntegrationService.initiateOAuth();
     }
   );
 

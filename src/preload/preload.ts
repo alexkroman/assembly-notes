@@ -89,8 +89,7 @@ const electronAPI = {
     ipcRenderer.invoke('post-to-slack', message, channelId),
 
   // Slack OAuth methods
-  slackOAuthInitiate: (clientId: string, clientSecret: string) =>
-    ipcRenderer.invoke('slack-oauth-initiate', clientId, clientSecret),
+  slackOAuthInitiate: () => ipcRenderer.invoke('slack-oauth-initiate'),
   slackOAuthRemoveInstallation: () =>
     ipcRenderer.invoke('slack-oauth-remove-installation'),
   slackOAuthGetCurrent: () => ipcRenderer.invoke('slack-oauth-get-current'),

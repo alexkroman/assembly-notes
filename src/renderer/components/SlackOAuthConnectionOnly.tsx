@@ -3,14 +3,7 @@ import React, { useEffect, useState } from 'react';
 import { useAppSelector, useAppDispatch } from '../hooks/redux.js';
 import { apiSlice } from '../slices/apiSlice.js';
 
-interface SlackOAuthConnectionOnlyProps {
-  clientId?: string;
-  clientSecret?: string;
-}
-
-export const SlackOAuthConnectionOnly: React.FC<
-  SlackOAuthConnectionOnlyProps
-> = ({ clientId = '', clientSecret = '' }) => {
+export const SlackOAuthConnectionOnly: React.FC = () => {
   const settings = useAppSelector((state) => state.settings);
   const dispatch = useAppDispatch();
   const [isConnecting, setIsConnecting] = useState(false);
@@ -36,13 +29,13 @@ export const SlackOAuthConnectionOnly: React.FC<
     window.electronAPI.onSlackOAuthError(handleOAuthError);
 
     // Note: electronAPI doesn't expose removeListener, so we rely on component unmount
-  }, []);
+  }, [dispatch]);
 
   const handleConnect = async () => {
     try {
       setIsConnecting(true);
       setError(null);
-      await window.electronAPI.slackOAuthInitiate(clientId, clientSecret);
+      await window.electronAPI.slackOAuthInitiate();
     } catch (err) {
       setIsConnecting(false);
       setError(err instanceof Error ? err.message : 'Failed to initiate OAuth');

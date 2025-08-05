@@ -78,10 +78,7 @@ export interface SlackAPI {
     message: string,
     channelId?: string
   ) => Promise<{ success: boolean; error?: string }>;
-  'slack-oauth-initiate': (
-    clientId: string,
-    clientSecret: string
-  ) => Promise<void>;
+  'slack-oauth-initiate': () => Promise<void>;
   'slack-oauth-remove-installation': () => void;
   'slack-oauth-get-current': () => SlackInstallation | null;
   'slack-oauth-validate-channels': (
