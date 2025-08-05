@@ -30,8 +30,6 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ onClose }) => {
     prompts: [],
     autoStart: false,
   });
-  const [slackClientId, setSlackClientId] = useState('');
-  const [slackClientSecret, setSlackClientSecret] = useState('');
   const dispatch = useAppDispatch();
 
   useEffect(() => {
@@ -191,50 +189,12 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ onClose }) => {
         />
       </div>
 
-      {!settings.slackInstallation && (
-        <div className="form-group">
-          <label className="block mb-0.5 text-xs font-medium text-white/[0.85]">
-            Slack Credentials (optional):
-          </label>
-          <div className="flex gap-1.5">
-            <input
-              type="text"
-              id="slackClientId"
-              data-testid="slack-client-id-input"
-              value={slackClientId}
-              onChange={(e) => {
-                setSlackClientId(e.target.value);
-              }}
-              placeholder="Client ID"
-              className="form-input flex-1"
-            />
-            <input
-              type="password"
-              id="slackClientSecret"
-              data-testid="slack-client-secret-input"
-              value={slackClientSecret}
-              onChange={(e) => {
-                setSlackClientSecret(e.target.value);
-              }}
-              placeholder="Client Secret"
-              className="form-input flex-1"
-            />
-          </div>
-        </div>
-      )}
-
-      {(Boolean(settings.slackInstallation) ||
-        (slackClientId.trim() && slackClientSecret.trim())) && (
-        <div className="form-group">
-          <label className="block mb-0.5 text-xs font-medium text-white/[0.85]">
-            Slack Connection:
-          </label>
-          <SlackOAuthConnectionOnly
-            clientId={slackClientId}
-            clientSecret={slackClientSecret}
-          />
-        </div>
-      )}
+      <div className="form-group">
+        <label className="block mb-0.5 text-xs font-medium text-white/[0.85]">
+          Slack Connection (optional):
+        </label>
+        <SlackOAuthConnectionOnly />
+      </div>
     </Modal>
   );
 };

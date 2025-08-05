@@ -1,6 +1,3 @@
-import { createServer, Server } from 'http';
-import { parse } from 'url';
-
 import type { Store } from '@reduxjs/toolkit';
 import { BrowserWindow } from 'electron';
 import { inject, injectable } from 'tsyringe';
@@ -19,7 +16,9 @@ interface SlackApiResponse {
 }
 
 // Slack OAuth configuration
-const SLACK_REDIRECT_URI = 'https://localhost:3000/auth/slack/callback';
+const SLACK_CLIENT_ID = '134297659808.9308789344146';
+const SLACK_REDIRECT_URI =
+  'https://assembly-notes.alexkroman.com/auth/slack/callback';
 
 interface SlackOAuthResponse {
   ok: boolean;
@@ -66,9 +65,6 @@ export class FetchHttpClient implements IHttpClient {
 @injectable()
 export class SlackIntegrationService {
   private oauthWindow: BrowserWindow | null = null;
-  private oauthServer: Server | null = null;
-  private tempClientId = '';
-  private tempClientSecret = '';
 
   constructor(
     @inject(DI_TOKENS.Store) private store: Store<RootState>,
@@ -81,35 +77,17 @@ export class SlackIntegrationService {
   // ========== OAuth Methods ==========
 
   /**
-   * Initiates the Slack OAuth flow using a temporary HTTP server
+   * Initiates the Slack OAuth flow
    */
-  async initiateOAuth(clientId: string, clientSecret: string): Promise<void> {
-    // Check if OAuth credentials are provided
-    if (!clientId || !clientSecret) {
-      const error = new Error('Slack OAuth credentials are required.');
-      this.logger.error('OAuth configuration missing:', error.message);
-      this.mainWindow.webContents.send(
-        'slack-oauth-error',
-        'Please enter both Slack Client ID and Client Secret.'
-      );
-      return;
-    }
-
-    // Store credentials temporarily for this OAuth flow
-    this.tempClientId = clientId;
-    this.tempClientSecret = clientSecret;
-
+  async initiateOAuth(): Promise<void> {
     if (this.oauthWindow) {
       this.oauthWindow.focus();
       return;
     }
 
-    // Start temporary HTTP server to handle OAuth callback
-    await this.startOAuthServer();
-
     const authUrl =
       `https://slack.com/oauth/v2/authorize?` +
-      `client_id=${this.tempClientId}&` +
+      `client_id=${SLACK_CLIENT_ID}&` +
       `scope=channels:read,groups:read,im:read,im:write,mpim:read,mpim:write,chat:write,chat:write.public,users:read&` +
       `redirect_uri=${encodeURIComponent(SLACK_REDIRECT_URI)}`;
 
@@ -120,7 +98,6 @@ export class SlackIntegrationService {
       webPreferences: {
         nodeIntegration: false,
         contextIsolation: true,
-        experimentalFeatures: true,
       },
       parent: this.mainWindow,
       modal: false,
@@ -136,7 +113,6 @@ export class SlackIntegrationService {
     // Handle window closed
     this.oauthWindow.on('closed', () => {
       this.oauthWindow = null;
-      this.stopOAuthServer();
     });
 
     // Add error handling for URL loading
@@ -151,24 +127,42 @@ export class SlackIntegrationService {
       }
     );
 
-    this.oauthWindow.webContents.on('did-finish-load', () => {
-      this.logger.info('OAuth window loaded successfully');
+    // Handle navigation events to intercept OAuth callback
+    const handleOAuthRedirect = (navigationUrl: string) => {
+      // Check if this is the OAuth callback
+      if (navigationUrl.startsWith(SLACK_REDIRECT_URI)) {
+        // Parse the URL to get the query parameters
+        const url = new URL(navigationUrl);
+        const code = url.searchParams.get('code');
+        const error = url.searchParams.get('error');
+
+        if (error) {
+          this.logger.error('OAuth error:', error);
+          this.mainWindow.webContents.send('slack-oauth-error', error);
+          this.closeOAuthWindow();
+        } else if (code) {
+          // Handle the OAuth callback with the code
+          void this.handleOAuthCode(code);
+        }
+        return true; // Indicate we handled it
+      }
+      return false;
+    };
+
+    // Listen for both will-navigate and will-redirect events
+    this.oauthWindow.webContents.on('will-navigate', (event, navigationUrl) => {
+      if (handleOAuthRedirect(navigationUrl)) {
+        event.preventDefault();
+      }
     });
 
-    // Handle navigation events
-    this.oauthWindow.webContents.on(
-      'will-navigate',
-      (_event, navigationUrl) => {
-        this.logger.info('OAuth window navigating to:', navigationUrl);
+    this.oauthWindow.webContents.on('will-redirect', (event, navigationUrl) => {
+      if (handleOAuthRedirect(navigationUrl)) {
+        event.preventDefault();
       }
-    );
-
-    this.oauthWindow.webContents.on('did-navigate', (_event, url) => {
-      this.logger.info('OAuth window navigated to:', url);
     });
 
     // Load the OAuth URL
-    this.logger.info('Loading OAuth URL:', authUrl);
 
     // Show the window immediately and then load the URL
     this.oauthWindow.show();
@@ -177,103 +171,26 @@ export class SlackIntegrationService {
 
     try {
       await this.oauthWindow.loadURL(authUrl);
-      this.logger.info('OAuth window should now be visible');
     } catch (error: unknown) {
       this.logger.error('Failed to load OAuth URL:', error);
       // Don't throw the error if it's just the redirect abort
       if (error instanceof Error && !error.message.includes('ERR_ABORTED')) {
         throw error;
       }
-      this.logger.info(
-        'Ignoring ERR_ABORTED error - this is normal for OAuth redirects'
-      );
     }
   }
 
   /**
-   * Starts a temporary HTTP server to handle OAuth callback
+   * Handles the OAuth code from the callback
    */
-  private async startOAuthServer(): Promise<void> {
-    return new Promise((resolve, reject) => {
-      this.oauthServer = createServer((req, res) => {
-        const url = req.url;
-        if (!url) return;
-
-        const parsedUrl = parse(url, true);
-
-        if (parsedUrl.pathname === '/auth/slack/callback') {
-          // Send success page
-          res.writeHead(200, { 'Content-Type': 'text/html' });
-          res.end(`
-            <html>
-              <body style="font-family: Arial, sans-serif; text-align: center; padding: 50px;">
-                <h1>✅ Successfully connected to Slack!</h1>
-                <p>You can close this window and return to Assembly-Notes.</p>
-                <script>window.close();</script>
-              </body>
-            </html>
-          `);
-
-          // Process the OAuth callback
-          void this.handleOAuthCallback(parsedUrl.query);
-        } else {
-          res.writeHead(404, { 'Content-Type': 'text/plain' });
-          res.end('Not Found');
-        }
-      });
-
-      this.oauthServer.listen(3000, 'localhost', () => {
-        this.logger.info('OAuth server started on https://localhost:3000');
-        resolve();
-      });
-
-      this.oauthServer.on('error', (error) => {
-        this.logger.error('OAuth server error:', error);
-        reject(error);
-      });
-    });
-  }
-
-  /**
-   * Stops the temporary HTTP server
-   */
-  private stopOAuthServer(): void {
-    if (this.oauthServer) {
-      this.oauthServer.close();
-      this.oauthServer = null;
-      this.logger.info('OAuth server stopped');
-    }
-  }
-
-  /**
-   * Handles the OAuth callback parameters
-   */
-  private async handleOAuthCallback(
-    query: Record<string, string | string[] | undefined>
-  ): Promise<void> {
+  private async handleOAuthCode(code: string): Promise<void> {
     try {
-      const code = Array.isArray(query['code'])
-        ? query['code'][0]
-        : query['code'];
-      const error = Array.isArray(query['error'])
-        ? query['error'][0]
-        : query['error'];
+      const installation = await this.exchangeCodeForToken(code);
+      this.saveInstallation(installation);
 
-      if (error) {
-        this.logger.error('OAuth error:', error);
-        this.mainWindow.webContents.send('slack-oauth-error', error);
-        this.closeOAuthWindow();
-        return;
-      }
-
-      if (code) {
-        const installation = await this.exchangeCodeForToken(code);
-        this.saveInstallation(installation);
-
-        // Notify the main window that OAuth is complete
-        this.mainWindow.webContents.send('slack-oauth-success', installation);
-        this.closeOAuthWindow();
-      }
+      // Notify the main window that OAuth is complete
+      this.mainWindow.webContents.send('slack-oauth-success', installation);
+      this.closeOAuthWindow();
     } catch (error) {
       this.logger.error('OAuth callback error:', error);
       this.mainWindow.webContents.send(
@@ -285,32 +202,34 @@ export class SlackIntegrationService {
   }
 
   /**
-   * Closes the OAuth window and stops the server
+   * Closes the OAuth window
    */
   private closeOAuthWindow(): void {
     if (this.oauthWindow) {
       this.oauthWindow.close();
       this.oauthWindow = null;
     }
-    this.stopOAuthServer();
   }
 
   /**
    * Exchanges authorization code for access token
    */
   private async exchangeCodeForToken(code: string): Promise<SlackInstallation> {
-    const response = await fetch('https://slack.com/api/oauth.v2.access', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/x-www-form-urlencoded',
-      },
-      body: new URLSearchParams({
-        client_id: this.tempClientId,
-        client_secret: this.tempClientSecret,
-        code: code,
-        redirect_uri: SLACK_REDIRECT_URI,
-      }),
-    });
+    // Use OAuth proxy to exchange code for token
+    const response = await fetch(
+      'https://assembly-notes.alexkroman.com/api/slack-oauth',
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          client_id: SLACK_CLIENT_ID,
+          code: code,
+          redirect_uri: SLACK_REDIRECT_URI,
+        }),
+      }
+    );
 
     const data = (await response.json()) as SlackOAuthResponse;
 
@@ -336,10 +255,6 @@ export class SlackIntegrationService {
     this.settingsService.updateSettings({
       slackInstallation: installation,
     });
-
-    // Clear temporary credentials
-    this.tempClientId = '';
-    this.tempClientSecret = '';
 
     this.logger.info(
       `Slack installation saved for team: ${installation.teamName}`

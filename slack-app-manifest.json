@@ -12,7 +12,9 @@
     }
   },
   "oauth_config": {
-    "redirect_urls": ["https://localhost:3000/auth/slack/callback"],
+    "redirect_urls": [
+      "https://assembly-notes.alexkroman.com/auth/slack/callback"
+    ],
     "scopes": {
       "bot": [
         "channels:read",
