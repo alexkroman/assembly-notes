@@ -81,7 +81,7 @@ export const SlackOAuthConnectionOnly: React.FC<
     <div className="text-sm">
       <button
         type="button"
-        className="btn-danger px-2 py-0.75 text-xs"
+        className="btn-danger px-2.5 py-1 text-sm"
         onClick={() => {
           void handleDisconnect();
         }}
