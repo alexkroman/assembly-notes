@@ -150,3 +150,50 @@ describe('SlackIntegrationService configuration helpers', () => {
     expect(service.isConfigured()).toBe(false);
   });
 });
+
+describe('SlackIntegrationService helper methods', () => {
+  it('convertMarkdownToSlackMrkdwn converts bold and headers', async () => {
+    const store = createMockStore(installation);
+    const service = createService(store, { post: jest.fn() } as any) as any;
+
+    const input = '**Bold** text\n# Header\n## Subheader';
+    const expected = '*Bold* text\n*Header*\n*Subheader*';
+
+    const output = service.convertMarkdownToSlackMrkdwn(input);
+    expect(output).toBe(expected);
+  });
+
+  it('getCurrentInstallation returns installation from store', () => {
+    const store = createMockStore(installation);
+    const service = createService(store, { post: jest.fn() } as any);
+
+    expect(service.getCurrentInstallation()).toBe(installation);
+  });
+
+  it('getCurrentInstallationInfo returns teamName', () => {
+    const store = createMockStore(installation);
+    const service = createService(store, { post: jest.fn() } as any);
+
+    expect(service.getCurrentInstallationInfo()).toEqual({ teamName: 'Test Team' });
+  });
+
+  it('removeInstallation clears installation and channels via settingsService', () => {
+    const store = createMockStore(installation);
+    const mockSettingsService = { updateSettings: jest.fn() } as any;
+    const service = new SlackIntegrationService(
+      store as any,
+      mockLogger as any,
+      mockMainWindow,
+      mockSettingsService,
+      { post: jest.fn() } as any
+    );
+
+    service.removeInstallation();
+
+    expect(mockSettingsService.updateSettings).toHaveBeenCalledWith({
+      slackInstallation: null,
+      slackChannels: '',
+    });
+    expect(mockLogger.info).toHaveBeenCalledWith('Removed current Slack installation');
+  });
+});
