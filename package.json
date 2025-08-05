@@ -5,7 +5,7 @@
   "keywords": [],
   "main": "./dist/main/main.js",
   "type": "module",
-  "version": "1.0.62",
+  "version": "1.0.63",
   "author": "Alex Kroman <alex@alexkroman.com>",
   "engines": {
     "node": ">=24.0.0",
