@@ -125,7 +125,7 @@ export class SlackIntegrationService {
       parent: this.mainWindow,
       modal: false,
       show: false,
-      title: 'Connect to Slack - Assembly Notes',
+      title: 'Connect to Slack - Assembly-Notes',
       autoHideMenuBar: true,
       alwaysOnTop: true,
       resizable: true,
@@ -208,7 +208,7 @@ export class SlackIntegrationService {
             <html>
               <body style="font-family: Arial, sans-serif; text-align: center; padding: 50px;">
                 <h1>✅ Successfully connected to Slack!</h1>
-                <p>You can close this window and return to Assembly Notes.</p>
+                <p>You can close this window and return to Assembly-Notes.</p>
                 <script>window.close();</script>
               </body>
             </html>

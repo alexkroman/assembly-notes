@@ -34,7 +34,7 @@ function createWindow(): void {
     height: 380,
     minWidth: 480,
     minHeight: 220,
-    title: 'Assembly Notes',
+    title: 'Assembly-Notes',
     webPreferences: {
       preload: path.join(__dirname, '../preload/preload.js'),
       contextIsolation: true,
