@@ -36,11 +36,18 @@ export default defineConfig(({ command, mode }) => {
       outDir: '../../dist/renderer',
       emptyOutDir: false,
       sourcemap: false,
+      chunkSizeWarningLimit: 600,
       rollupOptions: {
         input: {
           main: path.resolve(__dirname, 'src/renderer/index.html'),
         },
         external: ['audio-processor'],
+        output: {
+          manualChunks: {
+            vendor: ['react', 'react-dom', 'react-redux', '@reduxjs/toolkit'],
+            sentry: ['@sentry/electron/renderer'],
+          },
+        },
       },
     },
     publicDir: 'public',

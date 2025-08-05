@@ -1,12 +1,37 @@
 import * as path from 'path';
 import { fileURLToPath } from 'url';
 
+import * as Sentry from '@sentry/electron/main';
 import dotenv from 'dotenv';
 import { app, BrowserWindow, Menu } from 'electron';
 import { initMain as initAudioLoopback } from 'electron-audio-loopback';
 
 // Load environment variables from .env file
 dotenv.config();
+
+// Initialize Sentry
+const sentryDsn =
+  process.env['SENTRY_DSN'] ??
+  'https://fdae435c29626d7c3480f4bd5d2e9c33@o4509792651902976.ingest.us.sentry.io/4509792663764992';
+if (sentryDsn) {
+  Sentry.init({
+    dsn: sentryDsn,
+    environment: app.isPackaged ? 'production' : 'development',
+    integrations: [
+      Sentry.mainProcessSessionIntegration(),
+      Sentry.electronBreadcrumbsIntegration(),
+      Sentry.onUncaughtExceptionIntegration(),
+      Sentry.onUnhandledRejectionIntegration(),
+    ],
+    beforeSend(event) {
+      // Filter out development errors if in production
+      if (app.isPackaged && event.environment === 'development') {
+        return null;
+      }
+      return event;
+    },
+  });
+}
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);

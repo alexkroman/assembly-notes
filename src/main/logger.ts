@@ -1,5 +1,6 @@
 import path from 'path';
 
+import * as Sentry from '@sentry/electron/main';
 import { app } from 'electron';
 import log from 'electron-log';
 
@@ -20,5 +21,18 @@ log.transports.console.format = '[{h}:{i}:{s}.{ms}] [{level}] {text}';
 if (log.errorHandler) {
   log.errorHandler.startCatching();
 }
+
+// Hook electron-log errors to Sentry
+log.hooks.push((message, transport) => {
+  if (transport !== log.transports.console && message.level === 'error') {
+    const error = message.data[0] as unknown;
+    if (error instanceof Error) {
+      Sentry.captureException(error);
+    } else {
+      Sentry.captureMessage(String(error), 'error');
+    }
+  }
+  return message;
+});
 
 export default log;
