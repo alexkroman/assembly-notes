@@ -8,7 +8,7 @@ import {
   useGetAllRecordingsQuery,
   useSearchRecordingsQuery,
   useDeleteRecordingMutation,
-} from '../store/api/apiSlice.js';
+} from '../slices/apiSlice.js';
 import '../../types/global.d.ts';
 
 export const RecordingsList: React.FC<RecordingsListProps> = ({

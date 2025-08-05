@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 
 import { useAppSelector, useAppDispatch } from '../hooks/redux.js';
-import { apiSlice } from '../store/api/apiSlice.js';
+import { apiSlice } from '../slices/apiSlice.js';
 
 interface SlackOAuthConnectionOnlyProps {
   clientId?: string;

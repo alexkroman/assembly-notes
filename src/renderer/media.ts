@@ -9,7 +9,6 @@ let systemAudioStream: MediaStream | null = null;
 export async function acquireStreams(): Promise<{
   microphoneStream: MediaStream;
   systemAudioStream: MediaStream;
-  processedStream: MediaStream;
 }> {
   const constraints = {
     audio: {
@@ -41,15 +40,11 @@ export async function acquireStreams(): Promise<{
 
   systemAudioStream = displayStream;
 
-  const processedStream = processEchoCancellation(
-    microphoneStream,
-    systemAudioStream
-  );
+  processEchoCancellation(microphoneStream, systemAudioStream);
 
   return {
     microphoneStream,
     systemAudioStream,
-    processedStream,
   };
 }
 

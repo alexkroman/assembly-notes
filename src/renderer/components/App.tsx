@@ -12,7 +12,7 @@ import { PromptModal } from './PromptModal';
 import { RecordingsList } from './RecordingsList';
 import { RecordingView } from './RecordingView';
 import { SettingsModal } from './SettingsModal';
-import { useGetSettingsQuery, apiSlice } from '../store/api/apiSlice.js';
+import { useGetSettingsQuery, apiSlice } from '../slices/apiSlice.js';
 
 export const App: React.FC = () => {
   const dispatch = useAppDispatch();

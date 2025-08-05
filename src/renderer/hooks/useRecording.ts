@@ -6,7 +6,7 @@ import type { Recording } from '../../types/common.js';
 import {
   useUpdateRecordingTitleMutation,
   useUpdateRecordingSummaryMutation,
-} from '../store/api/apiSlice.js';
+} from '../slices/apiSlice.js';
 
 export const useRecording = (recordingId: string | null) => {
   const recordingState = useAppSelector(

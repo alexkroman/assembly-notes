@@ -16,7 +16,7 @@ jest.mock('../../../src/renderer/store', () => ({
 }));
 
 // Mock RTK Query hooks
-jest.mock('../../../src/renderer/store/api/apiSlice', () => ({
+jest.mock('../../../src/renderer/slices/apiSlice', () => ({
   useGetSettingsQuery: jest.fn(),
   useUpdateSettingsMutation: jest.fn(),
 }));
@@ -25,7 +25,7 @@ jest.mock('../../../src/renderer/store/api/apiSlice', () => ({
 import {
   useGetSettingsQuery,
   useUpdateSettingsMutation,
-} from '../../../src/renderer/store/api/apiSlice';
+} from '../../../src/renderer/slices/apiSlice';
 
 // Mock electron API
 const mockElectronAPI = {

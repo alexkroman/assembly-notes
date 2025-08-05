@@ -85,30 +85,3 @@ export function cleanupEchoCancellation(): void {
   }
   echoCancelledDestination = null;
 }
-
-declare global {
-  interface Window {
-    EchoCancellation: {
-      processEchoCancellation: (
-        micStream: MediaStream,
-        systemStream: MediaStream
-      ) => MediaStream;
-      cleanupEchoCancellation: () => void;
-    };
-  }
-}
-
-(
-  window as Window & {
-    EchoCancellation: {
-      processEchoCancellation: (
-        micStream: MediaStream,
-        systemStream: MediaStream
-      ) => MediaStream;
-      cleanupEchoCancellation: () => void;
-    };
-  }
-).EchoCancellation = {
-  processEchoCancellation,
-  cleanupEchoCancellation,
-};

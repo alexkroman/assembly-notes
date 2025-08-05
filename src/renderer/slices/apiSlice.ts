@@ -4,7 +4,7 @@ import type {
   FullSettingsState,
   PromptTemplate,
   Recording,
-} from '../../../types/index.js';
+} from '../../types/index.js';
 
 // Renderer-side API slice that calls IPC methods
 export const apiSlice = createApi({

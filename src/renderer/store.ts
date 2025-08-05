@@ -3,6 +3,7 @@ import { stateSyncEnhancer } from 'electron-redux/es/renderer.js';
 
 // Import API slice
 // Import slice reducers
+import { apiSlice } from './slices/apiSlice.js';
 import recordingReducer from './slices/recordingSlice.js';
 import recordingsReducer from './slices/recordingsSlice.js';
 import settingsReducer from './slices/settingsSlice.js';
@@ -16,7 +17,6 @@ import uiReducer, {
   setStatus,
 } from './slices/uiSlice.js';
 import updateReducer from './slices/updateSlice.js';
-import { apiSlice } from './store/api/apiSlice.js';
 
 // --- Store Configuration ---
 

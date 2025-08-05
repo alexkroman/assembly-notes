@@ -5,11 +5,11 @@ import { SlackOAuthConnectionOnly } from './SlackOAuthConnectionOnly.js';
 import type { SettingsModalProps } from '../../types/components.js';
 import type { FullSettingsState } from '../../types/redux.js';
 import { useAppDispatch, useAppSelector } from '../hooks/redux.js';
-import { setStatus } from '../store';
 import {
   useGetSettingsQuery,
   useUpdateSettingsMutation,
-} from '../store/api/apiSlice.js';
+} from '../slices/apiSlice.js';
+import { setStatus } from '../store';
 import '../../types/global.d.ts';
 
 export const SettingsModal: React.FC<SettingsModalProps> = ({ onClose }) => {

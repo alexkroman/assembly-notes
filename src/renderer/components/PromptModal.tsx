@@ -5,11 +5,11 @@ import { DEFAULT_PROMPTS } from '../../constants/defaultPrompts.js';
 import type { PromptModalProps } from '../../types/components.js';
 import type { PromptTemplate } from '../../types/index.js';
 import { useAppDispatch } from '../hooks/redux';
-import { setStatus } from '../store';
 import {
   useGetSettingsQuery,
   useUpdatePromptsMutation,
-} from '../store/api/apiSlice.js';
+} from '../slices/apiSlice.js';
+import { setStatus } from '../store';
 
 export const PromptModal: React.FC<PromptModalProps> = ({ onClose }) => {
   const { data: settings, isLoading, error } = useGetSettingsQuery(undefined);
