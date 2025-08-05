@@ -2,6 +2,12 @@ import type { Store } from '@reduxjs/toolkit';
 import type { BrowserWindow } from 'electron';
 import { inject, injectable } from 'tsyringe';
 
+import {
+  MissingApiKeyError,
+  NoActiveRecordingError,
+  TranscriptionConnectionError,
+  ErrorLogger,
+} from '../../errors/index.js';
 import { DI_TOKENS } from '../di-tokens.js';
 import type Logger from '../logger.js';
 import { RecordingDataService } from './recordingDataService.js';
@@ -29,6 +35,7 @@ export class RecordingManager {
     system: null,
   };
   private keepAliveInterval: NodeJS.Timeout | null = null;
+  private errorLogger: ErrorLogger;
 
   constructor(
     @inject(DI_TOKENS.Store)
@@ -42,6 +49,7 @@ export class RecordingManager {
     @inject(DI_TOKENS.SummarizationService)
     private summarizationService: SummarizationService
   ) {
+    this.errorLogger = new ErrorLogger(this.logger);
     this.setupStoreSubscriptions();
   }
 
@@ -90,11 +98,12 @@ export class RecordingManager {
       // MUST have a current recording from database before starting
       const currentState = this.store.getState();
       if (!currentState.recordings.currentRecording?.id) {
-        this.store.dispatch(
-          setRecordingError(
-            'No recording selected. Please create a new recording first.'
-          )
-        );
+        const error = new NoActiveRecordingError('Starting transcription');
+        this.errorLogger.logError(error, {
+          operation: 'startTranscription',
+          component: 'RecordingManager',
+        });
+        this.store.dispatch(setRecordingError(error.message));
         return false;
       }
 
@@ -106,11 +115,12 @@ export class RecordingManager {
       const apiKey = state.settings.assemblyaiKey;
 
       if (!apiKey) {
-        this.store.dispatch(
-          setRecordingError(
-            'AssemblyAI API Key is not set. Please add it in settings.'
-          )
-        );
+        const error = new MissingApiKeyError();
+        this.errorLogger.logError(error, {
+          operation: 'startTranscription',
+          component: 'RecordingManager',
+        });
+        this.store.dispatch(setRecordingError(error.message));
         return false;
       }
 
@@ -149,11 +159,22 @@ export class RecordingManager {
             }
           },
           onError: (stream: string, error: unknown) => {
-            const errorMessage =
-              error instanceof Error
-                ? `${stream.charAt(0).toUpperCase() + stream.slice(1)} Error: ${error.message}`
-                : `${stream.charAt(0).toUpperCase() + stream.slice(1)} Error: Unknown error`;
-            this.store.dispatch(setRecordingError(errorMessage));
+            const transcriptionError = new TranscriptionConnectionError(
+              stream as 'microphone' | 'system',
+              error instanceof Error ? error.message : String(error)
+            );
+
+            this.errorLogger.logError(transcriptionError, {
+              operation: 'transcription',
+              component: 'RecordingManager',
+              metadata: { stream },
+            });
+
+            this.store.dispatch(
+              setRecordingError(
+                this.errorLogger.getUserFriendlyMessage(transcriptionError)
+              )
+            );
 
             // Check if it's a critical error
             if (
@@ -181,11 +202,15 @@ export class RecordingManager {
 
       return true;
     } catch (error) {
-      this.logger.error('Failed to start recording:', error);
+      const recordingId = this.store.getState().recordings.currentRecording?.id;
+      this.errorLogger.logError(error, {
+        operation: 'startTranscription',
+        component: 'RecordingManager',
+        ...(recordingId && { recordingId }),
+      });
+
       this.store.dispatch(
-        setRecordingError(
-          error instanceof Error ? error.message : 'Failed to start recording'
-        )
+        setRecordingError(this.errorLogger.getUserFriendlyMessage(error))
       );
       return false;
     }

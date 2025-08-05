@@ -154,7 +154,7 @@ describe('RecordingManager', () => {
       expect(mockStore.dispatch).toHaveBeenCalledWith(
         expect.objectContaining({
           payload:
-            'No recording selected. Please create a new recording first.',
+            'Starting transcription requires an active recording. Please create a new recording first.',
         })
       );
     });
@@ -192,7 +192,8 @@ describe('RecordingManager', () => {
       expect(result).toBe(false);
       expect(mockStore.dispatch).toHaveBeenCalledWith(
         expect.objectContaining({
-          payload: 'AssemblyAI API Key is not set. Please add it in settings.',
+          payload:
+            'AssemblyAI API key is not configured. Please add it in settings.',
         })
       );
     });
@@ -230,9 +231,13 @@ describe('RecordingManager', () => {
       const result = await recordingManager.startTranscription();
 
       expect(result).toBe(false);
+      // The error is now logged through ErrorLogger with a different format
       expect(mockLogger.error).toHaveBeenCalledWith(
-        'Failed to start recording:',
-        expect.any(Error)
+        'System error occurred:',
+        expect.objectContaining({
+          message: 'Connection failed',
+          code: 'UNKNOWN_ERROR',
+        })
       );
     });
   });

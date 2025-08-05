@@ -8,7 +8,9 @@ import {
   setStatus,
 } from '../store';
 import { ChannelModal } from './ChannelModal';
+import { ErrorBoundary } from './ErrorBoundary';
 import { PromptModal } from './PromptModal';
+import { RecordingErrorBoundary } from './RecordingErrorBoundary';
 import { RecordingsList } from './RecordingsList';
 import { RecordingView } from './RecordingView';
 import { SettingsModal } from './SettingsModal';
@@ -81,54 +83,62 @@ export const App: React.FC = () => {
   };
 
   return (
-    <div className="container-flex" data-testid="app-container">
-      {currentPage === 'list' && (
-        <div className="page active">
-          <RecordingsList onNavigateToRecording={handleNavigateToRecording} />
-        </div>
-      )}
+    <ErrorBoundary>
+      <div className="container-flex" data-testid="app-container">
+        {currentPage === 'list' && (
+          <div className="page active">
+            <ErrorBoundary>
+              <RecordingsList
+                onNavigateToRecording={handleNavigateToRecording}
+              />
+            </ErrorBoundary>
+          </div>
+        )}
 
-      {currentPage === 'recording' && (
-        <div className="page active">
-          <RecordingView
-            recordingId={currentRecordingId}
-            onNavigateToList={() => {
-              void handleNavigateToList();
+        {currentPage === 'recording' && (
+          <div className="page active">
+            <RecordingErrorBoundary>
+              <RecordingView
+                recordingId={currentRecordingId}
+                onNavigateToList={() => {
+                  void handleNavigateToList();
+                }}
+                onShowPromptModal={() => {
+                  dispatch(setActiveModal('prompt'));
+                }}
+                onShowChannelModal={() => {
+                  dispatch(setActiveModal('channel'));
+                }}
+                isStoppingForNavigation={isStoppingForNavigation}
+              />
+            </RecordingErrorBoundary>
+          </div>
+        )}
+
+        {activeModal === 'settings' && (
+          <SettingsModal
+            onClose={() => {
+              dispatch(setActiveModal(null));
             }}
-            onShowPromptModal={() => {
-              dispatch(setActiveModal('prompt'));
-            }}
-            onShowChannelModal={() => {
-              dispatch(setActiveModal('channel'));
-            }}
-            isStoppingForNavigation={isStoppingForNavigation}
           />
-        </div>
-      )}
+        )}
 
-      {activeModal === 'settings' && (
-        <SettingsModal
-          onClose={() => {
-            dispatch(setActiveModal(null));
-          }}
-        />
-      )}
+        {activeModal === 'prompt' && (
+          <PromptModal
+            onClose={() => {
+              dispatch(setActiveModal(null));
+            }}
+          />
+        )}
 
-      {activeModal === 'prompt' && (
-        <PromptModal
-          onClose={() => {
-            dispatch(setActiveModal(null));
-          }}
-        />
-      )}
-
-      {activeModal === 'channel' && (
-        <ChannelModal
-          onClose={() => {
-            dispatch(setActiveModal(null));
-          }}
-        />
-      )}
-    </div>
+        {activeModal === 'channel' && (
+          <ChannelModal
+            onClose={() => {
+              dispatch(setActiveModal(null));
+            }}
+          />
+        )}
+      </div>
+    </ErrorBoundary>
   );
 };
