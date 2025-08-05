@@ -42,23 +42,30 @@ export class SettingsService {
   updateSettings(updates: Partial<SettingsSchema>): void {
     this.logger.info('SettingsService.updateSettings called with:', updates);
 
-    // Process each setting update
-    Object.entries(updates).forEach(([key, value]) => {
-      // Special handling for slackInstallation - explicitly allow null to clear it
-      if (key === 'slackInstallation') {
-        this.databaseService.setSetting(key, value);
-      } else if (value != null) {
-        // For other settings, only update if value is not null/undefined
-        this.databaseService.setSetting(key, value);
-      }
-    });
+    // Build a new object with only the settings that will be persisted
+    const persistedUpdates = Object.entries(updates).reduce<
+      Partial<SettingsSchema>
+    >((acc, [key, value]) => {
+      // Only persist settings that have meaningful values
+      // For slackInstallation, null is meaningful (clears the installation)
+      // For other settings, only non-null/undefined values are meaningful
+      const shouldPersist = key === 'slackInstallation' || value != null;
 
-    // Update Redux store with the new settings
-    const updatedSettings = this.getSettings();
-    this.logger.info('Dispatching updated settings to Redux:', {
-      slackInstallation: updatedSettings.slackInstallation,
-    });
-    this.store.dispatch(updateSettings(updatedSettings));
+      if (shouldPersist) {
+        this.databaseService.setSetting(key, value);
+        return { ...acc, [key]: value };
+      }
+
+      return acc;
+    }, {});
+
+    // Update Redux store with only the settings that were actually persisted
+    // This ensures Redux state matches what's in the database
+    this.logger.info(
+      'Dispatching persisted settings update to Redux:',
+      persistedUpdates
+    );
+    this.store.dispatch(updateSettings(persistedUpdates));
   }
 
   getAssemblyAIKey(): string {
