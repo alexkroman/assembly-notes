@@ -169,8 +169,22 @@ export const useRecording = (recordingId: string | null) => {
       setIsPostingToSlack(true);
       dispatch(setStatus('Posting to Slack...'));
 
-      const formattedMessage = (recordingTitle || '').trim()
-        ? `*${recordingTitle}*\n\n${message}`
+      // Format the date similar to RecordingsList
+      const dateString = currentRecording?.created_at
+        ? new Date(currentRecording.created_at).toLocaleString()
+        : '';
+
+      // Build the title with date
+      let titleWithDate = (recordingTitle || '').trim();
+      if (titleWithDate && dateString) {
+        titleWithDate = `${titleWithDate} - ${dateString}`;
+      } else if (!titleWithDate && dateString) {
+        titleWithDate = dateString;
+      }
+
+      // Format message with proper title
+      const formattedMessage = titleWithDate
+        ? `${titleWithDate}\n\n${message}`
         : message;
 
       const result = await window.electronAPI.postToSlack(

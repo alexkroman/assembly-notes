@@ -369,6 +369,19 @@ export class SlackIntegrationService {
   }
 
   /**
+   * Converts markdown to Slack's mrkdwn format
+   */
+  private convertMarkdownToSlackMrkdwn(markdown: string): string {
+    // Convert double asterisks to single asterisks for bold
+    let mrkdwn = markdown.replace(/\*\*(.+?)\*\*/g, '*$1*');
+
+    // Ensure headers on their own lines are bolded
+    mrkdwn = mrkdwn.replace(/^(#+ )(.+)$/gm, '*$2*');
+
+    return mrkdwn;
+  }
+
+  /**
    * Posts a message to a Slack channel
    */
   async postMessage(
@@ -395,6 +408,9 @@ export class SlackIntegrationService {
     }
 
     try {
+      // Convert markdown to Slack's mrkdwn format
+      const slackMessage = this.convertMarkdownToSlackMrkdwn(message);
+
       const response = await this.httpClient.post(
         'https://slack.com/api/chat.postMessage',
         {
@@ -404,13 +420,13 @@ export class SlackIntegrationService {
           },
           body: JSON.stringify({
             channel: targetChannelId,
-            text: message,
+            text: slackMessage,
             blocks: [
               {
                 type: 'section',
                 text: {
                   type: 'mrkdwn',
-                  text: message,
+                  text: slackMessage,
                 },
               },
             ],
