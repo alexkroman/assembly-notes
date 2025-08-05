@@ -1,4 +1,5 @@
 import type { Store } from '@reduxjs/toolkit';
+import * as Sentry from '@sentry/electron/main';
 import type { BrowserWindow } from 'electron';
 import { inject, injectable } from 'tsyringe';
 
@@ -109,6 +110,19 @@ export class RecordingManager {
 
       // Now dispatch the Redux action to set state to "starting"
       await this.store.dispatch(startRecording());
+
+      // Capture Sentry event for recording start
+      Sentry.captureMessage('Recording started', {
+        level: 'info',
+        tags: {
+          feature: 'recording',
+          action: 'start',
+        },
+        extra: {
+          recordingId: currentState.recordings.currentRecording.id,
+          timestamp: new Date().toISOString(),
+        },
+      });
 
       // Get API key from state
       const state = this.store.getState();

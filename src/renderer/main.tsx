@@ -30,6 +30,13 @@ initAutoUpdaterUI();
 // Create Redux store for renderer
 const store = createRendererStore();
 
+// Set user ID in Sentry from settings
+const settings = store.getState().settings;
+if (settings.userId) {
+  window.logger.info(`Setting Sentry user ID in renderer: ${settings.userId}`);
+  Sentry.setUser({ id: settings.userId });
+}
+
 // Set up global audio capture handlers
 window.electronAPI.onStartAudioCapture(() => {
   window.logger.info('Renderer: Received start-audio-capture event');

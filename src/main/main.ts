@@ -90,6 +90,13 @@ function createWindow(): void {
     DI_TOKENS.SettingsService
   );
   settingsService.initializeSettings();
+
+  // Set user ID in Sentry
+  const settings = settingsService.getSettings();
+  if (settings.userId) {
+    log.info(`Setting Sentry user ID: ${settings.userId}`);
+    Sentry.setUser({ id: settings.userId });
+  }
 }
 
 // Note: OAuth now uses temporary HTTP server instead of custom protocol

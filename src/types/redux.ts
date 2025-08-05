@@ -81,6 +81,7 @@ export interface FullSettingsState {
   summaryPrompt: string;
   prompts: PromptTemplate[];
   autoStart: boolean;
+  userId?: string; // Unique user identifier
 }
 
 export interface SettingsState extends FullSettingsState {

@@ -34,6 +34,7 @@ export interface SettingsSchema {
   slackInstallation: SlackInstallation | null;
   slackChannels: string; // Comma-separated favorite channel names
   autoStart: boolean;
+  userId?: string; // Unique user identifier
 }
 
 export interface Recording {
