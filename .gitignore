@@ -13,3 +13,5 @@ dev-app-update.yml
 coverage
 *.map
 test-results
+project.json
+.vercel
