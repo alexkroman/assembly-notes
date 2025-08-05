@@ -3,6 +3,7 @@ import { inject, injectable } from 'tsyringe';
 
 import { TranscriptionData } from '../../types/common.js';
 import { DI_TOKENS } from '../di-tokens.js';
+import logger from '../logger.js';
 
 export interface TranscriberConnection {
   transcriber: RealtimeTranscriber;
@@ -130,10 +131,7 @@ export class TranscriptionService {
       ) {
         return;
       }
-      // Log other errors - but only in development to avoid log spam
-      if (process.env['NODE_ENV'] === 'development') {
-        console.error('Error sending audio:', error);
-      }
+      logger.error('Error sending audio:', error);
     }
   }
 
@@ -158,7 +156,7 @@ export class TranscriptionService {
     try {
       await transcriber.close();
     } catch (error) {
-      console.error('Error closing transcriber:', error);
+      logger.error('Error closing transcriber:', error);
     }
   }
 

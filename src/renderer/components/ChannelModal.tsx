@@ -4,10 +4,12 @@ import type { ChannelModalProps } from '../../types/components.js';
 import { useAppDispatch, useAppSelector } from '../hooks/redux';
 import { setStatus } from '../store';
 import { Modal } from './Modal.js';
+import { useUpdateSettingsMutation } from '../slices/apiSlice.js';
 
 export const ChannelModal: React.FC<ChannelModalProps> = ({ onClose }) => {
   const settings = useAppSelector((state) => state.settings);
   const dispatch = useAppDispatch();
+  const [updateSettings] = useUpdateSettingsMutation();
   const [localChannelValue, setLocalChannelValue] = useState<string>('');
 
   const currentInstallation = settings.slackInstallation;
@@ -31,9 +33,9 @@ export const ChannelModal: React.FC<ChannelModalProps> = ({ onClose }) => {
 
     try {
       // Save the channels
-      await window.electronAPI.saveSettings({
+      await updateSettings({
         slackChannels: localChannelValue,
-      });
+      }).unwrap();
 
       const channelCount = localChannelValue.trim()
         ? localChannelValue
@@ -42,17 +44,17 @@ export const ChannelModal: React.FC<ChannelModalProps> = ({ onClose }) => {
             .filter(Boolean).length
         : 0;
 
-      dispatch(setStatus(`${String(channelCount)} favorite channels saved`));
+      dispatch(setStatus(`${String(channelCount)} summary channels saved`));
       onClose();
     } catch {
-      dispatch(setStatus('Error saving favorite channels'));
+      dispatch(setStatus('Error saving summary channels'));
     }
   };
 
   if (!currentInstallation) {
     return (
       <Modal
-        title="Manage Slack Channels"
+        title="Select Channels for Summary Posting"
         onClose={onClose}
         size="large"
         testId="channel-modal"
@@ -62,7 +64,7 @@ export const ChannelModal: React.FC<ChannelModalProps> = ({ onClose }) => {
           </button>
         }
       >
-        <div className="no-connection-message">
+        <div className="text-sm text-white/[0.70]">
           <p>
             No Slack workspace connected. Please connect to Slack in Settings
             first.
@@ -90,22 +92,18 @@ export const ChannelModal: React.FC<ChannelModalProps> = ({ onClose }) => {
 
   return (
     <Modal
-      title="Manage Favorite Slack Channels"
+      title="Select Channels for Summary Posting"
       onClose={onClose}
       footer={footer}
       size="large"
       testId="channel-modal"
     >
-      <div className="form-group" style={{ marginBottom: '12px' }}>
+      <div className="form-group">
         <label
           htmlFor="slack-channels-textarea"
-          style={{
-            fontSize: '14px',
-            display: 'block',
-            marginBottom: '8px',
-          }}
+          className="block mb-1 text-sm font-medium text-white/[0.85]"
         >
-          Favorite Channels (comma-separated):
+          Channels to Post Summaries (comma-separated):
         </label>
         <textarea
           id="slack-channels-textarea"
@@ -114,27 +112,12 @@ export const ChannelModal: React.FC<ChannelModalProps> = ({ onClose }) => {
             handleChannelListChange(e.target.value);
           }}
           placeholder="general, random, team-updates"
-          rows={4}
-          style={{
-            width: '100%',
-            padding: '8px',
-            fontSize: '14px',
-            border: '1px solid rgba(255, 255, 255, 0.18)',
-            borderRadius: '4px',
-            resize: 'vertical',
-            fontFamily: 'inherit',
-            backgroundColor: 'rgba(255, 255, 255, 0.05)',
-            color: '#ffffff',
-          }}
+          rows={3}
+          className="form-input"
         />
-        <div
-          style={{
-            fontSize: '12px',
-            color: 'rgba(255, 255, 255, 0.6)',
-            marginTop: '4px',
-          }}
-        >
-          Enter channel names without # symbol. Bot must be invited to private
+        <div className="text-xs text-white/[0.60] mt-1">
+          Enter channel names where you want to post meeting summaries. Use
+          channel names without # symbol. The bot must be invited to private
           channels.
         </div>
       </div>

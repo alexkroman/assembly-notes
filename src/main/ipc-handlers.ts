@@ -8,24 +8,16 @@ import {
 
 import type { AutoUpdaterService } from './auto-updater.js';
 import { DI_TOKENS, container } from './container.js';
+import type { DatabaseService } from './database.js';
 import { PromptTemplate, SettingsSchema } from '../types/common.js';
+import type { RecordingDataService } from './services/recordingDataService.js';
 import type { RecordingManager } from './services/recordingManager.js';
-import type { SlackOAuthService } from './services/slackOAuthService.js';
-import type { SlackService } from './services/slackService.js';
+import type { SettingsService } from './services/settingsService.js';
+import type { SlackIntegrationService } from './services/slackIntegrationService.js';
 import {
-  deleteRecording,
-  fetchAllRecordings,
-  fetchRecording,
-  searchRecordings,
-  updateRecordingSummary,
-  updateRecordingTitle,
+  updateCurrentRecordingTitle,
+  updateCurrentRecordingSummary,
 } from './store/slices/recordingsSlice.js';
-import {
-  fetchSettings,
-  savePrompt,
-  savePrompts,
-  saveSettings,
-} from './store/slices/settingsSlice.js';
 import type { AppDispatch, RootState } from './store/store.js';
 
 interface LogLevel {
@@ -42,9 +34,11 @@ function setupIpcHandlers(
   const recordingManager = container.resolve<RecordingManager>(
     DI_TOKENS.RecordingManager
   );
-  const slackService = container.resolve<SlackService>(DI_TOKENS.SlackService);
-  const slackOAuthService = container.resolve<SlackOAuthService>(
-    DI_TOKENS.SlackOAuthService
+  const recordingDataService = container.resolve<RecordingDataService>(
+    DI_TOKENS.RecordingDataService
+  );
+  const slackIntegrationService = container.resolve<SlackIntegrationService>(
+    DI_TOKENS.SlackIntegrationService
   );
   const autoUpdaterService = container.resolve<AutoUpdaterService>(
     DI_TOKENS.AutoUpdaterService
@@ -96,61 +90,71 @@ function setupIpcHandlers(
   });
 
   ipcMain.handle('new-recording', async (): Promise<string | null> => {
-    return await recordingManager.newRecording();
+    return await recordingDataService.newRecording();
   });
 
   ipcMain.handle(
     'load-recording',
     (_event: IpcMainInvokeEvent, recordingId: string): boolean => {
-      return recordingManager.loadRecording(recordingId);
+      return recordingDataService.loadRecording(recordingId);
     }
   );
 
   ipcMain.handle(
     'update-recording-title',
-    async (
+    (
       _event: IpcMainInvokeEvent,
       recordingId: string,
       title: string
     ): Promise<void> => {
-      // Validate that this update is for the current recording
+      // Only allow updates to the current recording
       const state = store.getState();
-      const currentRecordingId = state.recordings.currentRecording?.id;
+      const currentRecording = state.recordings.currentRecording;
 
-      if (currentRecordingId && recordingId !== currentRecordingId) {
+      if (!currentRecording || currentRecording.id !== recordingId) {
         logger.warn(
-          `Ignoring title update for non-current recording: ${recordingId} !== ${currentRecordingId}`
+          `Ignoring title update: not the current recording (requested: ${recordingId}, current: ${currentRecording?.id ?? 'none'})`
         );
-        return;
+        return Promise.resolve();
       }
 
-      await store
-        .dispatch(updateRecordingTitle({ id: recordingId, title }))
-        .unwrap();
+      const databaseService = container.resolve<DatabaseService>(
+        DI_TOKENS.DatabaseService
+      );
+      databaseService.updateRecording(recordingId, { title });
+
+      // Update Redux state to maintain single source of truth
+      store.dispatch(updateCurrentRecordingTitle(title));
+      return Promise.resolve();
     }
   );
 
   ipcMain.handle(
     'update-recording-summary',
-    async (
+    (
       _event: IpcMainInvokeEvent,
       recordingId: string,
       summary: string
     ): Promise<void> => {
-      // Validate that this update is for the current recording
+      // Only allow updates to the current recording
       const state = store.getState();
-      const currentRecordingId = state.recordings.currentRecording?.id;
+      const currentRecording = state.recordings.currentRecording;
 
-      if (currentRecordingId && recordingId !== currentRecordingId) {
+      if (!currentRecording || currentRecording.id !== recordingId) {
         logger.warn(
-          `Ignoring summary update for non-current recording: ${recordingId} !== ${currentRecordingId}`
+          `Ignoring summary update: not the current recording (requested: ${recordingId}, current: ${currentRecording?.id ?? 'none'})`
         );
-        return;
+        return Promise.resolve();
       }
 
-      await store
-        .dispatch(updateRecordingSummary({ id: recordingId, summary }))
-        .unwrap();
+      const databaseService = container.resolve<DatabaseService>(
+        DI_TOKENS.DatabaseService
+      );
+      databaseService.updateRecording(recordingId, { summary });
+
+      // Update Redux state to maintain single source of truth
+      store.dispatch(updateCurrentRecordingSummary(summary));
+      return Promise.resolve();
     }
   );
 
@@ -158,26 +162,25 @@ function setupIpcHandlers(
     'summarize-transcript',
     async (
       _event: IpcMainInvokeEvent,
-      recordingId?: string,
       transcript?: string
     ): Promise<boolean> => {
-      return await recordingManager.summarizeTranscript(
-        recordingId,
-        transcript
-      );
+      return await recordingManager.summarizeTranscript(transcript);
     }
   );
 
-  ipcMain.handle('get-settings', async () => {
-    return await store.dispatch(fetchSettings()).unwrap();
+  ipcMain.handle('get-settings', () => {
+    const settingsService = container.resolve<SettingsService>(
+      DI_TOKENS.SettingsService
+    );
+    return settingsService.getSettings();
   });
 
   ipcMain.handle(
     'save-settings',
-    async (
+    (
       _event: IpcMainInvokeEvent,
       newSettings: Partial<SettingsSchema>
-    ): Promise<boolean> => {
+    ): boolean => {
       const mappedSettings = { ...newSettings };
       if (newSettings.prompts) {
         mappedSettings.prompts = newSettings.prompts.map(
@@ -188,29 +191,35 @@ function setupIpcHandlers(
         );
       }
 
-      await store.dispatch(saveSettings(mappedSettings)).unwrap();
+      const settingsService = container.resolve<SettingsService>(
+        DI_TOKENS.SettingsService
+      );
+      settingsService.updateSettings(mappedSettings);
       return true;
     }
   );
 
   ipcMain.handle(
     'save-prompt',
-    async (
+    (
       _event: IpcMainInvokeEvent,
       promptSettings: Pick<SettingsSchema, 'summaryPrompt'>
-    ): Promise<boolean> => {
-      await store.dispatch(savePrompt(promptSettings)).unwrap();
+    ): boolean => {
+      const settingsService = container.resolve<SettingsService>(
+        DI_TOKENS.SettingsService
+      );
+      settingsService.updateSettings(promptSettings);
       return true;
     }
   );
 
   ipcMain.handle(
     'save-prompts',
-    async (
-      _event: IpcMainInvokeEvent,
-      prompts: PromptTemplate[]
-    ): Promise<boolean> => {
-      await store.dispatch(savePrompts(prompts)).unwrap();
+    (_event: IpcMainInvokeEvent, prompts: PromptTemplate[]): boolean => {
+      const settingsService = container.resolve<SettingsService>(
+        DI_TOKENS.SettingsService
+      );
+      settingsService.updateSettings({ prompts });
       return true;
     }
   );
@@ -222,7 +231,7 @@ function setupIpcHandlers(
       message: string,
       channelId?: string
     ): Promise<{ success: boolean; error?: string }> => {
-      return await slackService.postMessage(message, channelId);
+      return await slackIntegrationService.postMessage(message, channelId);
     }
   );
 
@@ -234,20 +243,14 @@ function setupIpcHandlers(
       clientId: string,
       clientSecret: string
     ): Promise<void> => {
-      const slackOAuthService = container.resolve<SlackOAuthService>(
-        DI_TOKENS.SlackOAuthService
-      );
-      await slackOAuthService.initiateOAuth(clientId, clientSecret);
+      await slackIntegrationService.initiateOAuth(clientId, clientSecret);
     }
   );
 
   ipcMain.handle(
     'slack-oauth-remove-installation',
     (_event: IpcMainInvokeEvent): void => {
-      const slackOAuthService = container.resolve<SlackOAuthService>(
-        DI_TOKENS.SlackOAuthService
-      );
-      slackOAuthService.removeInstallation();
+      slackIntegrationService.removeInstallation();
     }
   );
 
@@ -287,34 +290,43 @@ function setupIpcHandlers(
     return autoUpdaterService.getUpdateStatus();
   });
 
-  ipcMain.handle('get-all-recordings', async () => {
-    return await store.dispatch(fetchAllRecordings()).unwrap();
+  ipcMain.handle('get-all-recordings', () => {
+    const databaseService = container.resolve<DatabaseService>(
+      DI_TOKENS.DatabaseService
+    );
+    return databaseService.getAllRecordings();
   });
 
   ipcMain.handle(
     'search-recordings',
-    async (_event: IpcMainInvokeEvent, query: string) => {
-      return await store.dispatch(searchRecordings(query)).unwrap();
+    (_event: IpcMainInvokeEvent, query: string) => {
+      const databaseService = container.resolve<DatabaseService>(
+        DI_TOKENS.DatabaseService
+      );
+      return databaseService.searchRecordings(query);
     }
   );
 
-  ipcMain.handle(
-    'get-recording',
-    async (_event: IpcMainInvokeEvent, id: string) => {
-      return await store.dispatch(fetchRecording(id)).unwrap();
-    }
-  );
+  ipcMain.handle('get-recording', (_event: IpcMainInvokeEvent, id: string) => {
+    const databaseService = container.resolve<DatabaseService>(
+      DI_TOKENS.DatabaseService
+    );
+    return databaseService.getRecording(id);
+  });
 
   ipcMain.handle(
     'delete-recording',
-    async (_event: IpcMainInvokeEvent, id: string) => {
-      await store.dispatch(deleteRecording(id)).unwrap();
+    (_event: IpcMainInvokeEvent, id: string) => {
+      const databaseService = container.resolve<DatabaseService>(
+        DI_TOKENS.DatabaseService
+      );
+      databaseService.deleteRecording(id);
       return true;
     }
   );
 
   ipcMain.handle('slack-oauth-get-current', () => {
-    return slackOAuthService.getCurrentInstallation();
+    return slackIntegrationService.getCurrentInstallation();
   });
 
   ipcMain.handle('slack-oauth-validate-channels', (): void => {

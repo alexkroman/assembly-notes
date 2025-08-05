@@ -1,56 +1,5 @@
 import type { UpdateInfo, DownloadProgress } from '../types/index.js';
 
-let updateNotification: HTMLElement | null = null;
-let notificationTimeout: NodeJS.Timeout | null = null;
-
-function createUpdateNotification(message: string, type = 'info'): void {
-  // Clear any existing timeout
-  if (notificationTimeout) {
-    clearTimeout(notificationTimeout);
-    notificationTimeout = null;
-  }
-
-  if (updateNotification) {
-    updateNotification.remove();
-  }
-
-  updateNotification = document.createElement('div');
-  updateNotification.className = `update-notification ${type}`;
-
-  // Create the notification content safely
-  const content = document.createElement('div');
-  content.className = 'notification-content';
-
-  const messageSpan = document.createElement('span');
-  messageSpan.textContent = message; // Safe: uses textContent instead of innerHTML
-
-  const closeBtn = document.createElement('button');
-  closeBtn.className = 'close-btn';
-  closeBtn.textContent = '×';
-  closeBtn.onclick = () => {
-    if (updateNotification) {
-      updateNotification.remove();
-      updateNotification = null;
-    }
-  };
-
-  content.appendChild(messageSpan);
-  content.appendChild(closeBtn);
-  updateNotification.appendChild(content);
-
-  document.body.appendChild(updateNotification);
-
-  if (type === 'info') {
-    notificationTimeout = setTimeout(() => {
-      if (updateNotification) {
-        updateNotification.remove();
-        updateNotification = null;
-      }
-      notificationTimeout = null;
-    }, 10000);
-  }
-}
-
 function createUpdateDialog(info: UpdateInfo): void {
   const dialog = document.createElement('div');
   dialog.className = 'modal-overlay';
@@ -241,34 +190,3 @@ export function initAutoUpdaterUI(): void {
   window.electronAPI.onDownloadProgress(handleDownloadProgress);
   window.electronAPI.onUpdateDownloaded(handleUpdateDownloaded);
 }
-
-declare global {
-  interface Window {
-    AutoUpdaterUI: {
-      initAutoUpdaterUI: () => void;
-      createUpdateNotification: (message: string, type?: string) => void;
-      createUpdateDialog: (updateInfo: UpdateInfo) => void;
-      handleUpdateAvailable: (updateInfo: UpdateInfo) => void;
-      handleDownloadProgress: (progress: Partial<DownloadProgress>) => void;
-      handleUpdateDownloaded: (updateInfo: UpdateInfo) => void;
-    };
-  }
-}
-
-(window as Window & { AutoUpdaterUI: Window['AutoUpdaterUI'] }).AutoUpdaterUI =
-  {
-    initAutoUpdaterUI,
-    createUpdateNotification,
-    createUpdateDialog,
-    handleUpdateAvailable,
-    handleDownloadProgress,
-    handleUpdateDownloaded,
-  };
-
-export {
-  createUpdateNotification,
-  createUpdateDialog,
-  handleUpdateAvailable,
-  handleDownloadProgress,
-  handleUpdateDownloaded,
-};

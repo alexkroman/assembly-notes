@@ -1,0 +1,15 @@
+export const autoUpdater = {
+  logger: null,
+  autoDownload: false,
+  autoInstallOnAppQuit: true,
+  allowPrerelease: false,
+  setFeedURL: jest.fn(),
+  checkForUpdates: jest.fn().mockResolvedValue(null),
+  checkForUpdatesAndNotify: jest.fn().mockResolvedValue(null),
+  downloadUpdate: jest.fn().mockResolvedValue([]),
+  quitAndInstall: jest.fn(),
+  on: jest.fn(),
+  once: jest.fn(),
+  removeListener: jest.fn(),
+  removeAllListeners: jest.fn(),
+};

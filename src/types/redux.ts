@@ -1,5 +1,7 @@
 // Redux state types extracted from store slices
 
+import type { EntityState } from '@reduxjs/toolkit';
+
 import type {
   PromptTemplate,
   Recording,
@@ -27,8 +29,7 @@ export interface RecordingState {
 }
 
 // Recordings slice state
-export interface RecordingsState {
-  recordings: Recording[];
+export interface RecordingsState extends EntityState<Recording, string> {
   currentRecording: Recording | null;
   searchResults: Recording[];
   searchQuery: string;
@@ -85,7 +86,6 @@ export interface FullSettingsState {
 export interface SettingsState extends FullSettingsState {
   loading: boolean;
   error: string | null;
-  theme: 'light' | 'dark';
   // Computed properties for safe trim operations
   hasAssemblyAIKey: boolean;
   hasSlackConfigured: boolean;
@@ -93,14 +93,13 @@ export interface SettingsState extends FullSettingsState {
 
 // UI slice state (renderer)
 export type Page = 'list' | 'recording';
+export type ModalType = 'settings' | 'prompt' | 'channel' | null;
 
 export interface UIState {
   currentPage: Page;
   currentRecordingId: string | null;
   isNewRecording: boolean;
-  showSettingsModal: boolean;
-  showPromptModal: boolean;
-  showChannelModal: boolean;
+  activeModal: ModalType;
   status: string;
 }
 

@@ -275,6 +275,11 @@ class DatabaseService {
     try {
       const stmt = this.db.prepare('SELECT * FROM recordings WHERE id = ?');
       const result = stmt.get(id) as Recording | undefined;
+      if (result) {
+        this.logger.debug(
+          `Retrieved recording ${id}, transcript length: ${String(result.transcript?.length ?? 0)}`
+        );
+      }
       return result ?? null;
     } catch (error) {
       this.logger.error(`Error getting recording ${id}:`, error);
@@ -308,6 +313,16 @@ class DatabaseService {
       const values = fields.map(
         (field) => updates[field as keyof typeof updates]
       );
+
+      // Debug logging
+      this.logger.debug(
+        `Updating recording ${id} with fields: ${fields.join(', ')}`
+      );
+      if (updates.transcript !== undefined) {
+        this.logger.debug(
+          `Transcript value length: ${String(updates.transcript.length)}`
+        );
+      }
 
       const stmt = this.db.prepare(`
         UPDATE recordings 
@@ -368,6 +383,47 @@ class DatabaseService {
       );
       throw error;
     }
+  }
+
+  // Convenience methods for RecordingDataService
+  createRecording(recording: {
+    id: string;
+    title: string;
+    timestamp: number;
+    summary: string | null;
+    transcript: string;
+  }): void {
+    const recordingData: Omit<Recording, 'created_at' | 'updated_at'> & {
+      created_at?: number;
+      updated_at?: number;
+    } = {
+      id: recording.id,
+      title: recording.title,
+      transcript: recording.transcript,
+      created_at: recording.timestamp,
+      updated_at: recording.timestamp,
+    };
+
+    if (recording.summary !== null) {
+      recordingData.summary = recording.summary;
+    }
+
+    this.saveRecording(recordingData);
+  }
+
+  getRecordingById(id: string): Recording | null {
+    return this.getRecording(id);
+  }
+
+  updateRecordingTranscript(id: string, transcript: string): void {
+    this.logger.debug(
+      `Updating transcript for recording ${id}, transcript length: ${String(transcript.length)}`
+    );
+    this.updateRecording(id, { transcript });
+  }
+
+  updateRecordingSummary(id: string, summary: string): void {
+    this.updateRecording(id, { summary });
   }
 
   close(): void {

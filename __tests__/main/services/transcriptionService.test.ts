@@ -1,4 +1,4 @@
-import { RealtimeTranscriber } from 'assemblyai';
+import 'reflect-metadata';
 import { container } from 'tsyringe';
 
 import { DI_TOKENS } from '../../../src/main/di-tokens';
@@ -8,6 +8,13 @@ import {
   TranscriptionCallbacks,
   TranscriptionService,
 } from '../../../src/main/services/transcriptionService';
+import {
+  resetTestContainer,
+  registerMock,
+} from '../../test-helpers/container-setup';
+
+// Mock assemblyai module
+jest.mock('assemblyai');
 
 // Mock RealtimeTranscriber
 const mockRealtimeTranscriber = {
@@ -16,18 +23,18 @@ const mockRealtimeTranscriber = {
   close: jest.fn(),
   on: jest.fn(),
   off: jest.fn(),
-} as unknown as jest.Mocked<RealtimeTranscriber>;
+};
 
 // Mock AssemblyAI client
 const mockAssemblyAIClient: IAssemblyAIClient = {
   realtime: {
-    transcriber: jest.fn(() => mockRealtimeTranscriber),
+    transcriber: jest.fn().mockReturnValue(mockRealtimeTranscriber),
   },
 };
 
 // Mock AssemblyAI factory
 const mockAssemblyAIFactory = {
-  createClient: jest.fn(() => Promise.resolve(mockAssemblyAIClient)),
+  createClient: jest.fn().mockResolvedValue(mockAssemblyAIClient),
 } as unknown as jest.Mocked<IAssemblyAIFactory>;
 
 describe('TranscriptionService', () => {
@@ -35,12 +42,27 @@ describe('TranscriptionService', () => {
   let callbacks: TranscriptionCallbacks;
 
   beforeEach(() => {
+    // Reset the container and mocks
+    resetTestContainer();
     jest.clearAllMocks();
 
-    // Register mocks in container
-    container.register(DI_TOKENS.AssemblyAIFactory, {
-      useValue: mockAssemblyAIFactory,
-    });
+    // Reset mock implementations
+    mockRealtimeTranscriber.connect.mockResolvedValue(undefined);
+    mockRealtimeTranscriber.close.mockResolvedValue(undefined);
+    mockRealtimeTranscriber.on.mockReturnValue(undefined);
+    mockRealtimeTranscriber.off.mockReturnValue(undefined);
+    mockRealtimeTranscriber.sendAudio.mockReturnValue(undefined);
+
+    // Ensure the realtime.transcriber method returns the mock
+    mockAssemblyAIClient.realtime.transcriber = jest
+      .fn()
+      .mockReturnValue(mockRealtimeTranscriber);
+
+    // Reset the factory mock to ensure it returns the client
+    mockAssemblyAIFactory.createClient.mockResolvedValue(mockAssemblyAIClient);
+
+    // Register mocks using the helper
+    registerMock(DI_TOKENS.AssemblyAIFactory, mockAssemblyAIFactory);
 
     transcriptionService = container.resolve(TranscriptionService);
 
@@ -55,7 +77,7 @@ describe('TranscriptionService', () => {
   });
 
   afterEach(() => {
-    container.clearInstances();
+    resetTestContainer();
   });
 
   describe('createConnections', () => {
@@ -95,9 +117,9 @@ describe('TranscriptionService', () => {
     });
 
     it('should handle factory errors gracefully', async () => {
-      mockAssemblyAIFactory.createClient.mockImplementation(() => {
-        throw new Error('API key invalid');
-      });
+      mockAssemblyAIFactory.createClient.mockRejectedValue(
+        new Error('API key invalid')
+      );
 
       await expect(
         transcriptionService.createConnections('invalid-key', callbacks)

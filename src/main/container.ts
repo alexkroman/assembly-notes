@@ -7,10 +7,13 @@ import { AutoUpdaterService } from './auto-updater.js';
 import { DatabaseService } from './database.js';
 import { DI_TOKENS } from './di-tokens.js';
 import logger from './logger.js';
+import { RecordingDataService } from './services/recordingDataService.js';
 import { RecordingManager } from './services/recordingManager.js';
 import { SettingsService } from './services/settingsService.js';
-import { SlackOAuthService } from './services/slackOAuthService.js';
-import { FetchHttpClient, SlackService } from './services/slackService.js';
+import {
+  SlackIntegrationService,
+  FetchHttpClient,
+} from './services/slackIntegrationService.js';
 import {
   AssemblyAIFactoryWithLemur,
   SummarizationService,
@@ -54,8 +57,10 @@ export function setupContainer(mainWindow: BrowserWindow): void {
   // Register services as singletons
   container.registerSingleton(DI_TOKENS.DatabaseService, DatabaseService);
   container.registerSingleton(DI_TOKENS.SettingsService, SettingsService);
-  container.registerSingleton(DI_TOKENS.SlackService, SlackService);
-  container.registerSingleton(DI_TOKENS.SlackOAuthService, SlackOAuthService);
+  container.registerSingleton(
+    DI_TOKENS.SlackIntegrationService,
+    SlackIntegrationService
+  );
   container.registerSingleton(
     DI_TOKENS.TranscriptionService,
     TranscriptionService
@@ -63,6 +68,10 @@ export function setupContainer(mainWindow: BrowserWindow): void {
   container.registerSingleton(
     DI_TOKENS.SummarizationService,
     SummarizationService
+  );
+  container.registerSingleton(
+    DI_TOKENS.RecordingDataService,
+    RecordingDataService
   );
   container.registerSingleton(DI_TOKENS.RecordingManager, RecordingManager);
   container.registerSingleton(DI_TOKENS.AutoUpdaterService, AutoUpdaterService);

@@ -52,10 +52,10 @@ export const ConfirmModal: React.FC<ConfirmModalProps> = ({
       }}
     >
       <div className="modal-content">
-        <div className="modal-header">
-          <h2>{title}</h2>
+        <div className="flex items-center justify-between px-2 py-1.5 border-b border-white/[0.12] bg-white/[0.04]">
+          <h2 className="m-0 text-sm font-semibold text-white">{title}</h2>
           <button
-            className="modal-close"
+            className="bg-transparent border-none text-white/[0.70] text-lg cursor-pointer p-0 w-5 h-5 flex items-center justify-center rounded-sm transition-all duration-200 hover:bg-white/[0.09] hover:text-white"
             data-testid="close-confirm-modal-btn"
             onClick={onCancel}
           >
@@ -63,11 +63,11 @@ export const ConfirmModal: React.FC<ConfirmModalProps> = ({
           </button>
         </div>
 
-        <div className="modal-body">
-          <p>{message}</p>
+        <div className="px-2 py-2 overflow-y-auto flex-1 bg-black/[0.15]">
+          <p className="m-0 text-sm text-white/[0.85]">{message}</p>
         </div>
 
-        <div className="modal-footer">
+        <div className="flex justify-end gap-1 px-2 py-1.5 border-t border-white/[0.12] bg-white/[0.03]">
           <button
             className="btn-secondary"
             data-testid="cancel-confirm-btn"

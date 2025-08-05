@@ -32,8 +32,7 @@
     "formulahendry.auto-rename-tag",
     "ms-vscode.hexeditor",
     "ms-vscode.vscode-npm-script",
-    "ms-vscode.vscode-import-cost",
-    "streetsidesoftware.code-spell-checker"
+    "ms-vscode.vscode-import-cost"
   ],
   "unwantedRecommendations": [
     // Avoid conflicting formatters

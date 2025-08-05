@@ -1,0 +1,182 @@
+@import 'tailwindcss';
+
+@layer base {
+  body {
+    @apply m-0 h-screen overflow-hidden bg-[#1a1a1a] text-white font-sans;
+  }
+}
+
+@layer components {
+  /* Container components */
+  .container-flex {
+    @apply flex flex-col w-full h-screen p-0 pt-2;
+  }
+
+  /* Page components */
+  .page {
+    @apply hidden h-screen overflow-hidden;
+  }
+
+  .page.active {
+    @apply flex flex-col;
+  }
+
+  /* Input components */
+  .input-base {
+    @apply bg-white/[0.05] border border-white/[0.12] text-white transition-all duration-200;
+  }
+
+  .input-base:hover {
+    @apply bg-white/[0.09] border-white/[0.18];
+  }
+
+  .input-base:focus {
+    @apply outline-none border-white/[0.45] bg-white/[0.12];
+  }
+
+  /* Button components */
+  .btn-base {
+    @apply px-3 h-8 rounded-sm transition-all duration-200 cursor-pointer flex items-center justify-center whitespace-nowrap flex-shrink-0;
+  }
+
+  .btn-primary {
+    @apply px-2.5 py-1 bg-[#28a745]/20 border border-[#28a745]/50 text-[#28a745] rounded-sm cursor-pointer text-xs font-medium transition-all duration-200 min-w-[80px] text-center;
+  }
+
+  .btn-primary:hover {
+    @apply bg-[#28a745]/30;
+  }
+
+  .btn-danger {
+    @apply px-2.5 py-1 bg-[#dc3545]/20 border border-[#dc3545]/50 text-[#dc3545] rounded-sm cursor-pointer text-xs font-medium transition-all duration-200 min-w-[80px] text-center;
+  }
+
+  .btn-danger:hover {
+    @apply bg-[#dc3545]/30;
+  }
+
+  .btn-secondary {
+    @apply px-2.5 py-1 bg-white/[0.09] border border-white/[0.18] text-white/[0.85] rounded-sm cursor-pointer text-xs font-medium transition-all duration-200 min-w-[80px] text-center;
+  }
+
+  .btn-secondary:hover {
+    @apply bg-white/[0.12] text-white;
+  }
+
+  /* Modal components */
+  .modal-overlay {
+    @apply fixed inset-0 bg-black/70 flex items-center justify-center z-[1000];
+  }
+
+  .modal-content {
+    @apply bg-[#1a1a1a] border border-white/[0.18] rounded-lg w-[400px] max-w-[90%] max-h-[85vh] flex flex-col overflow-hidden shadow-[0_4px_16px_rgba(0,0,0,0.4)];
+  }
+
+  .modal-content.large {
+    @apply w-[550px] h-[450px] max-w-[95%] max-h-[90vh];
+  }
+
+  /* Panel components */
+  .content-panel {
+    @apply flex-1 flex flex-col bg-white/[0.06] border border-white/[0.12] rounded-sm min-h-0 overflow-hidden;
+  }
+
+  .panel-header {
+    @apply m-0 px-2 py-1 text-xs font-semibold text-white bg-white/[0.09] border-b border-white/[0.18] tracking-wide;
+  }
+
+  .panel-content {
+    @apply flex-1 p-2 m-0 border-none bg-transparent text-white font-mono text-[11px] leading-snug resize-none whitespace-pre-wrap break-words overflow-y-auto;
+  }
+
+  .panel-content:focus {
+    @apply outline-none;
+  }
+
+  /* Recording card components */
+  .recording-card {
+    @apply flex flex-col p-2 px-3 bg-white/[0.06] border border-white/[0.12] rounded transition-all duration-200 gap-1 cursor-pointer;
+  }
+
+  .recording-card:hover {
+    @apply bg-white/[0.09] border-white/[0.18];
+  }
+
+  /* Form components */
+  .form-group {
+    @apply mb-2.5 bg-transparent;
+  }
+
+  .form-group label {
+    @apply block mb-0.5 text-xs font-medium text-white/[0.85];
+  }
+
+  .form-input {
+    @apply w-full p-1.5 bg-transparent border border-white/[0.12] rounded-sm text-white text-xs outline-none transition-all duration-200 box-border resize-none;
+  }
+
+  .form-input:focus {
+    @apply border-white/[0.45] bg-transparent;
+  }
+
+  /* Transcript text styles */
+  .text-partial {
+    @apply text-white/40;
+  }
+}
+
+/* Custom scrollbar styles for dark mode */
+@layer base {
+  /* For Webkit browsers (Chrome, Safari, Edge) */
+  ::-webkit-scrollbar {
+    width: 12px;
+    height: 12px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: rgba(255, 255, 255, 0.03);
+    border-radius: 6px;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.15);
+    border-radius: 6px;
+    border: 2px solid transparent;
+    background-clip: padding-box;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 255, 255, 0.25);
+    background-clip: padding-box;
+  }
+
+  ::-webkit-scrollbar-thumb:active {
+    background: rgba(255, 255, 255, 0.35);
+    background-clip: padding-box;
+  }
+
+  /* For thin scrollbars */
+  .thin-scrollbar::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+
+  /* For Firefox */
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(255, 255, 255, 0.15) rgba(255, 255, 255, 0.03);
+  }
+
+  /* Make textarea scrollbars match */
+  textarea::-webkit-scrollbar-track {
+    background: rgba(255, 255, 255, 0.02);
+  }
+
+  textarea::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.12);
+  }
+
+  textarea::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 255, 255, 0.18);
+  }
+}

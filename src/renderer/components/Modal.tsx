@@ -31,9 +31,8 @@ export const Modal: React.FC<ModalProps> = ({
     if (e.target === e.currentTarget) {
       if (onOverlayClick) {
         onOverlayClick();
-      } else if (!closeDisabled) {
-        onClose();
       }
+      // Never close modal on outside click
     }
   };
 
@@ -44,10 +43,10 @@ export const Modal: React.FC<ModalProps> = ({
       onClick={handleOverlayClick}
     >
       <div className={`modal-content ${size === 'large' ? 'large' : ''}`}>
-        <div className="modal-header">
-          <h2>{title}</h2>
+        <div className="flex items-center justify-between px-2 py-1.5 border-b border-white/[0.12] bg-white/[0.04]">
+          <h2 className="m-0 text-sm font-semibold text-white">{title}</h2>
           <button
-            className={`modal-close ${closeDisabled ? 'disabled' : ''}`}
+            className={`bg-transparent border-none text-white/[0.70] text-lg cursor-pointer p-0 w-5 h-5 flex items-center justify-center rounded-sm transition-all duration-200 hover:bg-white/[0.09] hover:text-white ${closeDisabled ? 'opacity-50 cursor-not-allowed' : ''}`}
             data-testid="close-modal-btn"
             onClick={onClose}
             disabled={closeDisabled}
@@ -56,11 +55,18 @@ export const Modal: React.FC<ModalProps> = ({
           </button>
         </div>
 
-        <div className="modal-body" data-testid={bodyTestId}>
+        <div
+          className="px-2 py-2 overflow-y-auto flex-1 bg-black/[0.15]"
+          data-testid={bodyTestId}
+        >
           {children}
         </div>
 
-        {footer && <div className="modal-footer">{footer}</div>}
+        {footer && (
+          <div className="flex justify-end gap-1 px-2 py-1.5 border-t border-white/[0.12] bg-white/[0.03]">
+            {footer}
+          </div>
+        )}
       </div>
     </div>
   );

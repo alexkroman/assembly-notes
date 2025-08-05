@@ -1,35 +1,40 @@
+import 'reflect-metadata';
 import { Store } from '@reduxjs/toolkit';
 import { BrowserWindow } from 'electron';
 import { container } from 'tsyringe';
 
 import { DI_TOKENS } from '../../../src/main/di-tokens';
 import { RecordingManager } from '../../../src/main/services/recordingManager';
+import { resetTestContainer } from '../../test-helpers/container-setup';
+
+// Create default state
+const defaultState = {
+  recording: {
+    status: 'idle',
+    recordingId: null,
+    startTime: null,
+    error: null,
+    connectionStatus: { microphone: false, system: false },
+  },
+  recordings: {
+    currentRecording: {
+      id: 'test-recording-id',
+      title: 'Test Recording',
+      transcript: '',
+      created_at: Date.now(),
+      updated_at: Date.now(),
+    },
+  },
+  transcription: {
+    currentTranscript: 'Test transcript content',
+    isTranscribing: false,
+  },
+  settings: { assemblyaiKey: 'test-api-key' },
+};
 
 // Mock Redux store with minimal implementation
 const mockStore = {
-  getState: jest.fn(() => ({
-    recording: {
-      status: 'idle',
-      recordingId: null,
-      startTime: null,
-      error: null,
-      connectionStatus: { microphone: false, system: false },
-    },
-    recordings: {
-      currentRecording: {
-        id: 'test-recording-id',
-        title: 'Test Recording',
-        transcript: '',
-        created_at: Date.now(),
-        updated_at: Date.now(),
-      },
-    },
-    transcription: {
-      currentTranscript: 'Test transcript content',
-      isTranscribing: false,
-    },
-    settings: { assemblyaiKey: 'test-api-key' },
-  })),
+  getState: jest.fn(() => defaultState),
   dispatch: jest.fn(),
   subscribe: jest.fn(() => jest.fn()), // Return unsubscribe function
 } as any;
@@ -45,12 +50,6 @@ const mockMainWindow = {
   webContents: { send: jest.fn() },
 } as unknown as BrowserWindow;
 
-const mockDatabase = {
-  saveRecording: jest.fn(),
-  getRecording: jest.fn(),
-  updateRecording: jest.fn(),
-} as any;
-
 const mockTranscriptionService = {
   createConnections: jest.fn(),
   sendAudio: jest.fn(),
@@ -63,11 +62,21 @@ const mockSummarizationService = {
   summarizeTranscript: jest.fn(),
 } as any;
 
+const mockRecordingDataService = {
+  saveCurrentTranscription: jest.fn(),
+  saveSummary: jest.fn(),
+} as any;
+
 describe('RecordingManager', () => {
   let recordingManager: RecordingManager;
 
   beforeEach(() => {
+    // Reset the container and mocks
+    resetTestContainer();
     jest.clearAllMocks();
+
+    // Reset getState to return default state
+    mockStore.getState.mockReturnValue(defaultState);
 
     // Setup mock store dispatch
     mockStore.dispatch.mockImplementation(() => ({
@@ -77,13 +86,15 @@ describe('RecordingManager', () => {
         }),
     }));
 
-    // Register mocks in container
+    // Register all mocks before resolving
     container.register(DI_TOKENS.Store, {
       useValue: mockStore as unknown as Store,
     });
-    container.register(DI_TOKENS.Logger, { useValue: mockLogger as any });
+    container.register(DI_TOKENS.Logger, { useValue: mockLogger });
     container.register(DI_TOKENS.MainWindow, { useValue: mockMainWindow });
-    container.register(DI_TOKENS.DatabaseService, { useValue: mockDatabase });
+    container.register(DI_TOKENS.RecordingDataService, {
+      useValue: mockRecordingDataService,
+    });
     container.register(DI_TOKENS.TranscriptionService, {
       useValue: mockTranscriptionService,
     });
@@ -95,7 +106,7 @@ describe('RecordingManager', () => {
   });
 
   afterEach(() => {
-    container.clearInstances();
+    resetTestContainer();
   });
 
   describe('startTranscription', () => {
@@ -121,9 +132,20 @@ describe('RecordingManager', () => {
     });
 
     it('should fail when no current recording exists', async () => {
-      mockStore.getState.mockReturnValue({
-        ...mockStore.getState(),
+      mockStore.getState.mockReturnValueOnce({
+        recording: {
+          status: 'idle',
+          recordingId: null,
+          startTime: null,
+          error: null,
+          connectionStatus: { microphone: false, system: false },
+        },
         recordings: { currentRecording: null },
+        transcription: {
+          currentTranscript: 'Test transcript content',
+          isTranscribing: false,
+        },
+        settings: { assemblyaiKey: 'test-api-key' },
       });
 
       const result = await recordingManager.startTranscription();
@@ -138,8 +160,14 @@ describe('RecordingManager', () => {
     });
 
     it('should fail when API key is missing', async () => {
-      mockStore.getState.mockReturnValue({
-        ...mockStore.getState(),
+      const stateWithNoApiKey = {
+        recording: {
+          status: 'idle',
+          recordingId: null,
+          startTime: null,
+          error: null,
+          connectionStatus: { microphone: false, system: false },
+        },
         recordings: {
           currentRecording: {
             id: 'test-recording-id',
@@ -149,8 +177,15 @@ describe('RecordingManager', () => {
             updated_at: Date.now(),
           },
         },
+        transcription: {
+          currentTranscript: 'Test transcript content',
+          isTranscribing: false,
+        },
         settings: { assemblyaiKey: '' },
-      });
+      };
+
+      // Return the same state for both calls to getState
+      mockStore.getState.mockReturnValue(stateWithNoApiKey);
 
       const result = await recordingManager.startTranscription();
 
@@ -164,8 +199,14 @@ describe('RecordingManager', () => {
 
     it('should handle transcription service errors', async () => {
       // Set up the state to pass the initial checks
-      mockStore.getState.mockReturnValue({
-        ...mockStore.getState(),
+      mockStore.getState.mockReturnValueOnce({
+        recording: {
+          status: 'idle',
+          recordingId: null,
+          startTime: null,
+          error: null,
+          connectionStatus: { microphone: false, system: false },
+        },
         recordings: {
           currentRecording: {
             id: 'test-recording-id',
@@ -174,6 +215,10 @@ describe('RecordingManager', () => {
             created_at: Date.now(),
             updated_at: Date.now(),
           },
+        },
+        transcription: {
+          currentTranscript: 'Test transcript content',
+          isTranscribing: false,
         },
         settings: { assemblyaiKey: 'test-api-key' },
       });
@@ -278,110 +323,17 @@ describe('RecordingManager', () => {
     });
   });
 
-  describe('getCurrentTranscript', () => {
-    it('should return current transcript from store', () => {
-      const transcript = recordingManager.getCurrentTranscript();
-
-      expect(transcript).toBe('Test transcript content');
-    });
-  });
-
-  describe('newRecording', () => {
-    it('should generate a new recording ID', async () => {
-      const recordingId = await recordingManager.newRecording();
-
-      expect(recordingId).toMatch(/^recording_\d+_[a-z0-9]+$/);
-      expect(mockDatabase.saveRecording).toHaveBeenCalledWith(
-        expect.objectContaining({
-          id: recordingId,
-          title: 'New Recording',
-        })
-      );
-      expect(mockStore.dispatch).toHaveBeenCalled();
-    });
-
-    it('should stop existing recording before creating new one', async () => {
-      mockStore.getState.mockReturnValue({
-        ...mockStore.getState(),
-        recording: { status: 'recording' },
-      });
-
-      // Mock stopTranscription to avoid complex setup
-      jest.spyOn(recordingManager, 'stopTranscription').mockResolvedValue(true);
-
-      await recordingManager.newRecording();
-
-      expect(recordingManager.stopTranscription).toHaveBeenCalled();
-    });
-
-    it('should handle database errors gracefully', async () => {
-      mockDatabase.saveRecording.mockImplementation(() => {
-        throw new Error('Database error');
-      });
-
-      const result = await recordingManager.newRecording();
-
-      expect(result).toBeNull();
-      expect(mockLogger.error).toHaveBeenCalledWith(
-        'Failed to create new recording:',
-        expect.any(Error)
-      );
-    });
-  });
-
-  describe('loadRecording', () => {
-    it('should load recording from database', () => {
-      const mockRecording = {
-        id: 'test-id',
-        title: 'Test Recording',
-        transcript: 'Test transcript',
-        created_at: Date.now(),
-        updated_at: Date.now(),
-      };
-      mockDatabase.getRecording.mockReturnValue(mockRecording);
-
-      const result = recordingManager.loadRecording('test-id');
-
-      expect(result).toBe(true);
-      expect(mockDatabase.getRecording).toHaveBeenCalledWith('test-id');
-      expect(mockStore.dispatch).toHaveBeenCalledWith(
-        expect.objectContaining({
-          payload: mockRecording,
-        })
-      );
-    });
-
-    it('should handle missing recording', () => {
-      mockDatabase.getRecording.mockReturnValue(null);
-
-      const result = recordingManager.loadRecording('missing-id');
-
-      expect(result).toBe(false);
-      expect(mockLogger.warn).toHaveBeenCalledWith(
-        'Recording not found: missing-id'
-      );
-    });
-
-    it('should handle database errors', () => {
-      mockDatabase.getRecording.mockImplementation(() => {
-        throw new Error('Database error');
-      });
-
-      const result = recordingManager.loadRecording('test-id');
-
-      expect(result).toBe(false);
-      expect(mockLogger.error).toHaveBeenCalledWith(
-        'Failed to load recording test-id:',
-        expect.any(Error)
-      );
-    });
-  });
-
   describe('summarizeTranscript', () => {
     it('should return false when no transcript available', async () => {
-      mockStore.getState.mockReturnValue({
-        ...mockStore.getState(),
-        transcription: { currentTranscript: '' },
+      mockStore.getState.mockReturnValueOnce({
+        recording: {
+          status: 'idle',
+          recordingId: null,
+          startTime: null,
+          error: null,
+          connectionStatus: { microphone: false, system: false },
+        },
+        transcription: { currentTranscript: '', isTranscribing: false },
         recordings: { currentRecording: null },
         settings: { summaryPrompt: '', assemblyaiKey: '' },
       });
@@ -395,9 +347,18 @@ describe('RecordingManager', () => {
     });
 
     it('should handle missing API key', async () => {
-      mockStore.getState.mockReturnValue({
-        ...mockStore.getState(),
-        transcription: { currentTranscript: 'Test transcript content' },
+      mockStore.getState.mockReturnValueOnce({
+        recording: {
+          status: 'idle',
+          recordingId: null,
+          startTime: null,
+          error: null,
+          connectionStatus: { microphone: false, system: false },
+        },
+        transcription: {
+          currentTranscript: 'Test transcript content',
+          isTranscribing: false,
+        },
         recordings: {
           currentRecording: {
             id: 'test-recording-id',

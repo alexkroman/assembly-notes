@@ -47,15 +47,7 @@ const updateSlice = createSlice({
       state.downloading = false;
       state.error = action.payload;
     },
-    resetUpdate: (state) => {
-      state.checking = false;
-      state.available = false;
-      state.downloading = false;
-      state.progress = 0;
-      state.downloaded = false;
-      state.error = null;
-      state.updateInfo = null;
-    },
+    resetUpdate: () => initialState,
   },
 });
 

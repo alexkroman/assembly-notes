@@ -1,8 +1,12 @@
 import { useEffect, useState, useCallback, useRef } from 'react';
 
-// Recording type no longer needed since we use Redux state
 import { setStatus } from '../store';
 import { useAppSelector, useAppDispatch } from './redux';
+import type { Recording } from '../../types/common.js';
+import {
+  useUpdateRecordingTitleMutation,
+  useUpdateRecordingSummaryMutation,
+} from '../slices/apiSlice.js';
 
 export const useRecording = (recordingId: string | null) => {
   const recordingState = useAppSelector(
@@ -29,14 +33,24 @@ export const useRecording = (recordingId: string | null) => {
   );
   const dispatch = useAppDispatch();
 
-  // Get recording data from Redux for initial values
-  const recordingsState = useAppSelector(
+  // Load recording into Redux store when recordingId changes
+  useEffect(() => {
+    if (recordingId) {
+      window.electronAPI.loadRecording(recordingId).catch((error: unknown) => {
+        window.logger.error('Failed to load recording:', error);
+      });
+    }
+  }, [recordingId]);
+
+  // Get current recording from Redux store (synced from main process)
+  const currentRecording = useAppSelector(
     (state) =>
-      state.recordings as {
-        currentRecording: { title: string; summary: string } | null;
-      }
+      (state.recordings as { currentRecording: Recording | null })
+        .currentRecording
   );
-  const currentRecording = recordingsState.currentRecording;
+
+  const [updateTitle] = useUpdateRecordingTitleMutation();
+  const [updateSummary] = useUpdateRecordingSummaryMutation();
 
   // Local state for immediate UI updates
   const [localTitle, setLocalTitle] = useState(currentRecording?.title ?? '');
@@ -84,36 +98,10 @@ export const useRecording = (recordingId: string | null) => {
       clearTimeout(summaryDebounceRef.current);
       summaryDebounceRef.current = null;
     }
-
-    if (recordingId) {
-      void loadRecording(recordingId);
-    }
   }, [recordingId]);
 
-  const loadRecording = async (id: string) => {
-    try {
-      // Use the load-recording IPC call that loads recording into Redux state
-      const success = await window.electronAPI.loadRecording(id);
-      if (success) {
-        dispatch(setStatus('Recording loaded'));
-      } else {
-        dispatch(setStatus('Recording not found'));
-      }
-    } catch (error) {
-      console.error('Error loading recording:', error);
-      dispatch(setStatus('Error loading recording'));
-    }
-  };
-
   useEffect(() => {
-    const handleSummary = (data: { text: string; recordingId?: string }) => {
-      // Only apply summary if it's for the current recording
-      if (data.recordingId && data.recordingId !== recordingId) {
-        console.warn(
-          `Ignoring summary for different recording: ${data.recordingId} !== ${recordingId ?? 'undefined'}`
-        );
-        return;
-      }
+    const handleSummary = (data: { text: string }) => {
       // Update local state immediately and trigger same debounced flow as user typing
       handleSummaryChange(data.text);
     };
@@ -158,7 +146,7 @@ export const useRecording = (recordingId: string | null) => {
         await window.electronAPI.stopRecording();
       }
     } catch (error) {
-      console.error('Error toggling recording:', error);
+      window.logger.error('Error toggling recording:', error);
       dispatch(setStatus('Error toggling recording'));
       setIsStopping(false);
       setIsStarting(false);
@@ -170,7 +158,7 @@ export const useRecording = (recordingId: string | null) => {
       // Don't set isSummarizing here - let the event handlers manage it
       await window.electronAPI.summarizeTranscript();
     } catch (error) {
-      console.error('Error generating summary:', error);
+      window.logger.error('Error generating summary:', error);
       dispatch(setStatus('Error generating summary'));
       setIsSummarizing(false);
     }
@@ -181,8 +169,22 @@ export const useRecording = (recordingId: string | null) => {
       setIsPostingToSlack(true);
       dispatch(setStatus('Posting to Slack...'));
 
-      const formattedMessage = (recordingTitle || '').trim()
-        ? `*${recordingTitle}*\n\n${message}`
+      // Format the date similar to RecordingsList
+      const dateString = currentRecording?.created_at
+        ? new Date(currentRecording.created_at).toLocaleString()
+        : '';
+
+      // Build the title with date
+      let titleWithDate = (recordingTitle || '').trim();
+      if (titleWithDate && dateString) {
+        titleWithDate = `${titleWithDate} - ${dateString}`;
+      } else if (!titleWithDate && dateString) {
+        titleWithDate = dateString;
+      }
+
+      // Format message with proper title
+      const formattedMessage = titleWithDate
+        ? `${titleWithDate}\n\n${message}`
         : message;
 
       const result = await window.electronAPI.postToSlack(
@@ -196,7 +198,7 @@ export const useRecording = (recordingId: string | null) => {
         dispatch(setStatus(`Slack error: ${result.error ?? 'Unknown error'}`));
       }
     } catch (error) {
-      console.error('Error posting to Slack:', error);
+      window.logger.error('Error posting to Slack:', error);
       dispatch(setStatus('Error posting to Slack'));
     } finally {
       setIsPostingToSlack(false);
@@ -221,12 +223,10 @@ export const useRecording = (recordingId: string | null) => {
 
       // Debounce database update
       titleDebounceRef.current = setTimeout(() => {
-        // Always send with the captured recording ID
-        // The Redux middleware will validate if it's still current
-        void window.electronAPI.updateRecordingTitle(currentRecordingId, title);
+        void updateTitle({ id: currentRecordingId, title });
       }, 500); // Wait 500ms after user stops typing
     },
-    [recordingId]
+    [recordingId, updateTitle]
   );
 
   const handleSummaryChange = useCallback(
@@ -246,15 +246,10 @@ export const useRecording = (recordingId: string | null) => {
 
       // Debounce database update
       summaryDebounceRef.current = setTimeout(() => {
-        // Always send with the captured recording ID
-        // The Redux middleware will validate if it's still current
-        void window.electronAPI.updateRecordingSummary(
-          currentRecordingId,
-          summaryText
-        );
+        void updateSummary({ id: currentRecordingId, summary: summaryText });
       }, 500); // Wait 500ms after user stops typing
     },
-    [recordingId]
+    [recordingId, updateSummary]
   );
 
   // Cleanup timeouts on unmount

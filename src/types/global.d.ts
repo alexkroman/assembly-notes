@@ -26,18 +26,13 @@ declare global {
       startRecording: () => Promise<boolean>;
       stopRecording: () => Promise<boolean>;
       newRecording: () => Promise<string | null>;
-      summarizeTranscript: (
-        recordingId?: string,
-        transcript?: string
-      ) => Promise<boolean>;
+      summarizeTranscript: (transcript?: string) => Promise<boolean>;
       sendMicrophoneAudio: (data: ArrayBuffer) => void;
       sendSystemAudio: (data: ArrayBuffer) => void;
 
       // Event listeners
       onTranscript: (callback: (data: TranscriptData) => void) => void;
-      onSummary: (
-        callback: (data: { text: string; recordingId?: string }) => void
-      ) => void;
+      onSummary: (callback: (data: { text: string }) => void) => void;
       onSummarizationStarted: (callback: () => void) => void;
       onSummarizationCompleted: (callback: () => void) => void;
       onConnectionStatus: (

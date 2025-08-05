@@ -4,9 +4,7 @@ import { useAppDispatch, useAppSelector } from '../hooks/redux';
 import {
   navigateToList,
   navigateToRecording,
-  setShowChannelModal,
-  setShowPromptModal,
-  setShowSettingsModal,
+  setActiveModal,
   setStatus,
 } from '../store';
 import { ChannelModal } from './ChannelModal';
@@ -14,36 +12,26 @@ import { PromptModal } from './PromptModal';
 import { RecordingsList } from './RecordingsList';
 import { RecordingView } from './RecordingView';
 import { SettingsModal } from './SettingsModal';
+import { useGetSettingsQuery, apiSlice } from '../slices/apiSlice.js';
 
 export const App: React.FC = () => {
   const dispatch = useAppDispatch();
-  const {
-    currentPage,
-    currentRecordingId,
-    showSettingsModal,
-    showPromptModal,
-    showChannelModal,
-  } = useAppSelector((state) => state.ui);
+  const { currentPage, currentRecordingId, activeModal } = useAppSelector(
+    (state) => state.ui
+  );
   const { status } = useAppSelector(
     (state: { recording: { status: string } }) => state.recording
   );
+  const { data: settings } = useGetSettingsQuery(undefined);
   const isRecording = status === 'recording';
   const [isStoppingForNavigation, setIsStoppingForNavigation] = useState(false);
 
   useEffect(() => {
-    const checkInitialSetup = async () => {
-      try {
-        const settings = await window.electronAPI.getSettings();
-        if (!(settings.assemblyaiKey || '').trim()) {
-          dispatch(setShowSettingsModal(true));
-        }
-      } catch (error) {
-        console.error('Error checking initial setup:', error);
-      }
-    };
-
-    void checkInitialSetup();
-  }, [dispatch]);
+    // Check if settings are loaded and AssemblyAI key is missing
+    if (settings && !(settings.assemblyaiKey || '').trim()) {
+      dispatch(setActiveModal('settings'));
+    }
+  }, [settings, dispatch]);
 
   useEffect(() => {
     const handleStopAudioCapture = () => {
@@ -51,6 +39,8 @@ export const App: React.FC = () => {
         setIsStoppingForNavigation(false);
         dispatch(navigateToList());
         dispatch(setStatus(''));
+        // Invalidate recordings list to force reload
+        dispatch(apiSlice.util.invalidateTags(['RecordingsList']));
       }
     };
 
@@ -72,19 +62,26 @@ export const App: React.FC = () => {
         dispatch(setStatus('Stopping and going back to recordings'));
         await window.electronAPI.stopRecording();
       } catch (error) {
-        console.error('Error stopping recording before navigation:', error);
+        window.logger.error(
+          'Error stopping recording before navigation:',
+          error
+        );
         setIsStoppingForNavigation(false);
         dispatch(navigateToList());
         dispatch(setStatus(''));
+        // Invalidate recordings list to force reload
+        dispatch(apiSlice.util.invalidateTags(['RecordingsList']));
       }
     } else {
       dispatch(navigateToList());
       dispatch(setStatus(''));
+      // Invalidate recordings list to force reload
+      dispatch(apiSlice.util.invalidateTags(['RecordingsList']));
     }
   };
 
   return (
-    <div className="container" data-testid="app-container">
+    <div className="container-flex" data-testid="app-container">
       {currentPage === 'list' && (
         <div className="page active">
           <RecordingsList onNavigateToRecording={handleNavigateToRecording} />
@@ -99,36 +96,36 @@ export const App: React.FC = () => {
               void handleNavigateToList();
             }}
             onShowPromptModal={() => {
-              dispatch(setShowPromptModal(true));
+              dispatch(setActiveModal('prompt'));
             }}
             onShowChannelModal={() => {
-              dispatch(setShowChannelModal(true));
+              dispatch(setActiveModal('channel'));
             }}
             isStoppingForNavigation={isStoppingForNavigation}
           />
         </div>
       )}
 
-      {showSettingsModal && (
+      {activeModal === 'settings' && (
         <SettingsModal
           onClose={() => {
-            dispatch(setShowSettingsModal(false));
+            dispatch(setActiveModal(null));
           }}
         />
       )}
 
-      {showPromptModal && (
+      {activeModal === 'prompt' && (
         <PromptModal
           onClose={() => {
-            dispatch(setShowPromptModal(false));
+            dispatch(setActiveModal(null));
           }}
         />
       )}
 
-      {showChannelModal && (
+      {activeModal === 'channel' && (
         <ChannelModal
           onClose={() => {
-            dispatch(setShowChannelModal(false));
+            dispatch(setActiveModal(null));
           }}
         />
       )}

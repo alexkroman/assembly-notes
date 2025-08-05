@@ -2,9 +2,9 @@ import type { Store } from '@reduxjs/toolkit';
 import type { BrowserWindow } from 'electron';
 import { inject, injectable } from 'tsyringe';
 
-import { DatabaseService } from '../database.js';
 import { DI_TOKENS } from '../di-tokens.js';
 import type Logger from '../logger.js';
+import { RecordingDataService } from './recordingDataService.js';
 import { SummarizationService } from './summarizationService.js';
 import {
   TranscriptionService,
@@ -17,14 +17,8 @@ import {
   updateConnectionStatus,
 } from '../store/slices/recordingSlice.js';
 import {
-  setCurrentRecording,
-  updateCurrentRecordingSummary,
-} from '../store/slices/recordingsSlice.js';
-import {
   addTranscriptSegment,
   updateTranscriptBuffer,
-  clearTranscription,
-  loadExistingTranscript,
 } from '../store/slices/transcriptionSlice.js';
 import { AppDispatch, RootState } from '../store/store.js';
 
@@ -41,14 +35,14 @@ export class RecordingManager {
     private store: Store<RootState> & { dispatch: AppDispatch },
     @inject(DI_TOKENS.Logger) private logger: typeof Logger,
     @inject(DI_TOKENS.MainWindow) private mainWindow: BrowserWindow,
-    @inject(DI_TOKENS.DatabaseService) private database: DatabaseService,
+    @inject(DI_TOKENS.RecordingDataService)
+    private recordingDataService: RecordingDataService,
     @inject(DI_TOKENS.TranscriptionService)
     private transcriptionService: TranscriptionService,
     @inject(DI_TOKENS.SummarizationService)
     private summarizationService: SummarizationService
   ) {
     this.setupStoreSubscriptions();
-    // Removed auto-save - UI now handles all database writes via debounced updates
   }
 
   private setupStoreSubscriptions(): void {
@@ -150,6 +144,8 @@ export class RecordingManager {
                   text: '',
                 })
               );
+              // Auto-save transcript after receiving final transcript
+              this.recordingDataService.saveCurrentTranscription();
             }
           },
           onError: (stream: string, error: unknown) => {
@@ -181,20 +177,7 @@ export class RecordingManager {
       );
 
       // Start keep-alive interval
-      if (this.keepAliveInterval) {
-        clearInterval(this.keepAliveInterval);
-      }
-
-      this.keepAliveInterval = setInterval(() => {
-        const microphone = this.connections.microphone;
-        const system = this.connections.system;
-        if (microphone) {
-          this.transcriptionService.sendKeepAlive(microphone);
-        }
-        if (system) {
-          this.transcriptionService.sendKeepAlive(system);
-        }
-      }, 30000);
+      this.startKeepAliveInterval();
 
       return true;
     } catch (error) {
@@ -211,15 +194,10 @@ export class RecordingManager {
   async stopTranscription(): Promise<boolean> {
     try {
       // Save current transcription before stopping
-      this.saveCurrentTranscription();
+      this.recordingDataService.saveCurrentTranscription();
 
       // Clear keep-alive interval
-      if (this.keepAliveInterval) {
-        clearInterval(this.keepAliveInterval);
-        this.keepAliveInterval = null;
-      }
-
-      // No more auto-save timeout to clear
+      this.stopKeepAliveInterval();
 
       // FIRST: Stop audio capture to prevent more audio from being sent
       this.mainWindow.webContents.send('stop-audio-capture');
@@ -260,96 +238,17 @@ export class RecordingManager {
     }
   }
 
-  getCurrentTranscript(): string {
-    return this.store.getState().transcription.currentTranscript;
-  }
-
-  async newRecording(): Promise<string | null> {
-    try {
-      const state = this.store.getState();
-      if (state.recording.status === 'recording') {
-        await this.stopTranscription();
-      }
-
-      // Generate new recording ID
-      const recordingId = `recording_${Date.now().toString()}_${Math.random()
-        .toString(36)
-        .substring(2, 15)}`;
-
-      // Create new recording in database
-      const newRecording = {
-        id: recordingId,
-        title: 'New Recording',
-        transcript: '',
-        created_at: Date.now(),
-        updated_at: Date.now(),
-      };
-
-      this.database.saveRecording(newRecording);
-
-      // Set as current recording in Redux state
-      this.store.dispatch(setCurrentRecording(newRecording));
-
-      // Clear transcription state for new recording
-      this.store.dispatch(clearTranscription());
-
-      this.logger.info(
-        `Created new recording: ${recordingId} - "New Recording"`
-      );
-      return recordingId;
-    } catch (error) {
-      this.logger.error('Failed to create new recording:', error);
-      return null;
-    }
-  }
-
-  loadRecording(recordingId: string): boolean {
-    try {
-      const recording = this.database.getRecording(recordingId);
-      if (!recording) {
-        this.logger.warn(`Recording not found: ${recordingId}`);
-        return false;
-      }
-
-      // Set as current recording in recordings slice (includes title, summary, etc.)
-      this.store.dispatch(setCurrentRecording(recording));
-
-      // Load the transcript into the transcription state
-      if (recording.transcript) {
-        this.store.dispatch(loadExistingTranscript(recording.transcript));
-        this.logger.info(
-          `Loaded recording: ${recordingId} - "${String(recording.title)}" with transcript (${String(recording.transcript.length)} chars)${recording.summary ? ' and summary' : ''}`
-        );
-      } else {
-        // Clear transcription if no existing transcript
-        this.store.dispatch(clearTranscription());
-        this.logger.info(
-          `Loaded empty recording: ${recordingId} - "${String(recording.title)}"`
-        );
-      }
-
-      return true;
-    } catch (error) {
-      this.logger.error(`Failed to load recording ${recordingId}:`, error);
-      return false;
-    }
-  }
-
-  async summarizeTranscript(
-    recordingId?: string,
-    transcript?: string
-  ): Promise<boolean> {
-    // Get current recording and transcript if not provided
+  async summarizeTranscript(transcript?: string): Promise<boolean> {
+    // Get current recording and transcript from state
     const state = this.store.getState();
     const currentTranscript =
       transcript ?? state.transcription.currentTranscript;
-    // Single source of truth: currentRecording.id from database
-    const currentRecordingId =
-      recordingId ?? state.recordings.currentRecording?.id;
+    // Single source of truth: currentRecording.id from state
+    const currentRecordingId = state.recordings.currentRecording?.id;
 
     // Debug logging
     this.logger.info(
-      `Summarization debug - recordingId param: ${String(recordingId)}, currentRecording.id: ${String(state.recordings.currentRecording?.id)}, final currentRecordingId: ${String(currentRecordingId)}`
+      `Summarization debug - currentRecording.id: ${String(currentRecordingId)}`
     );
 
     if (!currentTranscript.trim()) {
@@ -382,15 +281,14 @@ export class RecordingManager {
         // Send summary to UI - UI will handle both state update and database write
         this.mainWindow.webContents.send('summary', {
           text: summary,
-          recordingId: currentRecordingId,
         });
 
-        // Update Redux state immediately for UI responsiveness (no database write)
+        // Save to database and update Redux state via RecordingDataService
         if (currentRecordingId) {
           this.logger.info(
-            `Updating Redux state for summary on recording: ${currentRecordingId}`
+            `Saving summary for recording: ${currentRecordingId}`
           );
-          this.store.dispatch(updateCurrentRecordingSummary(summary));
+          this.recordingDataService.saveSummary(currentRecordingId, summary);
         }
       }
 
@@ -404,33 +302,31 @@ export class RecordingManager {
     }
   }
 
-  private saveCurrentTranscription(): void {
-    try {
-      const state = this.store.getState();
-      // Use database as single source of truth
-      const recordingId = state.recordings.currentRecording?.id;
-      const transcript = state.transcription.currentTranscript;
-
-      if (recordingId && transcript.trim()) {
-        // Update the recording in the database with the current transcript
-        this.database.updateRecording(recordingId, {
-          transcript,
-          updated_at: Date.now(),
-        });
-
-        this.logger.info(`Saved transcript for recording ${recordingId}`);
-      }
-    } catch (error) {
-      this.logger.error('Failed to save transcription:', error);
+  private startKeepAliveInterval(): void {
+    if (this.keepAliveInterval) {
+      clearInterval(this.keepAliveInterval);
     }
+
+    this.keepAliveInterval = setInterval(() => {
+      const microphone = this.connections.microphone;
+      const system = this.connections.system;
+      if (microphone) {
+        this.transcriptionService.sendKeepAlive(microphone);
+      }
+      if (system) {
+        this.transcriptionService.sendKeepAlive(system);
+      }
+    }, 30000);
   }
 
-  cleanup(): void {
-    // Clear keep-alive interval
+  private stopKeepAliveInterval(): void {
     if (this.keepAliveInterval) {
       clearInterval(this.keepAliveInterval);
       this.keepAliveInterval = null;
     }
-    // No more auto-save cleanup needed - UI handles all database writes
+  }
+
+  cleanup(): void {
+    this.stopKeepAliveInterval();
   }
 }

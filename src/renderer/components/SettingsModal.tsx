@@ -1,24 +1,53 @@
 import React, { useEffect, useState } from 'react';
 
-import type { SettingsModalProps } from '../../types/components.js';
-import type { SettingsState } from '../../types/redux.js';
-import { useAppDispatch, useAppSelector } from '../hooks/redux.js';
-import { setStatus } from '../store';
 import { Modal } from './Modal.js';
 import { SlackOAuthConnectionOnly } from './SlackOAuthConnectionOnly.js';
+import type { SettingsModalProps } from '../../types/components.js';
+import type { FullSettingsState } from '../../types/redux.js';
+import { useAppDispatch, useAppSelector } from '../hooks/redux.js';
+import {
+  useGetSettingsQuery,
+  useUpdateSettingsMutation,
+} from '../slices/apiSlice.js';
+import { setStatus } from '../store';
 import '../../types/global.d.ts';
 
 export const SettingsModal: React.FC<SettingsModalProps> = ({ onClose }) => {
-  const reduxSettings = useAppSelector((state) => state.settings);
-  const [settings, setSettings] = useState<SettingsState>(reduxSettings);
+  const {
+    data: fetchedSettings,
+    isLoading,
+    error,
+  } = useGetSettingsQuery(undefined);
+  const [updateSettings, { isLoading: isSaving }] = useUpdateSettingsMutation();
+  const reduxSlackInstallation = useAppSelector(
+    (state) => state.settings.slackInstallation
+  );
+  const [settings, setSettings] = useState<FullSettingsState>({
+    assemblyaiKey: '',
+    slackChannels: '',
+    slackInstallation: null,
+    summaryPrompt: 'Summarize the key points from this meeting transcript:',
+    prompts: [],
+    autoStart: false,
+  });
   const [slackClientId, setSlackClientId] = useState('');
   const [slackClientSecret, setSlackClientSecret] = useState('');
   const dispatch = useAppDispatch();
 
   useEffect(() => {
-    // Update local state when Redux state changes
-    setSettings(reduxSettings);
-  }, [reduxSettings]);
+    // Update local state when settings are fetched
+    if (fetchedSettings) {
+      setSettings(fetchedSettings);
+    }
+  }, [fetchedSettings]);
+
+  useEffect(() => {
+    // Sync slackInstallation from Redux state when OAuth completes
+    setSettings((prev) => ({
+      ...prev,
+      slackInstallation: reduxSlackInstallation,
+    }));
+  }, [reduxSlackInstallation]);
 
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
@@ -39,20 +68,25 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ onClose }) => {
     }
 
     try {
-      await window.electronAPI.saveSettings(settings);
+      // Ensure we're saving the current slackInstallation from Redux state
+      const settingsToSave = {
+        ...settings,
+        slackInstallation: reduxSlackInstallation ?? settings.slackInstallation,
+      };
+      await updateSettings(settingsToSave).unwrap();
       dispatch(setStatus('Settings saved successfully'));
       onClose();
     } catch (error) {
-      console.error('Error saving settings:', error);
+      window.logger.error('Error saving settings:', error);
       dispatch(setStatus('Error saving settings'));
     }
   };
 
   const handleInputChange = (
-    field: keyof SettingsState,
+    field: keyof FullSettingsState,
     value: string | boolean
   ) => {
-    setSettings((prev: SettingsState) => ({ ...prev, [field]: value }));
+    setSettings((prev: FullSettingsState) => ({ ...prev, [field]: value }));
   };
 
   const handleCancel = () => {
@@ -70,29 +104,62 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ onClose }) => {
   };
 
   const isAssemblyAIKeyMissing = !(settings.assemblyaiKey || '').trim();
+  const isDisabled = isAssemblyAIKeyMissing || isSaving;
 
   const footer = (
     <>
       <button
-        className={`btn-secondary ${isAssemblyAIKeyMissing ? 'disabled' : ''}`}
+        className={`btn-secondary ${isDisabled ? 'opacity-50 cursor-not-allowed' : ''}`}
         data-testid="cancel-settings-btn"
         onClick={handleCancel}
-        disabled={isAssemblyAIKeyMissing}
+        disabled={isDisabled}
       >
         Cancel
       </button>
       <button
-        className={`btn-primary ${isAssemblyAIKeyMissing ? 'disabled' : ''}`}
+        className={`btn-primary ${isDisabled ? 'opacity-50 cursor-not-allowed' : ''}`}
         data-testid="save-settings-btn"
         onClick={() => {
           void handleSave();
         }}
-        disabled={isAssemblyAIKeyMissing}
+        disabled={isDisabled}
       >
-        Save
+        {isSaving ? 'Saving...' : 'Save'}
       </button>
     </>
   );
+
+  if (isLoading) {
+    return (
+      <Modal
+        title="Settings"
+        onClose={handleClose}
+        footer={null}
+        size="large"
+        testId="settings-modal"
+        bodyTestId="slack-settings"
+        closeDisabled={true}
+      >
+        <div>Loading settings...</div>
+      </Modal>
+    );
+  }
+
+  if (error) {
+    return (
+      <Modal
+        title="Settings"
+        onClose={handleClose}
+        footer={null}
+        size="large"
+        testId="settings-modal"
+        bodyTestId="slack-settings"
+        closeDisabled={false}
+      >
+        <div>Error loading settings. Please try again.</div>
+      </Modal>
+    );
+  }
 
   return (
     <Modal
@@ -105,7 +172,12 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ onClose }) => {
       closeDisabled={isAssemblyAIKeyMissing}
     >
       <div className="form-group">
-        <label htmlFor="assemblyaiKey">AssemblyAI API Key (required):</label>
+        <label
+          htmlFor="assemblyaiKey"
+          className="block mb-0.5 text-xs font-medium text-white/[0.85]"
+        >
+          AssemblyAI API Key (required):
+        </label>
         <input
           type="password"
           id="assemblyaiKey"
@@ -115,14 +187,16 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ onClose }) => {
             handleInputChange('assemblyaiKey', e.target.value);
           }}
           placeholder="Enter your AssemblyAI API key"
-          className={isAssemblyAIKeyMissing ? 'error' : ''}
+          className={`form-input ${isAssemblyAIKeyMissing ? 'border-[#dc3545]' : ''}`}
         />
       </div>
 
       {!settings.slackInstallation && (
         <div className="form-group">
-          <label>Slack Credentials (optional):</label>
-          <div style={{ display: 'flex', gap: '8px' }}>
+          <label className="block mb-0.5 text-xs font-medium text-white/[0.85]">
+            Slack Credentials (optional):
+          </label>
+          <div className="flex gap-1.5">
             <input
               type="text"
               id="slackClientId"
@@ -132,7 +206,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ onClose }) => {
                 setSlackClientId(e.target.value);
               }}
               placeholder="Client ID"
-              style={{ flex: 1 }}
+              className="form-input flex-1"
             />
             <input
               type="password"
@@ -143,7 +217,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ onClose }) => {
                 setSlackClientSecret(e.target.value);
               }}
               placeholder="Client Secret"
-              style={{ flex: 1 }}
+              className="form-input flex-1"
             />
           </div>
         </div>
@@ -152,7 +226,9 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ onClose }) => {
       {(Boolean(settings.slackInstallation) ||
         (slackClientId.trim() && slackClientSecret.trim())) && (
         <div className="form-group">
-          <label>Slack Connection:</label>
+          <label className="block mb-0.5 text-xs font-medium text-white/[0.85]">
+            Slack Connection:
+          </label>
           <SlackOAuthConnectionOnly
             clientId={slackClientId}
             clientSecret={slackClientSecret}

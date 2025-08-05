@@ -1,26 +1,26 @@
 import React, { useState, useEffect } from 'react';
 
+import { Modal } from './Modal.js';
 import { DEFAULT_PROMPTS } from '../../constants/defaultPrompts.js';
 import type { PromptModalProps } from '../../types/components.js';
 import type { PromptTemplate } from '../../types/index.js';
 import { useAppDispatch } from '../hooks/redux';
+import {
+  useGetSettingsQuery,
+  useUpdatePromptsMutation,
+} from '../slices/apiSlice.js';
 import { setStatus } from '../store';
-import { Modal } from './Modal.js';
 
 export const PromptModal: React.FC<PromptModalProps> = ({ onClose }) => {
+  const { data: settings, isLoading, error } = useGetSettingsQuery(undefined);
+  const [updatePrompts, { isLoading: isSaving }] = useUpdatePromptsMutation();
   const [prompts, setPrompts] = useState<PromptTemplate[]>([]);
   const [selectedIndex, setSelectedIndex] = useState(0);
   const dispatch = useAppDispatch();
 
   useEffect(() => {
-    void loadPrompts();
-  }, []);
-
-  const loadPrompts = async () => {
-    try {
-      const settings = await window.electronAPI.getSettings();
-      const loadedPrompts =
-        (settings as { prompts?: PromptTemplate[] }).prompts ?? [];
+    if (settings) {
+      const loadedPrompts = settings.prompts;
 
       // Ensure we always have exactly 5 prompts
       const finalPrompts: PromptTemplate[] = [];
@@ -30,22 +30,22 @@ export const PromptModal: React.FC<PromptModalProps> = ({ onClose }) => {
           finalPrompts.push(prompt);
         }
       }
-
       setPrompts(finalPrompts);
       setSelectedIndex(0);
-    } catch (error) {
-      console.error('Error loading prompts:', error);
+    } else if (error) {
+      // Fallback to default prompts if loading fails
+      setPrompts(DEFAULT_PROMPTS);
     }
-  };
+  }, [settings, error]);
 
   const handleSave = async () => {
     try {
-      await window.electronAPI.savePrompts(prompts);
+      await updatePrompts(prompts).unwrap();
       dispatch(setStatus('Prompts saved successfully'));
       window.dispatchEvent(new CustomEvent('prompts-updated'));
       onClose();
     } catch (error) {
-      console.error('Error saving prompts:', error);
+      window.logger.error('Error saving prompts:', error);
       dispatch(setStatus('Error saving prompts'));
     }
   };
@@ -79,9 +79,20 @@ export const PromptModal: React.FC<PromptModalProps> = ({ onClose }) => {
     }
   };
 
+  // Check if prompt is modified from default
+  const isPromptModified = (index: number) => {
+    const defaultPrompt = DEFAULT_PROMPTS[index];
+    const currentPrompt = prompts[index];
+    if (!defaultPrompt || !currentPrompt) return false;
+    return (
+      currentPrompt.name !== defaultPrompt.name ||
+      currentPrompt.content !== defaultPrompt.content
+    );
+  };
+
   const footer = (
     <>
-      <button className="btn-secondary" onClick={onClose}>
+      <button className="btn-secondary" onClick={onClose} disabled={isSaving}>
         Cancel
       </button>
       <button
@@ -89,11 +100,26 @@ export const PromptModal: React.FC<PromptModalProps> = ({ onClose }) => {
         onClick={() => {
           void handleSave();
         }}
+        disabled={isSaving}
       >
-        Save Changes
+        {isSaving ? 'Saving...' : 'Save'}
       </button>
     </>
   );
+
+  if (isLoading) {
+    return (
+      <Modal
+        title="Manage Prompts"
+        onClose={onClose}
+        footer={null}
+        size="large"
+        testId="prompt-modal"
+      >
+        <div>Loading prompts...</div>
+      </Modal>
+    );
+  }
 
   return (
     <Modal
@@ -103,29 +129,34 @@ export const PromptModal: React.FC<PromptModalProps> = ({ onClose }) => {
       size="large"
       testId="prompt-modal"
     >
-      <div className="prompt-editor-dense">
-        <div className="prompt-tabs">
+      <div className="flex flex-col gap-0.5 h-full">
+        <div className="flex gap-0.25 mb-0.5">
           {prompts.map((prompt, index) => (
             <button
               key={index}
-              className={`prompt-tab ${index === selectedIndex ? 'active' : ''}`}
+              className={`px-1.25 py-0.25 text-xs font-medium rounded-sm cursor-pointer transition-all duration-150 ease-in-out min-w-[22px] text-center ${index === selectedIndex ? 'bg-[#28a745]/20 border-[#28a745]/50 text-white hover:bg-[#28a745]/30' : 'bg-white/[0.06] border border-white/[0.12] text-white/[0.70] hover:bg-white/[0.09] hover:text-white/[0.85]'}`}
               onClick={() => {
                 setSelectedIndex(index);
               }}
               title={prompt.name}
             >
               {index + 1}
+              {isPromptModified(index) && (
+                <span className="text-[8px] ml-0.5">•</span>
+              )}
             </button>
           ))}
         </div>
 
         {prompts[selectedIndex] && (
-          <div className="prompt-content-dense">
-            <div className="prompt-header-row">
-              <span className="prompt-label">Name:</span>
+          <div className="flex flex-col gap-1.5 flex-1">
+            <div className="flex flex-col gap-0.5">
+              <span className="text-xs font-medium text-white/[0.85]">
+                Name:
+              </span>
               <input
                 type="text"
-                className="prompt-name-input-dense"
+                className="bg-white/[0.05] border border-white/[0.18] rounded-sm px-1.25 py-0.5 text-xs text-white focus:outline-none focus:border-[#28a745]/50 focus:bg-white/[0.12]"
                 value={prompts[selectedIndex].name}
                 onChange={(e) => {
                   handleUpdatePrompt(selectedIndex, 'name', e.target.value);
@@ -134,11 +165,13 @@ export const PromptModal: React.FC<PromptModalProps> = ({ onClose }) => {
               />
             </div>
 
-            <div className="prompt-content-row">
-              <span className="prompt-label">Content:</span>
-              <div className="prompt-content-wrapper">
+            <div className="flex flex-col gap-0.5 flex-1">
+              <span className="text-xs font-medium text-white/[0.85]">
+                Content:
+              </span>
+              <div className="flex flex-col flex-1">
                 <textarea
-                  className="prompt-content-input-dense"
+                  className="bg-white/[0.05] border border-white/[0.18] rounded-sm p-1 text-xs text-white resize-none min-h-[35px] font-mono leading-tight focus:outline-none focus:border-[#28a745]/50 focus:bg-white/[0.12] flex-1"
                   value={prompts[selectedIndex].content}
                   onChange={(e) => {
                     handleUpdatePrompt(
@@ -148,37 +181,28 @@ export const PromptModal: React.FC<PromptModalProps> = ({ onClose }) => {
                     );
                   }}
                   placeholder="Enter prompt content..."
-                  rows={9}
-                  style={{ width: '100%', boxSizing: 'border-box' }}
+                  rows={3}
+                  style={{ width: '100%' }}
                 />
-                <div className="revert-link-wrapper">
-                  <a
-                    href="#"
-                    className="revert-to-default-link"
-                    onClick={(e) => {
-                      e.preventDefault();
-                      handleRevertToDefault();
-                    }}
-                    title="Revert to the default name and prompt for this slot"
-                    style={{
-                      fontSize: '0.7em',
-                      color: '#888',
-                      textDecoration: 'none',
-                      marginTop: '4px',
-                      display: 'inline-block',
-                    }}
-                    onMouseEnter={(e) => {
-                      e.currentTarget.style.color = '#666';
-                      e.currentTarget.style.textDecoration = 'underline';
-                    }}
-                    onMouseLeave={(e) => {
-                      e.currentTarget.style.color = '#888';
-                      e.currentTarget.style.textDecoration = 'none';
-                    }}
-                  >
-                    Revert to default
-                  </a>
-                </div>
+                {DEFAULT_PROMPTS[selectedIndex] &&
+                  (prompts[selectedIndex].name !==
+                    DEFAULT_PROMPTS[selectedIndex].name ||
+                    prompts[selectedIndex].content !==
+                      DEFAULT_PROMPTS[selectedIndex].content) && (
+                    <div className="mt-1 flex items-center gap-1">
+                      <button
+                        className="px-2 py-0.5 text-[10px] bg-white/[0.06] border border-white/[0.12] rounded-sm text-white/[0.60] cursor-pointer transition-all duration-200 hover:bg-white/[0.09] hover:text-white/[0.85] hover:border-white/[0.18] flex items-center gap-1"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          handleRevertToDefault();
+                        }}
+                        title="Reset this prompt to its default name and content"
+                      >
+                        <span className="text-xs">↺</span>
+                        Reset to default
+                      </button>
+                    </div>
+                  )}
               </div>
             </div>
           </div>

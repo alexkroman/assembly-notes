@@ -21,12 +21,11 @@ const transcriptionSlice = createSlice({
   reducers: {
     addTranscriptSegment: (state, action: PayloadAction<TranscriptSegment>) => {
       state.segments.push(action.payload);
-      if (action.payload.isFinal) {
-        state.currentTranscript = state.segments
-          .filter((seg) => seg.isFinal)
-          .map((seg) => seg.text)
-          .join(' ');
-      }
+      // Rebuild the transcript from all final segments to prevent corruption
+      state.currentTranscript = state.segments
+        .filter((seg) => seg.isFinal)
+        .map((seg) => seg.text)
+        .join(' ');
     },
     updateTranscriptBuffer: (
       state,
@@ -42,13 +41,7 @@ const transcriptionSlice = createSlice({
       state.error = action.payload;
       state.isTranscribing = false;
     },
-    clearTranscription: (state) => {
-      state.currentTranscript = '';
-      state.segments = [];
-      state.microphoneTranscriptBuffer = '';
-      state.systemAudioTranscriptBuffer = '';
-      state.error = null;
-    },
+    clearTranscription: () => initialState,
     clearTranscriptionError: (state) => {
       state.error = null;
     },
