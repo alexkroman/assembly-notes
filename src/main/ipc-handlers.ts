@@ -102,16 +102,20 @@ function setupIpcHandlers(
 
   ipcMain.handle(
     'update-recording-title',
-    (_event: IpcMainInvokeEvent, recordingId: string, title: string): void => {
-      // Validate that this update is for the current recording
+    (
+      _event: IpcMainInvokeEvent,
+      recordingId: string,
+      title: string
+    ): Promise<void> => {
+      // Only allow updates to the current recording
       const state = store.getState();
-      const currentRecordingId = state.recordings.currentRecording?.id;
+      const currentRecording = state.recordings.currentRecording;
 
-      if (currentRecordingId && recordingId !== currentRecordingId) {
+      if (!currentRecording || currentRecording.id !== recordingId) {
         logger.warn(
-          `Ignoring title update for non-current recording: ${recordingId} !== ${currentRecordingId}`
+          `Ignoring title update: not the current recording (requested: ${recordingId}, current: ${currentRecording?.id ?? 'none'})`
         );
-        return;
+        return Promise.resolve();
       }
 
       const databaseService = container.resolve<DatabaseService>(
@@ -121,6 +125,7 @@ function setupIpcHandlers(
 
       // Update Redux state to maintain single source of truth
       store.dispatch(updateCurrentRecordingTitle(title));
+      return Promise.resolve();
     }
   );
 
@@ -130,16 +135,16 @@ function setupIpcHandlers(
       _event: IpcMainInvokeEvent,
       recordingId: string,
       summary: string
-    ): void => {
-      // Validate that this update is for the current recording
+    ): Promise<void> => {
+      // Only allow updates to the current recording
       const state = store.getState();
-      const currentRecordingId = state.recordings.currentRecording?.id;
+      const currentRecording = state.recordings.currentRecording;
 
-      if (currentRecordingId && recordingId !== currentRecordingId) {
+      if (!currentRecording || currentRecording.id !== recordingId) {
         logger.warn(
-          `Ignoring summary update for non-current recording: ${recordingId} !== ${currentRecordingId}`
+          `Ignoring summary update: not the current recording (requested: ${recordingId}, current: ${currentRecording?.id ?? 'none'})`
         );
-        return;
+        return Promise.resolve();
       }
 
       const databaseService = container.resolve<DatabaseService>(
@@ -149,6 +154,7 @@ function setupIpcHandlers(
 
       // Update Redux state to maintain single source of truth
       store.dispatch(updateCurrentRecordingSummary(summary));
+      return Promise.resolve();
     }
   );
 
