@@ -27,7 +27,7 @@ export class AssemblyAIFactoryWithLemur implements IAssemblyAIFactoryWithLemur {
   async createClient(apiKey: string): Promise<IAssemblyAIClientWithLemur> {
     // This will be mocked in tests
     const { AssemblyAI } = await import('assemblyai');
-    return new AssemblyAI({ apiKey });
+    return new AssemblyAI({ apiKey }) as IAssemblyAIClientWithLemur;
   }
 }
 

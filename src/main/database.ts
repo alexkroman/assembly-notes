@@ -4,6 +4,7 @@ import path from 'path';
 import Database from 'better-sqlite3';
 import { app } from 'electron';
 import { inject, injectable } from 'tsyringe';
+import { v4 as uuidv4 } from 'uuid';
 
 import { DI_TOKENS } from './di-tokens.js';
 import { DEFAULT_PROMPTS } from '../constants/defaultPrompts.js';
@@ -139,6 +140,7 @@ class DatabaseService {
       // Slack OAuth fields
       slackInstallation: JSON.stringify(null),
       autoStart: false,
+      userId: uuidv4(), // Generate default user ID
     };
 
     const insertStmt = this.db.prepare(
@@ -199,6 +201,7 @@ class DatabaseService {
         }
       }
 
+      const userId = settingsMap.get('userId');
       return {
         assemblyaiKey: (settingsMap.get('assemblyaiKey') ?? '') as string,
         summaryPrompt: (settingsMap.get('summaryPrompt') ?? '') as string,
@@ -208,6 +211,7 @@ class DatabaseService {
           null) as SlackInstallation | null,
         slackChannels: (settingsMap.get('slackChannels') ?? '') as string,
         autoStart: (settingsMap.get('autoStart') ?? false) as boolean,
+        ...(userId !== undefined && { userId: userId as string }),
       };
     } catch (error) {
       this.logger.error('Error getting all settings:', error);

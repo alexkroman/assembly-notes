@@ -1,3 +1,4 @@
+import * as Sentry from '@sentry/electron/renderer';
 import React from 'react';
 import { createRoot } from 'react-dom/client';
 import { Provider } from 'react-redux';
@@ -13,11 +14,28 @@ import { acquireStreams, releaseStreams } from './media';
 import { createRendererStore, setStatus } from './store';
 import './assets/tailwind.css';
 
+// Initialize Sentry
+// Use the DSN provided by main process via preload
+const sentryDsn =
+  'https://fdae435c29626d7c3480f4bd5d2e9c33@o4509792651902976.ingest.us.sentry.io/4509792663764992';
+Sentry.init({
+  dsn: sentryDsn,
+  integrations: [Sentry.browserTracingIntegration()],
+  tracesSampleRate: 1.0,
+});
+
 // Initialize auto-updater UI
 initAutoUpdaterUI();
 
 // Create Redux store for renderer
 const store = createRendererStore();
+
+// Set user ID in Sentry from settings
+const settings = store.getState().settings;
+if (settings.userId) {
+  window.logger.info(`Setting Sentry user ID in renderer: ${settings.userId}`);
+  Sentry.setUser({ id: settings.userId });
+}
 
 // Set up global audio capture handlers
 window.electronAPI.onStartAudioCapture(() => {

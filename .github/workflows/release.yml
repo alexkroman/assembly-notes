@@ -138,7 +138,7 @@ jobs:
       - name: List artifacts for debugging
         run: |
           echo "Listing all artifacts:"
-          find artifacts/ -type f -name "*.dmg" -o -name "*.zip" -o -name "*.exe" -o -name "*.AppImage" -o -name "*.tar.gz" || true
+          find artifacts/ -type f -name "*.dmg" -o -name "*.zip" -o -name "*.exe" -o -name "*.AppImage" || true
           ls -la artifacts/*/
 
       - name: Generate update metadata files
@@ -177,19 +177,19 @@ jobs:
           EOF
           fi
 
-          # Generate latest-linux.yml for Linux (using tar.gz file for autoupdater)
-          TARGZ_FILE=$(find artifacts/release-ubuntu-latest/ -name "*.tar.gz" | head -1)
-          if [ -n "$TARGZ_FILE" ] && [ -f "$TARGZ_FILE" ]; then
-            TARGZ_SIZE=$(stat -c%s "$TARGZ_FILE" 2>/dev/null || stat -f%z "$TARGZ_FILE")
-            TARGZ_NAME=$(basename "$TARGZ_FILE")
+          # Generate latest-linux.yml for Linux (using AppImage file for autoupdater)
+          APPIMAGE_FILE=$(find artifacts/release-ubuntu-latest/ -name "*.AppImage" | head -1)
+          if [ -n "$APPIMAGE_FILE" ] && [ -f "$APPIMAGE_FILE" ]; then
+            APPIMAGE_SIZE=$(stat -c%s "$APPIMAGE_FILE" 2>/dev/null || stat -f%z "$APPIMAGE_FILE")
+            APPIMAGE_NAME=$(basename "$APPIMAGE_FILE")
             cat > artifacts/release-ubuntu-latest/latest-linux.yml << EOF
           version: ${GITHUB_REF#refs/tags/v}
           files:
-            - url: $TARGZ_NAME
-              sha512: $(shasum -a 512 "$TARGZ_FILE" | cut -d' ' -f1)
-              size: $TARGZ_SIZE
-          path: $TARGZ_NAME
-          sha512: $(shasum -a 512 "$TARGZ_FILE" | cut -d' ' -f1)
+            - url: $APPIMAGE_NAME
+              sha512: $(shasum -a 512 "$APPIMAGE_FILE" | cut -d' ' -f1)
+              size: $APPIMAGE_SIZE
+          path: $APPIMAGE_NAME
+          sha512: $(shasum -a 512 "$APPIMAGE_FILE" | cut -d' ' -f1)
           releaseDate: $(date -u +"%Y-%m-%dT%H:%M:%S.%3NZ")
           EOF
           fi
@@ -203,10 +203,11 @@ jobs:
             artifacts/release-macos-latest/*.zip
             artifacts/release-macos-latest/*.blockmap
             artifacts/release-macos-latest/latest-mac.yml
+            artifacts/release-windows-latest/*.exe
             artifacts/release-windows-latest/*.zip
             artifacts/release-windows-latest/*.blockmap
             artifacts/release-windows-latest/latest.yml
-            artifacts/release-ubuntu-latest/*.tar.gz
+            artifacts/release-ubuntu-latest/*.AppImage
             artifacts/release-ubuntu-latest/latest-linux.yml
           draft: false
           prerelease: false

@@ -7,6 +7,10 @@ import {
   useUpdateRecordingTitleMutation,
   useUpdateRecordingSummaryMutation,
 } from '../slices/apiSlice.js';
+import {
+  updateCurrentRecordingTitle,
+  updateCurrentRecordingSummary,
+} from '../slices/recordingsSlice.js';
 
 export const useRecording = (recordingId: string | null) => {
   const recordingState = useAppSelector(
@@ -52,15 +56,9 @@ export const useRecording = (recordingId: string | null) => {
   const [updateTitle] = useUpdateRecordingTitleMutation();
   const [updateSummary] = useUpdateRecordingSummaryMutation();
 
-  // Local state for immediate UI updates
-  const [localTitle, setLocalTitle] = useState(currentRecording?.title ?? '');
-  const [localSummary, setLocalSummary] = useState(
-    currentRecording?.summary ?? ''
-  );
-
-  // Use local state for UI, Redux for initial load
-  const summary = localSummary;
-  const recordingTitle = localTitle;
+  // Use Redux state directly
+  const summary = currentRecording?.summary ?? '';
+  const recordingTitle = currentRecording?.title ?? '';
 
   const [isStopping, setIsStopping] = useState(false);
   const [isStarting, setIsStarting] = useState(false);
@@ -70,16 +68,6 @@ export const useRecording = (recordingId: string | null) => {
   // Refs for debouncing
   const titleDebounceRef = useRef<NodeJS.Timeout | null>(null);
   const summaryDebounceRef = useRef<NodeJS.Timeout | null>(null);
-
-  // Sync Redux changes to local state (when recordings are loaded or summaries generated)
-  useEffect(() => {
-    if (currentRecording?.title !== undefined) {
-      setLocalTitle(currentRecording.title);
-    }
-    if (currentRecording?.summary !== undefined) {
-      setLocalSummary(currentRecording.summary);
-    }
-  }, [currentRecording?.title, currentRecording?.summary]);
 
   const partialTranscript = [
     microphoneTranscriptBuffer,
@@ -102,7 +90,7 @@ export const useRecording = (recordingId: string | null) => {
 
   useEffect(() => {
     const handleSummary = (data: { text: string }) => {
-      // Update local state immediately and trigger same debounced flow as user typing
+      // Update summary via debounced database write
       handleSummaryChange(data.text);
     };
 
@@ -205,13 +193,13 @@ export const useRecording = (recordingId: string | null) => {
     }
   };
 
-  // Immediate UI updates + debounced database writes
+  // Immediate Redux updates + debounced database writes
   const handleTitleChange = useCallback(
     (title: string) => {
-      // Update UI immediately
-      setLocalTitle(title);
-
       if (!recordingId) return;
+
+      // Update Redux immediately for UI responsiveness
+      dispatch(updateCurrentRecordingTitle(title));
 
       // Clear existing timeout
       if (titleDebounceRef.current) {
@@ -224,17 +212,17 @@ export const useRecording = (recordingId: string | null) => {
       // Debounce database update
       titleDebounceRef.current = setTimeout(() => {
         void updateTitle({ id: currentRecordingId, title });
-      }, 500); // Wait 500ms after user stops typing
+      }, 300); // Wait 300ms after user stops typing
     },
-    [recordingId, updateTitle]
+    [recordingId, updateTitle, dispatch]
   );
 
   const handleSummaryChange = useCallback(
     (summaryText: string) => {
-      // Update UI immediately
-      setLocalSummary(summaryText);
-
       if (!recordingId) return;
+
+      // Update Redux immediately for UI responsiveness
+      dispatch(updateCurrentRecordingSummary(summaryText));
 
       // Clear existing timeout
       if (summaryDebounceRef.current) {
@@ -247,9 +235,9 @@ export const useRecording = (recordingId: string | null) => {
       // Debounce database update
       summaryDebounceRef.current = setTimeout(() => {
         void updateSummary({ id: currentRecordingId, summary: summaryText });
-      }, 500); // Wait 500ms after user stops typing
+      }, 300); // Wait 300ms after user stops typing
     },
-    [recordingId, updateSummary]
+    [recordingId, updateSummary, dispatch]
   );
 
   // Cleanup timeouts on unmount

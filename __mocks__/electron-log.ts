@@ -17,6 +17,7 @@ const mockLog = {
       format: '[{h}:{i}:{s}.{ms}] [{level}] {text}',
     },
   },
+  hooks: [],
   catchErrors: jest.fn(),
   initialize: jest.fn(),
   default: {
@@ -34,3 +35,4 @@ export const warn = mockLog.warn;
 export const error = mockLog.error;
 export const debug = mockLog.debug;
 export const transports = mockLog.transports;
+export const hooks = mockLog.hooks;

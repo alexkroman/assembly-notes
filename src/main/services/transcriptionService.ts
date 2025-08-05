@@ -1,3 +1,4 @@
+import * as Sentry from '@sentry/electron/main';
 import type { RealtimeTranscriber } from 'assemblyai';
 import { inject, injectable } from 'tsyringe';
 
@@ -37,7 +38,7 @@ export class AssemblyAIFactory implements IAssemblyAIFactory {
   async createClient(apiKey: string): Promise<IAssemblyAIClient> {
     // This will be mocked in tests
     const { AssemblyAI } = await import('assemblyai');
-    return new AssemblyAI({ apiKey });
+    return new AssemblyAI({ apiKey }) as IAssemblyAIClient;
   }
 }
 
@@ -132,6 +133,9 @@ export class TranscriptionService {
         return;
       }
       logger.error('Error sending audio:', error);
+      Sentry.captureException(error, {
+        tags: { service: 'transcription', operation: 'sendAudio' },
+      });
     }
   }
 
@@ -157,6 +161,9 @@ export class TranscriptionService {
       await transcriber.close();
     } catch (error) {
       logger.error('Error closing transcriber:', error);
+      Sentry.captureException(error, {
+        tags: { service: 'transcription', operation: 'closeTranscriber' },
+      });
     }
   }
 

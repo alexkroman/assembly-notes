@@ -50,6 +50,10 @@
   "win": {
     "target": [
       {
+        "target": "nsis",
+        "arch": ["x64"]
+      },
+      {
         "target": "zip",
         "arch": ["x64"]
       }
@@ -61,13 +65,14 @@
   "linux": {
     "target": [
       {
-        "target": "tar.gz",
+        "target": "AppImage",
         "arch": ["x64"]
       }
     ],
     "icon": "build/icons/png",
     "category": "Office",
     "synopsis": "Real-time transcription and meeting notes",
-    "description": "Assembly-Notes provides real-time transcription of microphone and system audio with AI-generated meeting summaries."
+    "description": "Assembly-Notes provides real-time transcription of microphone and system audio with AI-generated meeting summaries.",
+    "executableName": "assembly-notes"
   }
 }

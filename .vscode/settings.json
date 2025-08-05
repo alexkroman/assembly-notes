@@ -23,15 +23,32 @@
   "editor.insertSpaces": true,
   "editor.detectIndentation": false,
 
+  // Disable spellcheck
+  "cSpell.enabled": false,
+
   // ESLint settings
   "eslint.enable": true,
-  "eslint.validate": ["typescript"],
+  "eslint.validate": ["typescript", "markdown"],
   "eslint.format.enable": true,
   // Match ESLint's TypeScript configuration for test files
   "eslint.workingDirectories": ["."],
   // Disable VS Code's built-in import organization to let ESLint handle it
   "typescript.preferences.organizeImports": false,
   "javascript.preferences.organizeImports": false,
+
+  // Disable VS Code's built-in Markdown validation in favor of ESLint
+  "markdown.validate.enabled": false,
+  // Disable the markdownlint extension if installed
+  "markdownlint.config": {
+    "default": false
+  },
+  "[markdown]": {
+    "editor.defaultFormatter": "dbaeumer.vscode-eslint",
+    "editor.formatOnSave": true,
+    "editor.codeActionsOnSave": {
+      "source.fixAll.eslint": "explicit"
+    }
+  },
 
   // Prettier settings
   "prettier.enable": true,
