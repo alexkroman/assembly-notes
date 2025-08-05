@@ -20,8 +20,8 @@ const electronAPI = {
   stopRecording: () => ipcRenderer.invoke('stop-recording'),
   newRecording: () =>
     ipcRenderer.invoke('new-recording') as Promise<string | null>,
-  summarizeTranscript: (recordingId?: string, transcript?: string) =>
-    ipcRenderer.invoke('summarize-transcript', recordingId, transcript),
+  summarizeTranscript: (transcript?: string) =>
+    ipcRenderer.invoke('summarize-transcript', transcript),
   sendMicrophoneAudio: (data: ArrayBuffer) => {
     ipcRenderer.send('microphone-audio-data', data);
   },
@@ -33,11 +33,9 @@ const electronAPI = {
     ipcRenderer.on('transcript', (_event, data) => {
       callback(data as TranscriptData);
     }),
-  onSummary: (
-    callback: (data: { text: string; recordingId?: string }) => void
-  ) =>
+  onSummary: (callback: (data: { text: string }) => void) =>
     ipcRenderer.on('summary', (_event, data) => {
-      callback(data as { text: string; recordingId?: string });
+      callback(data as { text: string });
     }),
   onSummarizationStarted: (callback: () => void) =>
     ipcRenderer.on('summarization-started', () => {

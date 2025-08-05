@@ -4,7 +4,7 @@ import { Modal } from './Modal.js';
 import { SlackOAuthConnectionOnly } from './SlackOAuthConnectionOnly.js';
 import type { SettingsModalProps } from '../../types/components.js';
 import type { FullSettingsState } from '../../types/redux.js';
-import { useAppDispatch } from '../hooks/redux.js';
+import { useAppDispatch, useAppSelector } from '../hooks/redux.js';
 import { setStatus } from '../store';
 import {
   useGetSettingsQuery,
@@ -19,6 +19,9 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ onClose }) => {
     error,
   } = useGetSettingsQuery(undefined);
   const [updateSettings, { isLoading: isSaving }] = useUpdateSettingsMutation();
+  const reduxSlackInstallation = useAppSelector(
+    (state) => state.settings.slackInstallation
+  );
   const [settings, setSettings] = useState<FullSettingsState>({
     assemblyaiKey: '',
     slackChannels: '',
@@ -39,6 +42,14 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ onClose }) => {
   }, [fetchedSettings]);
 
   useEffect(() => {
+    // Sync slackInstallation from Redux state when OAuth completes
+    setSettings((prev) => ({
+      ...prev,
+      slackInstallation: reduxSlackInstallation,
+    }));
+  }, [reduxSlackInstallation]);
+
+  useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key === 'Escape') {
         handleClose();
@@ -57,7 +68,12 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ onClose }) => {
     }
 
     try {
-      await updateSettings(settings).unwrap();
+      // Ensure we're saving the current slackInstallation from Redux state
+      const settingsToSave = {
+        ...settings,
+        slackInstallation: reduxSlackInstallation ?? settings.slackInstallation,
+      };
+      await updateSettings(settingsToSave).unwrap();
       dispatch(setStatus('Settings saved successfully'));
       onClose();
     } catch (error) {

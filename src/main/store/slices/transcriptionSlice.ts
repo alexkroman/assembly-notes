@@ -22,10 +22,13 @@ const transcriptionSlice = createSlice({
     addTranscriptSegment: (state, action: PayloadAction<TranscriptSegment>) => {
       state.segments.push(action.payload);
       if (action.payload.isFinal) {
-        state.currentTranscript = state.segments
-          .filter((seg) => seg.isFinal)
-          .map((seg) => seg.text)
-          .join(' ');
+        // Append the new final transcript to the existing transcript
+        const newText = action.payload.text.trim();
+        if (newText) {
+          state.currentTranscript = state.currentTranscript
+            ? `${state.currentTranscript} ${newText}`
+            : newText;
+        }
       }
     },
     updateTranscriptBuffer: (

@@ -31,9 +31,8 @@ export const Modal: React.FC<ModalProps> = ({
     if (e.target === e.currentTarget) {
       if (onOverlayClick) {
         onOverlayClick();
-      } else if (!closeDisabled) {
-        onClose();
       }
+      // Never close modal on outside click
     }
   };
 

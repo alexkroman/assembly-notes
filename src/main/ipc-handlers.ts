@@ -14,6 +14,10 @@ import type { RecordingDataService } from './services/recordingDataService.js';
 import type { RecordingManager } from './services/recordingManager.js';
 import type { SettingsService } from './services/settingsService.js';
 import type { SlackIntegrationService } from './services/slackIntegrationService.js';
+import {
+  updateCurrentRecordingTitle,
+  updateCurrentRecordingSummary,
+} from './store/slices/recordingsSlice.js';
 import type { AppDispatch, RootState } from './store/store.js';
 
 interface LogLevel {
@@ -114,6 +118,9 @@ function setupIpcHandlers(
         DI_TOKENS.DatabaseService
       );
       databaseService.updateRecording(recordingId, { title });
+
+      // Update Redux state to maintain single source of truth
+      store.dispatch(updateCurrentRecordingTitle(title));
     }
   );
 
@@ -139,6 +146,9 @@ function setupIpcHandlers(
         DI_TOKENS.DatabaseService
       );
       databaseService.updateRecording(recordingId, { summary });
+
+      // Update Redux state to maintain single source of truth
+      store.dispatch(updateCurrentRecordingSummary(summary));
     }
   );
 
@@ -146,13 +156,9 @@ function setupIpcHandlers(
     'summarize-transcript',
     async (
       _event: IpcMainInvokeEvent,
-      recordingId?: string,
       transcript?: string
     ): Promise<boolean> => {
-      return await recordingManager.summarizeTranscript(
-        recordingId,
-        transcript
-      );
+      return await recordingManager.summarizeTranscript(transcript);
     }
   );
 

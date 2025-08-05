@@ -106,12 +106,9 @@ export const RecordingsList: React.FC<RecordingsListProps> = ({
       className="page active overflow-y-auto"
       data-testid="recordings-list"
     >
-      <div className="px-1.5 py-1 bg-[#1a1a1a] sticky top-0 z-[100]">
-        <div className="flex items-center gap-1.5 h-8">
-          <h1 className="m-0 text-sm font-semibold text-white tracking-wide">
-            Assembly Notes
-          </h1>
-          <div className="flex-1 max-w-[300px] mx-3">
+      <div className="px-3 py-1 bg-[#1a1a1a] sticky top-0 z-[100] mb-1.5">
+        <div className="flex items-center gap-3 h-8">
+          <div className="flex-1">
             <input
               type="text"
               className="w-full px-2 py-1 text-xs bg-white/[0.09] border border-white/[0.18] rounded-sm text-white h-8 box-border transition-all duration-200 placeholder:text-white/[0.35] focus:outline-none focus:border-white/[0.45] focus:bg-white/[0.12]"
@@ -123,10 +120,10 @@ export const RecordingsList: React.FC<RecordingsListProps> = ({
               }}
             />
           </div>
-          <div className="flex gap-1.5 ml-auto">
+          <div className="flex gap-1.5">
             <button
               type="button"
-              className={`px-3 h-8 rounded-sm bg-white/[0.12] border border-white/[0.24] text-white text-xs font-semibold cursor-pointer transition-all duration-200 flex items-center justify-center whitespace-nowrap flex-shrink-0 hover:bg-white/[0.05] ${isAssemblyAIKeyMissing || isRecordingActive ? 'opacity-50 cursor-not-allowed' : ''}`}
+              className={`px-3 h-8 rounded-sm bg-[#28a745]/20 border border-[#28a745]/50 text-[#28a745] text-xs font-semibold cursor-pointer transition-all duration-200 flex items-center justify-center whitespace-nowrap flex-shrink-0 hover:bg-[#28a745]/30 ${isAssemblyAIKeyMissing || isRecordingActive ? 'opacity-50 cursor-not-allowed' : ''}`}
               data-testid="new-recording-btn"
               onClick={() => {
                 if (!isAssemblyAIKeyMissing && !isRecordingActive) {

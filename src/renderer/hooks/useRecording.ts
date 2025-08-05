@@ -2,8 +2,8 @@ import { useEffect, useState, useCallback, useRef } from 'react';
 
 import { setStatus } from '../store';
 import { useAppSelector, useAppDispatch } from './redux';
+import type { Recording } from '../../types/common.js';
 import {
-  useGetRecordingQuery,
   useUpdateRecordingTitleMutation,
   useUpdateRecordingSummaryMutation,
 } from '../store/api/apiSlice.js';
@@ -33,10 +33,21 @@ export const useRecording = (recordingId: string | null) => {
   );
   const dispatch = useAppDispatch();
 
-  // Use RTK Query to fetch recording data
-  const { data: currentRecording } = useGetRecordingQuery(recordingId ?? '', {
-    skip: !recordingId,
-  });
+  // Load recording into Redux store when recordingId changes
+  useEffect(() => {
+    if (recordingId) {
+      window.electronAPI.loadRecording(recordingId).catch((error: unknown) => {
+        window.logger.error('Failed to load recording:', error);
+      });
+    }
+  }, [recordingId]);
+
+  // Get current recording from Redux store (synced from main process)
+  const currentRecording = useAppSelector(
+    (state) =>
+      (state.recordings as { currentRecording: Recording | null })
+        .currentRecording
+  );
 
   const [updateTitle] = useUpdateRecordingTitleMutation();
   const [updateSummary] = useUpdateRecordingSummaryMutation();
@@ -90,14 +101,7 @@ export const useRecording = (recordingId: string | null) => {
   }, [recordingId]);
 
   useEffect(() => {
-    const handleSummary = (data: { text: string; recordingId?: string }) => {
-      // Only apply summary if it's for the current recording
-      if (data.recordingId && data.recordingId !== recordingId) {
-        window.logger.warn(
-          `Ignoring summary for different recording: ${data.recordingId} !== ${recordingId ?? 'undefined'}`
-        );
-        return;
-      }
+    const handleSummary = (data: { text: string }) => {
       // Update local state immediately and trigger same debounced flow as user typing
       handleSummaryChange(data.text);
     };

@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 
-import { useAppSelector } from '../hooks/redux.js';
+import { useAppSelector, useAppDispatch } from '../hooks/redux.js';
+import { apiSlice } from '../store/api/apiSlice.js';
 
 interface SlackOAuthConnectionOnlyProps {
   clientId?: string;
@@ -11,6 +12,7 @@ export const SlackOAuthConnectionOnly: React.FC<
   SlackOAuthConnectionOnlyProps
 > = ({ clientId = '', clientSecret = '' }) => {
   const settings = useAppSelector((state) => state.settings);
+  const dispatch = useAppDispatch();
   const [isConnecting, setIsConnecting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -21,7 +23,8 @@ export const SlackOAuthConnectionOnly: React.FC<
     const handleOAuthSuccess = () => {
       setIsConnecting(false);
       setError(null);
-      // Settings will be updated automatically via Redux
+      // Invalidate settings query to ensure UI updates
+      dispatch(apiSlice.util.invalidateTags(['Settings']));
     };
 
     const handleOAuthError = (errorMessage: string) => {

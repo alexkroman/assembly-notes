@@ -405,6 +405,15 @@ export class SlackIntegrationService {
           body: JSON.stringify({
             channel: targetChannelId,
             text: message,
+            blocks: [
+              {
+                type: 'section',
+                text: {
+                  type: 'mrkdwn',
+                  text: message,
+                },
+              },
+            ],
           }),
         }
       );

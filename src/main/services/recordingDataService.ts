@@ -10,6 +10,7 @@ import { stopRecording } from '../store/slices/recordingSlice.js';
 import {
   setCurrentRecording,
   updateCurrentRecordingSummary,
+  updateCurrentRecordingTranscript,
 } from '../store/slices/recordingsSlice.js';
 import {
   loadExistingTranscript,
@@ -118,8 +119,8 @@ export class RecordingDataService {
         currentRecordingId,
         fullTranscript
       );
-      // Transcript is saved to database, no need to update store
-      this.logger.info(`Saved transcript for recording: ${currentRecordingId}`);
+      // Update the current recording in the store with the new transcript
+      this.store.dispatch(updateCurrentRecordingTranscript(fullTranscript));
     } catch (error) {
       this.logger.error(`Failed to save transcript: ${String(error)}`);
     }
@@ -128,7 +129,14 @@ export class RecordingDataService {
   saveSummary(recordingId: string, summary: string): void {
     try {
       this.database.updateRecordingSummary(recordingId, summary);
-      this.store.dispatch(updateCurrentRecordingSummary(summary));
+
+      // Only update Redux if this is for the current recording
+      const currentRecordingId =
+        this.store.getState().recordings.currentRecording?.id;
+      if (currentRecordingId === recordingId) {
+        this.store.dispatch(updateCurrentRecordingSummary(summary));
+      }
+
       this.logger.info(`Saved summary for recording: ${recordingId}`);
     } catch (error) {
       this.logger.error(`Failed to save summary: ${String(error)}`);

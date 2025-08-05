@@ -275,6 +275,11 @@ class DatabaseService {
     try {
       const stmt = this.db.prepare('SELECT * FROM recordings WHERE id = ?');
       const result = stmt.get(id) as Recording | undefined;
+      if (result) {
+        this.logger.debug(
+          `Retrieved recording ${id}, transcript length: ${String(result.transcript?.length ?? 0)}`
+        );
+      }
       return result ?? null;
     } catch (error) {
       this.logger.error(`Error getting recording ${id}:`, error);
@@ -308,6 +313,16 @@ class DatabaseService {
       const values = fields.map(
         (field) => updates[field as keyof typeof updates]
       );
+
+      // Debug logging
+      this.logger.debug(
+        `Updating recording ${id} with fields: ${fields.join(', ')}`
+      );
+      if (updates.transcript !== undefined) {
+        this.logger.debug(
+          `Transcript value length: ${String(updates.transcript.length)}`
+        );
+      }
 
       const stmt = this.db.prepare(`
         UPDATE recordings 
@@ -401,6 +416,9 @@ class DatabaseService {
   }
 
   updateRecordingTranscript(id: string, transcript: string): void {
+    this.logger.debug(
+      `Updating transcript for recording ${id}, transcript length: ${String(transcript.length)}`
+    );
     this.updateRecording(id, { transcript });
   }
 

@@ -238,21 +238,17 @@ export class RecordingManager {
     }
   }
 
-  async summarizeTranscript(
-    recordingId?: string,
-    transcript?: string
-  ): Promise<boolean> {
-    // Get current recording and transcript if not provided
+  async summarizeTranscript(transcript?: string): Promise<boolean> {
+    // Get current recording and transcript from state
     const state = this.store.getState();
     const currentTranscript =
       transcript ?? state.transcription.currentTranscript;
-    // Single source of truth: currentRecording.id from database
-    const currentRecordingId =
-      recordingId ?? state.recordings.currentRecording?.id;
+    // Single source of truth: currentRecording.id from state
+    const currentRecordingId = state.recordings.currentRecording?.id;
 
     // Debug logging
     this.logger.info(
-      `Summarization debug - recordingId param: ${String(recordingId)}, currentRecording.id: ${String(state.recordings.currentRecording?.id)}, final currentRecordingId: ${String(currentRecordingId)}`
+      `Summarization debug - currentRecording.id: ${String(currentRecordingId)}`
     );
 
     if (!currentTranscript.trim()) {
@@ -285,7 +281,6 @@ export class RecordingManager {
         // Send summary to UI - UI will handle both state update and database write
         this.mainWindow.webContents.send('summary', {
           text: summary,
-          recordingId: currentRecordingId,
         });
 
         // Save to database and update Redux state via RecordingDataService

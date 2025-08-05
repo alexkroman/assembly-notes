@@ -53,9 +53,24 @@ const recordingsSlice = createSlice({
       state.currentRecording = action.payload;
     },
     // State-only updates (no database writes) - used for syncing from external sources like AI
+    updateCurrentRecordingTitle: (state, action: PayloadAction<string>) => {
+      if (state.currentRecording) {
+        state.currentRecording.title = action.payload;
+        state.currentRecording.updated_at = Date.now();
+      }
+    },
     updateCurrentRecordingSummary: (state, action: PayloadAction<string>) => {
       if (state.currentRecording) {
         state.currentRecording.summary = action.payload;
+        state.currentRecording.updated_at = Date.now();
+      }
+    },
+    updateCurrentRecordingTranscript: (
+      state,
+      action: PayloadAction<string>
+    ) => {
+      if (state.currentRecording) {
+        state.currentRecording.transcript = action.payload;
         state.currentRecording.updated_at = Date.now();
       }
     },
@@ -66,7 +81,9 @@ export const {
   setSearchQuery,
   clearError,
   setCurrentRecording,
+  updateCurrentRecordingTitle,
   updateCurrentRecordingSummary,
+  updateCurrentRecordingTranscript,
 } = recordingsSlice.actions;
 
 export const {

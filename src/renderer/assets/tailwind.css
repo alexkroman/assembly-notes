@@ -9,7 +9,7 @@
 @layer components {
   /* Container components */
   .container-flex {
-    @apply flex flex-col w-full h-screen p-0;
+    @apply flex flex-col w-full h-screen p-0 pt-2;
   }
 
   /* Page components */
@@ -112,11 +112,16 @@
   }
 
   .form-input {
-    @apply w-full p-1.5 bg-transparent border border-white/[0.12] rounded-sm text-white text-xs outline-none transition-all duration-200 box-border;
+    @apply w-full p-1.5 bg-transparent border border-white/[0.12] rounded-sm text-white text-xs outline-none transition-all duration-200 box-border resize-none;
   }
 
   .form-input:focus {
     @apply border-white/[0.45] bg-transparent;
+  }
+
+  /* Transcript text styles */
+  .text-partial {
+    @apply text-white/40;
   }
 }
 
