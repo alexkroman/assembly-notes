@@ -21,12 +21,12 @@
 
 Download the latest version for your platform:
 
-| Platform                  | Download                                                                                                                     |
-| ------------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
-| **macOS** (Apple Silicon) | [Download DMG](https://github.com/alexkroman/assembly-notes/releases/latest/download/Assembly-Notes-mac-arm64.dmg)           |
-| **macOS** (Intel)         | [Download DMG](https://github.com/alexkroman/assembly-notes/releases/latest/download/Assembly-Notes-mac-x64.dmg)             |
-| **Windows**               | [Download Installer](https://github.com/alexkroman/assembly-notes/releases/latest/download/Assembly-Notes-win-x64.exe)       |
-| **Linux**                 | [Download AppImage](https://github.com/alexkroman/assembly-notes/releases/latest/download/Assembly-Notes-linux-x64.AppImage) |
+| Platform                  | Download                                                                                                                        |
+| ------------------------- | ------------------------------------------------------------------------------------------------------------------------------- |
+| **macOS** (Apple Silicon) | [Download DMG](https://github.com/alexkroman/assembly-notes/releases/latest/download/Assembly-Notes-mac-arm64.dmg)              |
+| **macOS** (Intel)         | [Download DMG](https://github.com/alexkroman/assembly-notes/releases/latest/download/Assembly-Notes-mac-x64.dmg)                |
+| **Windows**               | [Download Installer](https://github.com/alexkroman/assembly-notes/releases/latest/download/Assembly-Notes-win-x64.exe)          |
+| **Linux**                 | [Download AppImage](https://github.com/alexkroman/assembly-notes/releases/latest/download/Assembly-Notes-linux-x86_64.AppImage) |
 
 ## 🚀 Quick Start
 
