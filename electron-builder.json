@@ -66,7 +66,7 @@
     "target": [
       {
         "target": "AppImage",
-        "arch": ["x64"]
+        "arch": ["x64", "arm64"]
       }
     ],
     "icon": "build/icons/png",
@@ -83,7 +83,6 @@
         "Type": "Application",
         "StartupNotify": "true"
       }
-    },
-    "artifactName": "Assembly-Notes-linux-x86_64.AppImage"
+    }
   }
 }

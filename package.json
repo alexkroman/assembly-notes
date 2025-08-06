@@ -32,6 +32,7 @@
     "build:mac:notarized": "./scripts/build-mac-notarized.sh",
     "build:win": "npm run build:all && npm run build-icons && electron-builder --win",
     "build:linux": "npm run build:all && npm run build-icons && electron-builder --linux",
+    "build:linux:arm64": "npm run build:all && npm run build-icons && electron-builder --linux --arm64",
     "build-icons": "node scripts/generate-icons.js",
     "pack": "electron-builder --dir",
     "postinstall": "electron-builder install-app-deps && npx @electron/rebuild -f -w better-sqlite3",
