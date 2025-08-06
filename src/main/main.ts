@@ -79,6 +79,24 @@ function createWindow(): void {
   setupContainer(mainWindow);
   setupIpcHandlers(mainWindow, store);
 
+  // Set Content Security Policy based on environment
+  const isDevelopment = process.env['NODE_ENV'] !== 'production';
+  if (!isDevelopment) {
+    // Production CSP - more restrictive
+    mainWindow.webContents.session.webRequest.onHeadersReceived(
+      (details, callback) => {
+        callback({
+          responseHeaders: {
+            ...details.responseHeaders,
+            'Content-Security-Policy': [
+              "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src 'self' https://api.assemblyai.com wss://api.assemblyai.com",
+            ],
+          },
+        });
+      }
+    );
+  }
+
   // Now load the renderer - IPC handlers are ready
   void mainWindow.loadFile(path.join(__dirname, '../renderer/index.html'));
 
