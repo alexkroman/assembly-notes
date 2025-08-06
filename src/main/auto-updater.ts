@@ -20,6 +20,8 @@ const { autoUpdater } = pkg;
 
 @injectable()
 export class AutoUpdaterService {
+  private updateCheckInterval: NodeJS.Timeout | null = null;
+
   constructor(
     @inject(DI_TOKENS.MainWindow) private mainWindow: BrowserWindow,
     @inject(DI_TOKENS.Store) private store: Store<RootState>,
@@ -189,13 +191,41 @@ export class AutoUpdaterService {
   }
 
   startUpdateCheck(delay = 3000): void {
-    this.logger.info(`📅 Starting update check in ${String(delay)}ms`);
+    this.logger.info(`📅 Starting initial update check in ${String(delay)}ms`);
+
+    // Initial check after delay
     setTimeout(() => {
       this.logger.info(
-        '⏰ Timeout expired, calling checkForUpdatesAndNotify()'
+        '⏰ Initial timeout expired, calling checkForUpdatesAndNotify()'
       );
       this.checkForUpdatesAndNotify();
     }, delay);
+
+    // Set up hourly update checks (1 hour = 3600000 ms)
+    this.startPeriodicUpdateCheck();
+  }
+
+  private startPeriodicUpdateCheck(): void {
+    // Clear any existing interval
+    this.stopPeriodicUpdateCheck();
+
+    const intervalMs = 60 * 60 * 1000; // 1 hour in milliseconds
+    this.logger.info(
+      `⏰ Setting up hourly update checks (every ${String(intervalMs)}ms)`
+    );
+
+    this.updateCheckInterval = setInterval(() => {
+      this.logger.info('🔄 Performing scheduled hourly update check');
+      this.checkForUpdatesAndNotify();
+    }, intervalMs);
+  }
+
+  stopPeriodicUpdateCheck(): void {
+    if (this.updateCheckInterval) {
+      clearInterval(this.updateCheckInterval);
+      this.updateCheckInterval = null;
+      this.logger.info('⏹️ Stopped periodic update checks');
+    }
   }
 
   // Get current update status

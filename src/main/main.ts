@@ -237,7 +237,15 @@ app.on('window-all-closed', function () {
 });
 
 app.on('before-quit', () => {
-  log.info('App is quitting, closing database');
+  log.info('App is quitting, cleaning up resources');
+
+  // Stop periodic update checks
+  const autoUpdaterService = container.resolve<AutoUpdaterService>(
+    DI_TOKENS.AutoUpdaterService
+  );
+  autoUpdaterService.stopPeriodicUpdateCheck();
+
+  // Close database
   const databaseService = container.resolve<DatabaseService>(
     DI_TOKENS.DatabaseService
   );
