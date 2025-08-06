@@ -75,12 +75,14 @@
     "description": "Assembly-Notes provides real-time transcription of microphone and system audio with AI-generated meeting summaries.",
     "executableName": "assembly-notes",
     "desktop": {
-      "Name": "Assembly Notes",
-      "Comment": "Real-time transcription and meeting notes",
-      "Categories": "Office;AudioVideo;",
-      "Terminal": "false",
-      "Type": "Application",
-      "StartupNotify": "true"
+      "entry": {
+        "Name": "Assembly Notes",
+        "Comment": "Real-time transcription and meeting notes",
+        "Categories": "Office;AudioVideo;",
+        "Terminal": "false",
+        "Type": "Application",
+        "StartupNotify": "true"
+      }
     },
     "artifactName": "Assembly-Notes-linux-x86_64.AppImage"
   }
