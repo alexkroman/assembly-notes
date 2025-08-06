@@ -17,10 +17,12 @@ export default defineConfig({
         ),
       },
     },
+    assetsInlineLimit: 0, // Don't inline assets, copy them
   },
   resolve: {
     alias: {
       '@': path.resolve(__dirname, 'src'),
     },
   },
+  assetsInclude: ['**/*.mp3'],
 });
