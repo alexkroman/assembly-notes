@@ -51,7 +51,17 @@ jobs:
     needs: release-notes
     strategy:
       matrix:
-        os: [macos-latest, ubuntu-latest, windows-latest]
+        include:
+          - os: macos-latest
+            platform: mac
+          - os: windows-latest
+            platform: win
+          - os: ubuntu-latest
+            platform: linux
+            arch: x64
+          - os: ubuntu-latest
+            platform: linux
+            arch: arm64
 
     runs-on: ${{ matrix.os }}
 
@@ -119,16 +129,22 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y libfuse2 fuse3 libfuse3-3
 
-      - name: Build Electron app (Linux)
-        if: matrix.os == 'ubuntu-latest'
-        run: npm run build:linux
+      - name: Build Electron app (Linux x64)
+        if: matrix.os == 'ubuntu-latest' && matrix.arch == 'x64'
+        run: npm run build:linux -- --x64
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build Electron app (Linux ARM64)
+        if: matrix.os == 'ubuntu-latest' && matrix.arch == 'arm64'
+        run: npm run build:linux:arm64
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Upload build artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: release-${{ matrix.os }}
+          name: release-${{ matrix.os }}${{ matrix.arch && format('-{0}', matrix.arch) || '' }}
           path: release/
 
   # Create GitHub release with all build artifacts
@@ -183,19 +199,36 @@ jobs:
           EOF
           fi
 
-          # Generate latest-linux.yml for Linux (using AppImage file for autoupdater)
-          APPIMAGE_FILE=$(find artifacts/release-ubuntu-latest/ -name "*.AppImage" | head -1)
-          if [ -n "$APPIMAGE_FILE" ] && [ -f "$APPIMAGE_FILE" ]; then
-            APPIMAGE_SIZE=$(stat -c%s "$APPIMAGE_FILE" 2>/dev/null || stat -f%z "$APPIMAGE_FILE")
-            APPIMAGE_NAME=$(basename "$APPIMAGE_FILE")
-            cat > artifacts/release-ubuntu-latest/latest-linux.yml << EOF
+          # Generate latest-linux.yml for Linux x64 (using AppImage file for autoupdater)
+          APPIMAGE_FILE_X64=$(find artifacts/release-ubuntu-latest-x64/ -name "*-x64.AppImage" 2>/dev/null | head -1)
+          if [ -n "$APPIMAGE_FILE_X64" ] && [ -f "$APPIMAGE_FILE_X64" ]; then
+            APPIMAGE_SIZE=$(stat -c%s "$APPIMAGE_FILE_X64" 2>/dev/null || stat -f%z "$APPIMAGE_FILE_X64")
+            APPIMAGE_NAME=$(basename "$APPIMAGE_FILE_X64")
+            cat > artifacts/release-ubuntu-latest-x64/latest-linux.yml << EOF
           version: ${GITHUB_REF#refs/tags/v}
           files:
             - url: $APPIMAGE_NAME
-              sha512: $(shasum -a 512 "$APPIMAGE_FILE" | cut -d' ' -f1)
+              sha512: $(shasum -a 512 "$APPIMAGE_FILE_X64" | cut -d' ' -f1)
               size: $APPIMAGE_SIZE
           path: $APPIMAGE_NAME
-          sha512: $(shasum -a 512 "$APPIMAGE_FILE" | cut -d' ' -f1)
+          sha512: $(shasum -a 512 "$APPIMAGE_FILE_X64" | cut -d' ' -f1)
+          releaseDate: $(date -u +"%Y-%m-%dT%H:%M:%S.%3NZ")
+          EOF
+          fi
+
+          # Generate latest-linux-arm64.yml for Linux ARM64 (using AppImage file for autoupdater)
+          APPIMAGE_FILE_ARM64=$(find artifacts/release-ubuntu-latest-arm64/ -name "*-arm64.AppImage" 2>/dev/null | head -1)
+          if [ -n "$APPIMAGE_FILE_ARM64" ] && [ -f "$APPIMAGE_FILE_ARM64" ]; then
+            APPIMAGE_SIZE=$(stat -c%s "$APPIMAGE_FILE_ARM64" 2>/dev/null || stat -f%z "$APPIMAGE_FILE_ARM64")
+            APPIMAGE_NAME=$(basename "$APPIMAGE_FILE_ARM64")
+            cat > artifacts/release-ubuntu-latest-arm64/latest-linux-arm64.yml << EOF
+          version: ${GITHUB_REF#refs/tags/v}
+          files:
+            - url: $APPIMAGE_NAME
+              sha512: $(shasum -a 512 "$APPIMAGE_FILE_ARM64" | cut -d' ' -f1)
+              size: $APPIMAGE_SIZE
+          path: $APPIMAGE_NAME
+          sha512: $(shasum -a 512 "$APPIMAGE_FILE_ARM64" | cut -d' ' -f1)
           releaseDate: $(date -u +"%Y-%m-%dT%H:%M:%S.%3NZ")
           EOF
           fi
@@ -213,8 +246,10 @@ jobs:
             artifacts/release-windows-latest/*.zip
             artifacts/release-windows-latest/*.blockmap
             artifacts/release-windows-latest/latest.yml
-            artifacts/release-ubuntu-latest/*.AppImage
-            artifacts/release-ubuntu-latest/latest-linux.yml
+            artifacts/release-ubuntu-latest-x64/*.AppImage
+            artifacts/release-ubuntu-latest-x64/latest-linux.yml
+            artifacts/release-ubuntu-latest-arm64/*.AppImage
+            artifacts/release-ubuntu-latest-arm64/latest-linux-arm64.yml
           draft: false
           prerelease: false
         env:
