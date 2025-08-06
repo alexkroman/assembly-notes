@@ -65,6 +65,7 @@ const mockSummarizationService = {
 const mockRecordingDataService = {
   saveCurrentTranscription: jest.fn(),
   saveSummary: jest.fn(),
+  updateAudioFilename: jest.fn(),
 } as any;
 
 describe('RecordingManager', () => {
@@ -100,6 +101,17 @@ describe('RecordingManager', () => {
     });
     container.register(DI_TOKENS.SummarizationService, {
       useValue: mockSummarizationService,
+    });
+    // Add mock for AudioRecordingService
+    container.register(DI_TOKENS.AudioRecordingService, {
+      useValue: {
+        startRecording: jest.fn(),
+        stopRecording: jest.fn().mockResolvedValue('test-audio.wav'),
+        appendAudioData: jest.fn(),
+        getAudioFilePath: jest.fn().mockReturnValue('/path/to/audio.wav'),
+        deleteAudioFile: jest.fn(),
+        cleanup: jest.fn(),
+      },
     });
 
     recordingManager = container.resolve(RecordingManager);
