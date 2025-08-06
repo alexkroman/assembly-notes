@@ -1,5 +1,6 @@
 import * as Sentry from '@sentry/electron/main';
 import type { RealtimeTranscriber } from 'assemblyai';
+import { app } from 'electron';
 import { inject, injectable } from 'tsyringe';
 
 import { TranscriptionData } from '../../types/common.js';
@@ -135,9 +136,11 @@ export class TranscriptionService {
         return;
       }
       logger.error('Error sending audio:', error);
-      Sentry.captureException(error, {
-        tags: { service: 'transcription', operation: 'sendAudio' },
-      });
+      if (app.isPackaged) {
+        Sentry.captureException(error, {
+          tags: { service: 'transcription', operation: 'sendAudio' },
+        });
+      }
     }
   }
 
@@ -163,9 +166,11 @@ export class TranscriptionService {
       await transcriber.close();
     } catch (error) {
       logger.error('Error closing transcriber:', error);
-      Sentry.captureException(error, {
-        tags: { service: 'transcription', operation: 'closeTranscriber' },
-      });
+      if (app.isPackaged) {
+        Sentry.captureException(error, {
+          tags: { service: 'transcription', operation: 'closeTranscriber' },
+        });
+      }
     }
   }
 

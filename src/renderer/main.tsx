@@ -14,15 +14,24 @@ import { acquireStreams, releaseStreams } from './media';
 import { createRendererStore, setStatus } from './store';
 import './assets/tailwind.css';
 
-// Initialize Sentry
-// Use the DSN provided by main process via preload
+// Initialize Sentry only in production
+const isProduction = process.env['NODE_ENV'] === 'production';
 const sentryDsn =
   'https://fdae435c29626d7c3480f4bd5d2e9c33@o4509792651902976.ingest.us.sentry.io/4509792663764992';
-Sentry.init({
-  dsn: sentryDsn,
-  integrations: [Sentry.browserTracingIntegration()],
-  tracesSampleRate: 1.0,
-});
+
+if (isProduction) {
+  Sentry.init({
+    dsn: sentryDsn,
+    integrations: [Sentry.browserTracingIntegration()],
+    tracesSampleRate: 1.0,
+  });
+} else {
+  // In development, disable Sentry by providing an empty DSN
+  Sentry.init({
+    dsn: '',
+    enabled: false,
+  });
+}
 
 // Initialize auto-updater UI
 initAutoUpdaterUI();

@@ -22,9 +22,13 @@ if (log.errorHandler) {
   log.errorHandler.startCatching();
 }
 
-// Hook electron-log errors to Sentry
+// Hook electron-log errors to Sentry (only in production)
 log.hooks.push((message, transport) => {
-  if (transport !== log.transports.console && message.level === 'error') {
+  if (
+    transport !== log.transports.console &&
+    message.level === 'error' &&
+    isProduction
+  ) {
     const error = message.data[0] as unknown;
     if (error instanceof Error) {
       Sentry.captureException(error);

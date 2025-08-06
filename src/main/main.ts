@@ -9,27 +9,28 @@ import { initMain as initAudioLoopback } from 'electron-audio-loopback';
 // Load environment variables from .env file
 dotenv.config();
 
-// Initialize Sentry
+// Initialize Sentry only in production
 const sentryDsn =
   process.env['SENTRY_DSN'] ??
   'https://fdae435c29626d7c3480f4bd5d2e9c33@o4509792651902976.ingest.us.sentry.io/4509792663764992';
-if (sentryDsn) {
+
+// Only initialize Sentry in production (packaged app)
+if (sentryDsn && app.isPackaged) {
   Sentry.init({
     dsn: sentryDsn,
-    environment: app.isPackaged ? 'production' : 'development',
+    environment: 'production',
     integrations: [
       Sentry.mainProcessSessionIntegration(),
       Sentry.electronBreadcrumbsIntegration(),
       Sentry.onUncaughtExceptionIntegration(),
       Sentry.onUnhandledRejectionIntegration(),
     ],
-    beforeSend(event) {
-      // Filter out development errors if in production
-      if (app.isPackaged && event.environment === 'development') {
-        return null;
-      }
-      return event;
-    },
+  });
+} else {
+  // In development, disable Sentry by providing an empty DSN
+  Sentry.init({
+    dsn: '',
+    enabled: false,
   });
 }
 
