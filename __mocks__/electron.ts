@@ -2,6 +2,7 @@ export const app = {
   isPackaged: false,
   getPath: jest.fn().mockReturnValue('/mock/path'),
   getName: jest.fn().mockReturnValue('assembly-notes'),
+  setName: jest.fn(),
   getVersion: jest.fn().mockReturnValue('1.0.0'),
   quit: jest.fn(),
   on: jest.fn(),
