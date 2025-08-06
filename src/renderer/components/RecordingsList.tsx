@@ -51,11 +51,12 @@ export const RecordingsList: React.FC<RecordingsListProps> = ({
   const loading = shouldSearch ? isSearching : isLoadingAll;
   const error = shouldSearch ? searchError : allRecordingsError;
 
-  // Check if recording is active (starting, recording, or stopping)
+  // Check if recording is active (starting, recording, or stopping) or dictating
   const isRecordingActive =
     recordingStatus === 'starting' ||
     recordingStatus === 'recording' ||
-    recordingStatus === 'stopping';
+    recordingStatus === 'stopping' ||
+    isDictating;
 
   // No useEffect needed - RTK Query handles data fetching automatically
 
@@ -260,8 +261,19 @@ export const RecordingsList: React.FC<RecordingsListProps> = ({
 
       {/* Dictation Help Overlay */}
       <div className="fixed bottom-0 left-0 right-0 bg-[#1a1a1a]/95 backdrop-blur-sm border-t border-white/10 px-4 py-2 z-50">
-        <div className="flex items-center justify-between max-w-4xl mx-auto">
-          <div className="flex items-center gap-3">
+        <div className="relative flex items-center justify-between max-w-4xl mx-auto">
+          {/* Disabled overlay when recording */}
+          {isRecordingActive && !isDictating && (
+            <div className="absolute inset-0 bg-black/60 backdrop-blur-[1px] rounded flex items-center justify-center z-10">
+              <span className="text-xs text-white/50 font-medium">
+                Waiting for recording to finish
+              </span>
+            </div>
+          )}
+
+          <div
+            className={`flex items-center gap-3 ${isRecordingActive && !isDictating ? 'opacity-30' : ''}`}
+          >
             <div className="flex items-center gap-2">
               <kbd className="px-2 py-0.5 text-[10px] font-semibold bg-white/10 rounded border border-white/20">
                 Ctrl

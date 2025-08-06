@@ -19,6 +19,19 @@ export const recordingActions = {
     connected: boolean;
   }>('recording/updateConnectionStatus'),
   setDictationMode: createAction<boolean>('recording/setDictationMode'),
+  // Dictation-specific actions
+  startDictationPending: createAction('recording/startDictation/pending'),
+  startDictationFulfilled: createAction<{ recordingId: string }>(
+    'recording/startDictation/fulfilled'
+  ),
+  startDictationRejected: createAction<string>(
+    'recording/startDictation/rejected'
+  ),
+  stopDictationPending: createAction('recording/stopDictation/pending'),
+  stopDictationFulfilled: createAction('recording/stopDictation/fulfilled'),
+  stopDictationRejected: createAction<string>(
+    'recording/stopDictation/rejected'
+  ),
 };
 
 // Transcription action creators

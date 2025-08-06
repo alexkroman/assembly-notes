@@ -20,7 +20,9 @@ import {
 import {
   setRecordingError,
   startRecording,
+  startDictation,
   stopRecording,
+  stopDictation,
   updateConnectionStatus,
 } from '../store/slices/recordingSlice.js';
 import {
@@ -101,6 +103,13 @@ export class RecordingManager {
 
   async startTranscriptionForDictation(): Promise<boolean> {
     try {
+      // Use proper Redux action for dictation
+      const result = await this.store.dispatch(startDictation());
+
+      if (startDictation.rejected.match(result)) {
+        return false;
+      }
+
       // Get API key from state
       const state = this.store.getState();
       const apiKey = state.settings.assemblyaiKey;
@@ -111,22 +120,16 @@ export class RecordingManager {
           operation: 'startTranscriptionForDictation',
           component: 'RecordingManager',
         });
+        this.store.dispatch(setRecordingError(error.message));
         return false;
       }
-
-      // Set recording status directly for dictation mode
-      // We can't use startRecording() as it requires a database recording
-      this.store.dispatch({
-        type: 'recording/start/fulfilled',
-        payload: { recordingId: 'dictation' },
-      });
 
       // Create connections with callbacks that dispatch Redux actions
       this.connections = await this.transcriptionService.createConnections(
         apiKey,
         {
           onTranscript: (data) => {
-            // Check if we're in dictation mode via the DictationService
+            // Check if we're in dictation mode
             const isDictating = this.store.getState().recording.isDictating;
 
             if (isDictating) {
@@ -148,6 +151,11 @@ export class RecordingManager {
               operation: 'dictationTranscription',
               component: 'RecordingManager',
             });
+            this.store.dispatch(
+              setRecordingError(
+                this.errorLogger.getUserFriendlyMessage(transcriptionError)
+              )
+            );
           },
           onConnectionStatus: (stream: string, connected: boolean) => {
             this.store.dispatch(
@@ -169,6 +177,9 @@ export class RecordingManager {
         operation: 'startTranscriptionForDictation',
         component: 'RecordingManager',
       });
+      this.store.dispatch(
+        setRecordingError(this.errorLogger.getUserFriendlyMessage(error))
+      );
       return false;
     }
   }
@@ -349,6 +360,39 @@ export class RecordingManager {
       return true;
     } catch (error) {
       this.logger.error('Failed to stop recording:', error);
+      return false;
+    }
+  }
+
+  async stopTranscriptionForDictation(): Promise<boolean> {
+    try {
+      // Use proper Redux action for stopping dictation
+      const result = await this.store.dispatch(stopDictation());
+
+      if (stopDictation.rejected.match(result)) {
+        return false;
+      }
+
+      // Clear keep-alive interval
+      this.stopKeepAliveInterval();
+
+      // FIRST: Stop audio capture to prevent more audio from being sent
+      this.mainWindow.webContents.send('stop-audio-capture');
+
+      // Give a brief moment for any pending audio to clear
+      await new Promise((resolve) => setTimeout(resolve, 100));
+
+      // SECOND: Close connections while they still exist
+      if (this.connections.microphone || this.connections.system) {
+        await this.transcriptionService.closeConnections(this.connections);
+      }
+
+      // THIRD: Clear local connections after closing
+      this.connections = { microphone: null, system: null };
+
+      return true;
+    } catch (error) {
+      this.logger.error('Failed to stop dictation:', error);
       return false;
     }
   }
