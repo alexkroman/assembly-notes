@@ -129,6 +129,9 @@ function createWindow(): void {
   );
   dictationService.initialize();
 
+  // Show main window first to ensure app activation
+  mainWindow.show();
+
   // Create dictation status window (skip in test environment)
   if (process.env['NODE_ENV'] !== 'test') {
     const dictationStatusWindow = container.resolve<DictationStatusWindow>(
@@ -143,6 +146,11 @@ function createWindow(): void {
 
 void app.whenReady().then(() => {
   log.info('App is ready, initializing...');
+
+  // Activate the app on macOS to ensure dock icon shows properly
+  if (process.platform === 'darwin' && app.dock) {
+    void app.dock.show();
+  }
 
   createWindow();
 
