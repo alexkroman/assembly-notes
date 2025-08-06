@@ -45,6 +45,7 @@ const __dirname = path.dirname(__filename);
 import type { AutoUpdaterService } from './auto-updater.js';
 import { setupContainer, container, DI_TOKENS } from './container.js';
 import type { DatabaseService } from './database.js';
+import type { DictationStatusWindow } from './dictationStatusWindow.js';
 import { setupIpcHandlers } from './ipc-handlers.js';
 import log from './logger.js';
 import type { DictationService } from './services/dictationService.js';
@@ -109,6 +110,15 @@ function createWindow(): void {
     DI_TOKENS.DictationService
   );
   dictationService.initialize();
+
+  // Create dictation status window (skip in test environment)
+  if (process.env['NODE_ENV'] !== 'test') {
+    const dictationStatusWindow = container.resolve<DictationStatusWindow>(
+      DI_TOKENS.DictationStatusWindow
+    );
+    dictationStatusWindow.create();
+    dictationStatusWindow.show();
+  }
 }
 
 // Note: OAuth now uses temporary HTTP server instead of custom protocol
@@ -195,6 +205,14 @@ app.on('window-all-closed', function () {
       DI_TOKENS.DictationService
     );
     dictationService.cleanup();
+
+    // Cleanup dictation status window (if it exists)
+    if (process.env['NODE_ENV'] !== 'test') {
+      const dictationStatusWindow = container.resolve<DictationStatusWindow>(
+        DI_TOKENS.DictationStatusWindow
+      );
+      dictationStatusWindow.destroy();
+    }
 
     app.quit();
   }

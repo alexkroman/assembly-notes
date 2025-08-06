@@ -27,6 +27,7 @@ export interface RecordingState {
     system: boolean;
   };
   isDictating: boolean;
+  isTransitioning: boolean;
 }
 
 // Recordings slice state
