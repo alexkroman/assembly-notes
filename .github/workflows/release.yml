@@ -65,6 +65,12 @@ jobs:
           node-version: 24
           cache: 'npm'
 
+      - name: Install Linux dependencies for robotjs
+        if: matrix.os == 'ubuntu-latest'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libx11-dev libxtst-dev libpng-dev libxkbcommon-x11-dev
+
       - name: Install dependencies
         run: npm ci --no-optional --cache .npm
 
