@@ -26,6 +26,7 @@ export interface RecordingState {
     microphone: boolean;
     system: boolean;
   };
+  isDictating: boolean;
 }
 
 // Recordings slice state

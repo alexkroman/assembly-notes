@@ -24,7 +24,13 @@ class DatabaseService {
     private logger: typeof import('./logger.js').default
   ) {
     // Use consistent database name - app.setName() in main.ts handles dev/prod separation
-    this.dbPath = path.join(app.getPath('userData'), 'assembly-notes.db');
+    const userData = app.getPath('userData');
+    this.dbPath = path.join(userData, 'assembly-notes.db');
+
+    // Log the paths for debugging
+    this.logger.info('App name:', app.getName());
+    this.logger.info('User data path:', userData);
+    this.logger.info('Database path:', this.dbPath);
 
     const dir = path.dirname(this.dbPath);
     if (!fs.existsSync(dir)) {

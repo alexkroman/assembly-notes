@@ -21,8 +21,9 @@ export const App: React.FC = () => {
   const { currentPage, currentRecordingId, activeModal } = useAppSelector(
     (state) => state.ui
   );
-  const { status } = useAppSelector(
-    (state: { recording: { status: string } }) => state.recording
+  const { status, isDictating } = useAppSelector(
+    (state: { recording: { status: string; isDictating: boolean } }) =>
+      state.recording
   );
   const { data: settings } = useGetSettingsQuery(undefined);
   const isRecording = status === 'recording';
@@ -58,7 +59,7 @@ export const App: React.FC = () => {
   };
 
   const handleNavigateToList = async () => {
-    if (isRecording) {
+    if (isRecording || isDictating) {
       try {
         setIsStoppingForNavigation(true);
         dispatch(setStatus('Stopping and going back to recordings'));

@@ -23,6 +23,9 @@ jest.mock('path', () => ({
 jest.mock('electron', () => ({
   app: {
     getPath: jest.fn(() => '/mock/path'),
+    getName: jest.fn(() => 'assembly-notes'),
+    setName: jest.fn(),
+    isPackaged: false,
   },
 }));
 

@@ -9,27 +9,33 @@ import { initMain as initAudioLoopback } from 'electron-audio-loopback';
 // Load environment variables from .env file
 dotenv.config();
 
-// Initialize Sentry
+// Set different app name for development builds - MUST be done early!
+if (!app.isPackaged) {
+  app.setName('Assembly-Notes-Dev');
+}
+
+// Initialize Sentry only in production
 const sentryDsn =
   process.env['SENTRY_DSN'] ??
   'https://fdae435c29626d7c3480f4bd5d2e9c33@o4509792651902976.ingest.us.sentry.io/4509792663764992';
-if (sentryDsn) {
+
+// Only initialize Sentry in production (packaged app)
+if (sentryDsn && app.isPackaged) {
   Sentry.init({
     dsn: sentryDsn,
-    environment: app.isPackaged ? 'production' : 'development',
+    environment: 'production',
     integrations: [
       Sentry.mainProcessSessionIntegration(),
       Sentry.electronBreadcrumbsIntegration(),
       Sentry.onUncaughtExceptionIntegration(),
       Sentry.onUnhandledRejectionIntegration(),
     ],
-    beforeSend(event) {
-      // Filter out development errors if in production
-      if (app.isPackaged && event.environment === 'development') {
-        return null;
-      }
-      return event;
-    },
+  });
+} else {
+  // In development, disable Sentry by providing an empty DSN
+  Sentry.init({
+    dsn: '',
+    enabled: false,
   });
 }
 
@@ -41,15 +47,15 @@ import { setupContainer, container, DI_TOKENS } from './container.js';
 import type { DatabaseService } from './database.js';
 import { setupIpcHandlers } from './ipc-handlers.js';
 import log from './logger.js';
+import type { DictationService } from './services/dictationService.js';
 import type { SettingsService } from './services/settingsService.js';
 import { store } from './store/store.js';
 
-initAudioLoopback();
+// Log app name for debugging
+log.info('Development mode:', !app.isPackaged);
+log.info('App name:', app.getName());
 
-// Set different app name for development builds
-if (process.env['NODE_ENV'] !== 'production' && !app.isPackaged) {
-  app.setName('Assembly-Notes-Dev');
-}
+initAudioLoopback();
 
 let mainWindow: BrowserWindow | null = null;
 
@@ -97,6 +103,12 @@ function createWindow(): void {
     log.info(`Setting Sentry user ID: ${settings.userId}`);
     Sentry.setUser({ id: settings.userId });
   }
+
+  // Initialize dictation service
+  const dictationService = container.resolve<DictationService>(
+    DI_TOKENS.DictationService
+  );
+  dictationService.initialize();
 }
 
 // Note: OAuth now uses temporary HTTP server instead of custom protocol
@@ -177,6 +189,13 @@ app.on('window-all-closed', function () {
       DI_TOKENS.DatabaseService
     );
     databaseService.close();
+
+    // Cleanup dictation service
+    const dictationService = container.resolve<DictationService>(
+      DI_TOKENS.DictationService
+    );
+    dictationService.cleanup();
+
     app.quit();
   }
 });

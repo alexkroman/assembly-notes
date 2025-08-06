@@ -35,6 +35,7 @@ declare global {
       onSummary: (callback: (data: { text: string }) => void) => void;
       onSummarizationStarted: (callback: () => void) => void;
       onSummarizationCompleted: (callback: () => void) => void;
+      onDictationStatus: (callback: (isDictating: boolean) => void) => void;
       onConnectionStatus: (
         callback: (data: ConnectionStatusData) => void
       ) => void;

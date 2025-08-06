@@ -1,5 +1,6 @@
 import * as Sentry from '@sentry/electron/main';
 import type { RealtimeTranscriber } from 'assemblyai';
+import { app } from 'electron';
 import { inject, injectable } from 'tsyringe';
 
 import { TranscriptionData } from '../../types/common.js';
@@ -48,6 +49,8 @@ export class AssemblyAIFactory implements IAssemblyAIFactory {
  */
 @injectable()
 export class TranscriptionService {
+  private dictationListeners: ((text: string) => void)[] = [];
+
   constructor(
     @inject(DI_TOKENS.AssemblyAIFactory)
     private assemblyAIFactory: IAssemblyAIFactory
@@ -133,9 +136,11 @@ export class TranscriptionService {
         return;
       }
       logger.error('Error sending audio:', error);
-      Sentry.captureException(error, {
-        tags: { service: 'transcription', operation: 'sendAudio' },
-      });
+      if (app.isPackaged) {
+        Sentry.captureException(error, {
+          tags: { service: 'transcription', operation: 'sendAudio' },
+        });
+      }
     }
   }
 
@@ -161,9 +166,11 @@ export class TranscriptionService {
       await transcriber.close();
     } catch (error) {
       logger.error('Error closing transcriber:', error);
-      Sentry.captureException(error, {
-        tags: { service: 'transcription', operation: 'closeTranscriber' },
-      });
+      if (app.isPackaged) {
+        Sentry.captureException(error, {
+          tags: { service: 'transcription', operation: 'closeTranscriber' },
+        });
+      }
     }
   }
 
@@ -177,5 +184,31 @@ export class TranscriptionService {
       this.closeTranscriber(connections.microphone ?? null),
       this.closeTranscriber(connections.system ?? null),
     ]);
+  }
+
+  /**
+   * Register a listener for dictation text
+   */
+  onDictationText(listener: (text: string) => void): void {
+    this.dictationListeners.push(listener);
+  }
+
+  /**
+   * Unregister a dictation text listener
+   */
+  offDictationText(listener: (text: string) => void): void {
+    const index = this.dictationListeners.indexOf(listener);
+    if (index > -1) {
+      this.dictationListeners.splice(index, 1);
+    }
+  }
+
+  /**
+   * Emit dictation text to all listeners
+   */
+  emitDictationText(text: string): void {
+    this.dictationListeners.forEach((listener) => {
+      listener(text);
+    });
   }
 }

@@ -1,6 +1,7 @@
 import type { Store } from '@reduxjs/toolkit';
 import * as Sentry from '@sentry/electron/main';
 import type { BrowserWindow } from 'electron';
+import { app } from 'electron';
 import { inject, injectable } from 'tsyringe';
 
 import {
@@ -20,7 +21,9 @@ import {
 import {
   setRecordingError,
   startRecording,
+  startDictation,
   stopRecording,
+  stopDictation,
   updateConnectionStatus,
 } from '../store/slices/recordingSlice.js';
 import {
@@ -94,6 +97,94 @@ export class RecordingManager {
     });
   }
 
+  isRecording(): boolean {
+    const state = this.store.getState();
+    return state.recording.status === 'recording';
+  }
+
+  async startTranscriptionForDictation(): Promise<boolean> {
+    try {
+      // Use proper Redux action for dictation
+      const result = await this.store.dispatch(startDictation());
+
+      if (startDictation.rejected.match(result)) {
+        return false;
+      }
+
+      // Get API key from state
+      const state = this.store.getState();
+      const apiKey = state.settings.assemblyaiKey;
+
+      if (!apiKey) {
+        const error = new MissingApiKeyError();
+        this.errorLogger.logError(error, {
+          operation: 'startTranscriptionForDictation',
+          component: 'RecordingManager',
+        });
+        this.store.dispatch(setRecordingError(error.message));
+        return false;
+      }
+
+      // Create connections with callbacks that dispatch Redux actions
+      this.connections = await this.transcriptionService.createConnections(
+        apiKey,
+        {
+          onTranscript: (data) => {
+            // Check if we're in dictation mode
+            const isDictating = this.store.getState().recording.isDictating;
+
+            if (isDictating) {
+              // In dictation mode, only emit final transcripts for insertion
+              // Only emit from microphone stream to avoid duplicates
+              if (!data.partial && data.streamType === 'microphone') {
+                this.transcriptionService.emitDictationText(data.text);
+              }
+              // Don't process partials or store transcripts in dictation mode
+              return;
+            }
+          },
+          onError: (stream: string, error: unknown) => {
+            const transcriptionError = new TranscriptionConnectionError(
+              stream as 'microphone' | 'system',
+              error instanceof Error ? error.message : String(error)
+            );
+            this.errorLogger.logError(transcriptionError, {
+              operation: 'dictationTranscription',
+              component: 'RecordingManager',
+            });
+            this.store.dispatch(
+              setRecordingError(
+                this.errorLogger.getUserFriendlyMessage(transcriptionError)
+              )
+            );
+          },
+          onConnectionStatus: (stream: string, connected: boolean) => {
+            this.store.dispatch(
+              updateConnectionStatus({
+                stream: stream as 'microphone' | 'system',
+                connected,
+              })
+            );
+          },
+        }
+      );
+
+      // Start keep-alive interval
+      this.startKeepAliveInterval();
+
+      return true;
+    } catch (error) {
+      this.errorLogger.logError(error as Error, {
+        operation: 'startTranscriptionForDictation',
+        component: 'RecordingManager',
+      });
+      this.store.dispatch(
+        setRecordingError(this.errorLogger.getUserFriendlyMessage(error))
+      );
+      return false;
+    }
+  }
+
   async startTranscription(): Promise<boolean> {
     try {
       // MUST have a current recording from database before starting
@@ -111,18 +202,20 @@ export class RecordingManager {
       // Now dispatch the Redux action to set state to "starting"
       await this.store.dispatch(startRecording());
 
-      // Capture Sentry event for recording start
-      Sentry.captureMessage('Recording started', {
-        level: 'info',
-        tags: {
-          feature: 'recording',
-          action: 'start',
-        },
-        extra: {
-          recordingId: currentState.recordings.currentRecording.id,
-          timestamp: new Date().toISOString(),
-        },
-      });
+      // Capture Sentry event for recording start (only in production)
+      if (app.isPackaged) {
+        Sentry.captureMessage('Recording started', {
+          level: 'info',
+          tags: {
+            feature: 'recording',
+            action: 'start',
+          },
+          extra: {
+            recordingId: currentState.recordings.currentRecording.id,
+            timestamp: new Date().toISOString(),
+          },
+        });
+      }
 
       // Get API key from state
       const state = this.store.getState();
@@ -143,33 +236,47 @@ export class RecordingManager {
         apiKey,
         {
           onTranscript: (data) => {
-            if (data.partial) {
-              // Handle partial transcripts - update buffer for immediate UI display
-              this.store.dispatch(
-                updateTranscriptBuffer({
-                  source: data.streamType,
-                  text: data.text,
-                })
-              );
+            // Check if we're in dictation mode via the DictationService
+            const isDictating = this.store.getState().recording.isDictating;
+
+            if (isDictating) {
+              // In dictation mode, only emit final transcripts for insertion
+              // Only emit from microphone stream to avoid duplicates
+              if (!data.partial && data.streamType === 'microphone') {
+                this.transcriptionService.emitDictationText(data.text);
+              }
+              // Don't process partials or store transcripts in dictation mode
+              return;
             } else {
-              // Handle final transcripts - add to segments and clear buffers
-              this.store.dispatch(
-                addTranscriptSegment({
-                  text: data.text,
-                  timestamp: Date.now(),
-                  isFinal: true,
-                  source: data.streamType,
-                })
-              );
-              // Clear the buffer for this source since we now have the final transcript
-              this.store.dispatch(
-                updateTranscriptBuffer({
-                  source: data.streamType,
-                  text: '',
-                })
-              );
-              // Auto-save transcript after receiving final transcript
-              this.recordingDataService.saveCurrentTranscription();
+              // Normal transcription mode
+              if (data.partial) {
+                // Handle partial transcripts - update buffer for immediate UI display
+                this.store.dispatch(
+                  updateTranscriptBuffer({
+                    source: data.streamType,
+                    text: data.text,
+                  })
+                );
+              } else {
+                // Handle final transcripts - add to segments and clear buffers
+                this.store.dispatch(
+                  addTranscriptSegment({
+                    text: data.text,
+                    timestamp: Date.now(),
+                    isFinal: true,
+                    source: data.streamType,
+                  })
+                );
+                // Clear the buffer for this source since we now have the final transcript
+                this.store.dispatch(
+                  updateTranscriptBuffer({
+                    source: data.streamType,
+                    text: '',
+                  })
+                );
+                // Auto-save transcript after receiving final transcript
+                this.recordingDataService.saveCurrentTranscription();
+              }
             }
           },
           onError: (stream: string, error: unknown) => {
@@ -256,6 +363,39 @@ export class RecordingManager {
       return true;
     } catch (error) {
       this.logger.error('Failed to stop recording:', error);
+      return false;
+    }
+  }
+
+  async stopTranscriptionForDictation(): Promise<boolean> {
+    try {
+      // Use proper Redux action for stopping dictation
+      const result = await this.store.dispatch(stopDictation());
+
+      if (stopDictation.rejected.match(result)) {
+        return false;
+      }
+
+      // Clear keep-alive interval
+      this.stopKeepAliveInterval();
+
+      // FIRST: Stop audio capture to prevent more audio from being sent
+      this.mainWindow.webContents.send('stop-audio-capture');
+
+      // Give a brief moment for any pending audio to clear
+      await new Promise((resolve) => setTimeout(resolve, 100));
+
+      // SECOND: Close connections while they still exist
+      if (this.connections.microphone || this.connections.system) {
+        await this.transcriptionService.closeConnections(this.connections);
+      }
+
+      // THIRD: Clear local connections after closing
+      this.connections = { microphone: null, system: null };
+
+      return true;
+    } catch (error) {
+      this.logger.error('Failed to stop dictation:', error);
       return false;
     }
   }

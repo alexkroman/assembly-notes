@@ -7,6 +7,7 @@ import { AutoUpdaterService } from './auto-updater.js';
 import { DatabaseService } from './database.js';
 import { DI_TOKENS } from './di-tokens.js';
 import logger from './logger.js';
+import { DictationService } from './services/dictationService.js';
 import { RecordingDataService } from './services/recordingDataService.js';
 import { RecordingManager } from './services/recordingManager.js';
 import { SettingsService } from './services/settingsService.js';
@@ -75,6 +76,7 @@ export function setupContainer(mainWindow: BrowserWindow): void {
   );
   container.registerSingleton(DI_TOKENS.RecordingManager, RecordingManager);
   container.registerSingleton(DI_TOKENS.AutoUpdaterService, AutoUpdaterService);
+  container.registerSingleton(DI_TOKENS.DictationService, DictationService);
 }
 
 export { DI_TOKENS, container };

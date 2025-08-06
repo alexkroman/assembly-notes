@@ -64,6 +64,19 @@ export const RecordingView: React.FC<RecordingViewProps> = ({
     }
   }, [summary]);
 
+  // Listen for dictation status changes
+  useEffect(() => {
+    const handleDictationStatus = (_isDictating: boolean) => {
+      // Redux state will be updated from main process
+    };
+
+    window.electronAPI.onDictationStatus(handleDictationStatus);
+
+    return () => {
+      window.electronAPI.removeAllListeners('dictation-status');
+    };
+  }, []);
+
   useEffect(() => {
     if (
       recordingId &&

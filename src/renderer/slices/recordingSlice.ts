@@ -9,6 +9,7 @@ const initialState: RecordingState = {
   startTime: null,
   error: null,
   connectionStatus: { microphone: false, system: false },
+  isDictating: false,
 };
 
 const recordingSlice = createSlice({
@@ -41,6 +42,37 @@ const recordingSlice = createSlice({
       .addCase(recordingActions.updateConnectionStatus, (state, action) => {
         state.connectionStatus[action.payload.stream] =
           action.payload.connected;
+      })
+      .addCase(recordingActions.setDictationMode, (state, action) => {
+        state.isDictating = action.payload;
+      })
+      // Dictation-specific actions
+      .addCase(recordingActions.startDictationPending, (state) => {
+        state.status = 'starting';
+        state.error = null;
+        state.isDictating = true;
+      })
+      .addCase(recordingActions.startDictationFulfilled, (state, action) => {
+        state.status = 'recording';
+        state.recordingId = action.payload.recordingId;
+        state.startTime = Date.now();
+        state.isDictating = true;
+      })
+      .addCase(recordingActions.startDictationRejected, (state, action) => {
+        state.status = 'error';
+        state.error = action.payload;
+        state.isDictating = false;
+      })
+      .addCase(recordingActions.stopDictationPending, (state) => {
+        state.status = 'stopping';
+      })
+      .addCase(recordingActions.stopDictationFulfilled, () => {
+        // Reset to initial state
+        return initialState;
+      })
+      .addCase(recordingActions.stopDictationRejected, (state, action) => {
+        state.status = 'error';
+        state.error = action.payload;
       });
   },
 });

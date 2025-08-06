@@ -12,6 +12,7 @@ const initialState: RecordingState = {
     microphone: false,
     system: false,
   },
+  isDictating: false,
 };
 
 // Async thunk for starting recording - returns only serializable data
@@ -40,6 +41,48 @@ export const startRecording = createAsyncThunk<
 
   // Return only serializable data - connections are handled by RecordingManager
   return { recordingId };
+});
+
+// Async thunk for starting dictation mode
+export const startDictation = createAsyncThunk<
+  { recordingId: string },
+  undefined,
+  { state: RootState }
+>('recording/startDictation', (_, { getState, rejectWithValue }) => {
+  const state = getState();
+  const apiKey = state.settings.assemblyaiKey;
+
+  if (!apiKey) {
+    return rejectWithValue(
+      'AssemblyAI API Key is not set. Please add it in settings.'
+    );
+  }
+
+  // Check if already recording
+  if (state.recording.status === 'recording') {
+    return rejectWithValue(
+      'Cannot start dictation while recording is in progress.'
+    );
+  }
+
+  // Use special dictation ID (not from database)
+  return { recordingId: 'dictation' };
+});
+
+// Async thunk for stopping dictation mode
+export const stopDictation = createAsyncThunk<
+  undefined,
+  undefined,
+  { state: RootState }
+>('recording/stopDictation', (_, { getState, rejectWithValue }) => {
+  const state = getState();
+
+  // Only stop if we're actually in dictation mode
+  if (state.recording.recordingId !== 'dictation') {
+    return rejectWithValue('Not in dictation mode');
+  }
+
+  return undefined;
 });
 
 // Async thunk for stopping recording
@@ -78,6 +121,9 @@ const recordingSlice = createSlice({
       }
     },
     reset: () => initialState,
+    setDictationMode: (state, action: PayloadAction<boolean>) => {
+      state.isDictating = action.payload;
+    },
   },
   extraReducers: (builder) => {
     builder
@@ -106,6 +152,35 @@ const recordingSlice = createSlice({
       .addCase(stopRecording.rejected, (state) => {
         state.status = 'error';
         state.error = 'Failed to stop recording';
+      })
+      // Start dictation
+      .addCase(startDictation.pending, (state) => {
+        state.status = 'starting';
+        state.error = null;
+        state.isDictating = true;
+      })
+      .addCase(startDictation.fulfilled, (state, action) => {
+        state.status = 'recording';
+        state.recordingId = action.payload.recordingId;
+        state.startTime = Date.now();
+        state.isDictating = true;
+      })
+      .addCase(startDictation.rejected, (state, action) => {
+        state.status = 'error';
+        state.error = action.payload as string;
+        state.isDictating = false;
+      })
+      // Stop dictation
+      .addCase(stopDictation.pending, (state) => {
+        state.status = 'stopping';
+      })
+      .addCase(stopDictation.fulfilled, () => {
+        // Reset to initial state
+        return initialState;
+      })
+      .addCase(stopDictation.rejected, (state, action) => {
+        state.status = 'error';
+        state.error = action.payload as string;
       });
   },
 });
@@ -115,6 +190,7 @@ export const {
   clearRecordingError,
   updateConnectionStatus,
   reset: resetRecording,
+  setDictationMode,
 } = recordingSlice.actions;
 
 export default recordingSlice.reducer;

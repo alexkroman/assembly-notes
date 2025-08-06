@@ -59,11 +59,25 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      # Add any setup steps before running the `github/codeql-action/init` action.
-      # This includes steps like installing compilers or runtimes (`actions/setup-node`
-      # or others). This is typically only required for manual builds.
-      # - name: Setup runtime (example)
-      #   uses: actions/setup-example@v1
+      # Setup Node.js for JavaScript/TypeScript analysis
+      - name: Setup Node.js
+        if: matrix.language == 'javascript-typescript'
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: 'npm'
+
+      # Install Linux dependencies for native modules like robotjs
+      - name: Install Linux dependencies
+        if: matrix.language == 'javascript-typescript' && runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libx11-dev libxtst-dev libpng-dev libxkbcommon-x11-dev
+
+      # Install npm dependencies for better JavaScript/TypeScript analysis
+      - name: Install dependencies
+        if: matrix.language == 'javascript-typescript'
+        run: npm ci
 
       # Initializes the CodeQL tools for scanning.
       - name: Initialize CodeQL
