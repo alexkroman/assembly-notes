@@ -342,6 +342,7 @@ describe('DatabaseService', () => {
           'Test Recording',
           'Test transcript content',
           'Test summary',
+          null, // audio_filename
           1234567890,
           1234567890
         );
@@ -382,6 +383,7 @@ describe('DatabaseService', () => {
           'Test Recording',
           null,
           null,
+          null, // audio_filename
           1234567890,
           1234567890
         );

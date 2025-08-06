@@ -340,6 +340,27 @@ function setupIpcHandlers(
     // No validation needed - we assume all channels exist
     return;
   });
+
+  ipcMain.handle(
+    'get-audio-file-path',
+    (_event: IpcMainInvokeEvent, recordingId: string): string | null => {
+      const database = container.resolve<DatabaseService>(
+        DI_TOKENS.DatabaseService
+      );
+      const audioRecordingService = container.resolve<
+        import('./services/audioRecordingService.js').AudioRecordingService
+      >(DI_TOKENS.AudioRecordingService);
+
+      const recording = database.getRecording(recordingId);
+      if (recording?.audio_filename) {
+        const filepath = audioRecordingService.getAudioFilePath(
+          recording.audio_filename
+        );
+        return filepath;
+      }
+      return null;
+    }
+  );
 }
 
 export { setupIpcHandlers };

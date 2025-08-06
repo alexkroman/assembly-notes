@@ -115,6 +115,10 @@ const electronAPI = {
     ipcRenderer.invoke('update-recording-title', id, title),
   updateRecordingSummary: (id: string, summary: string) =>
     ipcRenderer.invoke('update-recording-summary', id, summary),
+  getAudioFilePath: (recordingId: string) =>
+    ipcRenderer.invoke('get-audio-file-path', recordingId) as Promise<
+      string | null
+    >,
 
   onUpdateAvailable: (callback: (info: UpdateInfo) => void) =>
     ipcRenderer.on('update-available', (_event, info) => {

@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useCallback } from 'react';
+import React, { useEffect, useRef, useCallback, useState } from 'react';
 
 import type { RecordingViewProps } from '../../types/components.js';
 import { useAppSelector } from '../hooks/redux';
@@ -57,12 +57,36 @@ export const RecordingView: React.FC<RecordingViewProps> = ({
   const transcriptRef = useRef<HTMLPreElement>(null);
   const isUserScrolled = useRef(false);
   const lastTranscriptLength = useRef(0);
+  const audioRef = useRef<HTMLAudioElement>(null);
+  const [audioUrl, setAudioUrl] = useState<string | null>(null);
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [currentTime, setCurrentTime] = useState(0);
+  const [duration, setDuration] = useState(0);
 
   useEffect(() => {
     if (summaryRef.current) {
       summaryRef.current.value = summary;
     }
   }, [summary]);
+
+  // Load audio file when recording changes
+  useEffect(() => {
+    async function loadAudio() {
+      if (recordingId && !isNewRecording) {
+        const filepath = await window.electronAPI.getAudioFilePath(recordingId);
+        if (filepath) {
+          // Convert file path to file:// URL for audio element
+          const fileUrl = `file://${filepath}`;
+          setAudioUrl(fileUrl);
+        } else {
+          setAudioUrl(null);
+        }
+      } else {
+        setAudioUrl(null);
+      }
+    }
+    void loadAudio();
+  }, [recordingId, isNewRecording]);
 
   // Listen for dictation status changes
   useEffect(() => {
@@ -100,6 +124,45 @@ export const RecordingView: React.FC<RecordingViewProps> = ({
 
   const handleSummaryChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     setSummary(e.target.value);
+  };
+
+  const handlePlayPause = () => {
+    if (!audioRef.current) return;
+
+    if (isPlaying) {
+      audioRef.current.pause();
+      setIsPlaying(false);
+    } else {
+      void audioRef.current.play();
+      setIsPlaying(true);
+    }
+  };
+
+  const handleTimeUpdate = () => {
+    if (audioRef.current) {
+      setCurrentTime(audioRef.current.currentTime);
+    }
+  };
+
+  const handleLoadedMetadata = () => {
+    if (audioRef.current) {
+      setDuration(audioRef.current.duration);
+    }
+  };
+
+  const handleSeek = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const time = parseFloat(e.target.value);
+    if (audioRef.current) {
+      audioRef.current.currentTime = time;
+      setCurrentTime(time);
+    }
+  };
+
+  const formatTime = (seconds: number): string => {
+    if (isNaN(seconds)) return '0:00';
+    const mins = Math.floor(seconds / 60);
+    const secs = Math.floor(seconds % 60);
+    return `${mins.toString()}:${secs.toString().padStart(2, '0')}`;
   };
 
   const checkIfAtBottom = useCallback((element: HTMLElement) => {
@@ -221,6 +284,45 @@ export const RecordingView: React.FC<RecordingViewProps> = ({
           </button>
         )}
       </div>
+
+      {/* Audio Player */}
+      {audioUrl && !isNewRecording && (
+        <div className="px-2 py-1 bg-[#1a1a1a] flex items-center gap-2 flex-shrink-0 h-10">
+          <button
+            type="button"
+            className="px-2 py-1 text-xs font-semibold rounded-sm cursor-pointer transition-all duration-200 h-7 tracking-wide w-[60px] bg-white/[0.09] border border-white/[0.18] text-white/[0.85] hover:bg-white/[0.12] hover:text-white"
+            onClick={handlePlayPause}
+          >
+            {isPlaying ? 'Pause' : 'Play'}
+          </button>
+          <span className="text-xs text-white/[0.6] min-w-[40px]">
+            {formatTime(currentTime)}
+          </span>
+          <input
+            type="range"
+            min="0"
+            max={duration || 0}
+            value={currentTime}
+            onChange={handleSeek}
+            className="flex-1 h-1 bg-white/[0.2] rounded-lg appearance-none cursor-pointer slider"
+            style={{
+              background: `linear-gradient(to right, #28a745 0%, #28a745 ${((currentTime / (duration || 1)) * 100).toString()}%, rgba(255, 255, 255, 0.2) ${((currentTime / (duration || 1)) * 100).toString()}%, rgba(255, 255, 255, 0.2) 100%)`,
+            }}
+          />
+          <span className="text-xs text-white/[0.6] min-w-[40px]">
+            {formatTime(duration)}
+          </span>
+          <audio
+            ref={audioRef}
+            src={audioUrl}
+            onTimeUpdate={handleTimeUpdate}
+            onLoadedMetadata={handleLoadedMetadata}
+            onEnded={() => {
+              setIsPlaying(false);
+            }}
+          />
+        </div>
+      )}
 
       <div className="px-2 py-1 bg-transparent flex-shrink-0 h-9">
         <div className="flex items-center gap-1.5 flex-nowrap">

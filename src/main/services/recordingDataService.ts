@@ -153,6 +153,15 @@ export class RecordingDataService {
     }
   }
 
+  updateAudioFilename(recordingId: string, audioFilename: string): void {
+    try {
+      this.database.updateRecordingAudioFilename(recordingId, audioFilename);
+      this.logger.info(`Updated audio filename for recording: ${recordingId}`);
+    } catch (error) {
+      this.logger.error(`Failed to update audio filename: ${String(error)}`);
+    }
+  }
+
   private async waitForRecordingToStop(): Promise<void> {
     return new Promise((resolve) => {
       const checkStatus = () => {

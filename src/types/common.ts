@@ -42,6 +42,7 @@ export interface Recording {
   title?: string;
   transcript?: string;
   summary?: string;
+  audio_filename?: string;
   created_at: number;
   updated_at: number;
 }

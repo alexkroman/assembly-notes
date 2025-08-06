@@ -12,6 +12,7 @@ import {
 } from '../../errors/index.js';
 import { DI_TOKENS } from '../di-tokens.js';
 import type Logger from '../logger.js';
+import { AudioRecordingService } from './audioRecordingService.js';
 import { RecordingDataService } from './recordingDataService.js';
 import { SummarizationService } from './summarizationService.js';
 import {
@@ -51,7 +52,9 @@ export class RecordingManager {
     @inject(DI_TOKENS.TranscriptionService)
     private transcriptionService: TranscriptionService,
     @inject(DI_TOKENS.SummarizationService)
-    private summarizationService: SummarizationService
+    private summarizationService: SummarizationService,
+    @inject(DI_TOKENS.AudioRecordingService)
+    private audioRecordingService: AudioRecordingService
   ) {
     this.errorLogger = new ErrorLogger(this.logger);
     this.setupStoreSubscriptions();
@@ -321,6 +324,10 @@ export class RecordingManager {
       // Start keep-alive interval
       this.startKeepAliveInterval();
 
+      // Start audio recording
+      const recordingId = currentState.recordings.currentRecording.id;
+      this.audioRecordingService.startRecording(recordingId);
+
       return true;
     } catch (error) {
       const recordingId = this.store.getState().recordings.currentRecording?.id;
@@ -358,6 +365,20 @@ export class RecordingManager {
 
       // THIRD: Clear local connections after closing
       this.connections = { microphone: null, system: null };
+
+      // Stop audio recording and save the file
+      const recordingId = this.store.getState().recordings.currentRecording?.id;
+      if (recordingId) {
+        const audioFilename =
+          await this.audioRecordingService.stopRecording(recordingId);
+        if (audioFilename) {
+          // Update the recording with the audio filename
+          this.recordingDataService.updateAudioFilename(
+            recordingId,
+            audioFilename
+          );
+        }
+      }
 
       await this.store.dispatch(stopRecording());
       return true;
@@ -408,12 +429,32 @@ export class RecordingManager {
         audioData
       );
     }
+
+    // Save audio data for recording
+    const recordingId = this.store.getState().recordings.currentRecording?.id;
+    if (recordingId && this.store.getState().recording.status === 'recording') {
+      this.audioRecordingService.appendAudioData(
+        recordingId,
+        audioData,
+        'microphone'
+      );
+    }
   }
 
   sendSystemAudio(audioData: ArrayBuffer): void {
     // Only send audio if we have an active connection
     if (this.connections.system) {
       this.transcriptionService.sendAudio(this.connections.system, audioData);
+    }
+
+    // Save audio data for recording
+    const recordingId = this.store.getState().recordings.currentRecording?.id;
+    if (recordingId && this.store.getState().recording.status === 'recording') {
+      this.audioRecordingService.appendAudioData(
+        recordingId,
+        audioData,
+        'system'
+      );
     }
   }
 
