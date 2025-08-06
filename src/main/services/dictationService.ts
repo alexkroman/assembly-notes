@@ -1,11 +1,15 @@
 import robotjs from '@jitsi/robotjs';
+import type { Store } from '@reduxjs/toolkit';
 import { globalShortcut, BrowserWindow } from 'electron';
 import log from 'electron-log';
 import { injectable, inject } from 'tsyringe';
 
 import { DI_TOKENS } from '../di-tokens.js';
+import type { DictationStatusWindow } from '../dictationStatusWindow.js';
 import { RecordingManager } from './recordingManager.js';
 import { TranscriptionService } from './transcriptionService.js';
+import { setTransitioning } from '../store/slices/recordingSlice.js';
+import type { RootState, AppDispatch } from '../store/store.js';
 
 @injectable()
 export class DictationService {
@@ -18,7 +22,11 @@ export class DictationService {
     @inject(DI_TOKENS.TranscriptionService)
     private transcriptionService: TranscriptionService,
     @inject(DI_TOKENS.RecordingManager)
-    private recordingManager: RecordingManager
+    private recordingManager: RecordingManager,
+    @inject(DI_TOKENS.DictationStatusWindow)
+    private dictationStatusWindow: DictationStatusWindow,
+    @inject(DI_TOKENS.Store)
+    private store: Store<RootState> & { dispatch: AppDispatch }
   ) {}
 
   public initialize(): void {
@@ -42,7 +50,16 @@ export class DictationService {
   }
 
   private handleDictationToggle(): void {
-    if (!this.isDictating) {
+    const state = this.store.getState();
+
+    // Prevent toggle if we're in transition
+    if (state.recording.isTransitioning) {
+      log.info('Ignoring dictation toggle - transition in progress');
+      return;
+    }
+
+    // Check current dictation state from Redux
+    if (!state.recording.isDictating) {
       void this.startDictation();
     } else {
       void this.stopDictation();
@@ -50,7 +67,13 @@ export class DictationService {
   }
 
   public async startDictation(): Promise<void> {
-    if (this.isDictating) return;
+    const state = this.store.getState();
+
+    // Check Redux state for dictation and transition status
+    if (state.recording.isDictating || state.recording.isTransitioning) {
+      log.info('Already dictating or transitioning');
+      return;
+    }
 
     // Check if a regular recording is already in progress
     if (this.recordingManager.isRecording()) {
@@ -58,37 +81,63 @@ export class DictationService {
       return;
     }
 
-    this.isDictating = true;
-    this.keyDownTime = Date.now();
+    // Set transitioning to true at the start
+    this.store.dispatch(setTransitioning(true));
 
     log.info('Starting dictation mode');
 
-    // Set up transcription handler to capture text and insert it immediately
-    this.transcriptionHandler = (text: string) => {
-      this.handleDictationText(text);
-    };
+    try {
+      // Set up transcription handler to capture text and insert it immediately
+      this.transcriptionHandler = (text: string) => {
+        this.handleDictationText(text);
+      };
 
-    // Subscribe to transcription events
-    this.transcriptionService.onDictationText(this.transcriptionHandler);
+      // Subscribe to transcription events
+      this.transcriptionService.onDictationText(this.transcriptionHandler);
 
-    // Start transcription for dictation mode
-    const started =
-      await this.recordingManager.startTranscriptionForDictation();
-    if (!started) {
-      log.error('Failed to start transcription for dictation');
-      this.isDictating = false;
-      // Cleanup handler
-      this.transcriptionService.offDictationText(this.transcriptionHandler);
-      this.transcriptionHandler = null;
-      return;
+      // Start transcription for dictation mode
+      const started =
+        await this.recordingManager.startTranscriptionForDictation();
+      if (!started) {
+        log.error('Failed to start transcription for dictation');
+        // Cleanup handler
+        this.transcriptionService.offDictationText(this.transcriptionHandler);
+        this.transcriptionHandler = null;
+        // Clear transitioning state on failure
+        this.store.dispatch(setTransitioning(false));
+        return;
+      }
+
+      // Only set isDictating and notify after successful start
+      this.isDictating = true;
+      this.keyDownTime = Date.now();
+
+      // Add 300ms delay before notifying to account for recording startup time
+      // and clear transitioning state after the delay
+      setTimeout(() => {
+        // Notify renderer about dictation mode
+        this.notifyDictationStatus(true);
+        // Clear transitioning state after notification
+        this.store.dispatch(setTransitioning(false));
+      }, 400);
+    } catch (error) {
+      // Clear transitioning state on error
+      this.store.dispatch(setTransitioning(false));
+      throw error;
     }
-
-    // Notify renderer about dictation mode
-    this.notifyDictationStatus(true);
   }
 
   public async stopDictation(): Promise<void> {
-    if (!this.isDictating) return;
+    const state = this.store.getState();
+
+    // Check Redux state for dictation and transition status
+    if (!state.recording.isDictating || state.recording.isTransitioning) {
+      log.info('Not dictating or already transitioning');
+      return;
+    }
+
+    // Set transitioning to true at the start
+    this.store.dispatch(setTransitioning(true));
 
     this.isDictating = false;
 
@@ -99,17 +148,23 @@ export class DictationService {
       `Stopping dictation mode (duration: ${String(dictationDuration)}ms)`
     );
 
-    // Unsubscribe from transcription events
-    if (this.transcriptionHandler) {
-      this.transcriptionService.offDictationText(this.transcriptionHandler);
-      this.transcriptionHandler = null;
+    try {
+      // Notify renderer about dictation mode IMMEDIATELY
+      this.notifyDictationStatus(false);
+
+      // Unsubscribe from transcription events
+      if (this.transcriptionHandler) {
+        this.transcriptionService.offDictationText(this.transcriptionHandler);
+        this.transcriptionHandler = null;
+      }
+
+      // Stop dictation transcription (uses proper Redux action)
+      // This includes all audio cleanup
+      await this.recordingManager.stopTranscriptionForDictation();
+    } finally {
+      // Clear transitioning state after all audio cleanup is complete
+      this.store.dispatch(setTransitioning(false));
     }
-
-    // Stop dictation transcription (uses proper Redux action)
-    await this.recordingManager.stopTranscriptionForDictation();
-
-    // Notify renderer about dictation mode
-    this.notifyDictationStatus(false);
   }
 
   private handleDictationText(text: string): void {
@@ -127,10 +182,13 @@ export class DictationService {
   }
 
   private notifyDictationStatus(isDictating: boolean): void {
-    // Send status to renderer via IPC
-    const mainWindow = BrowserWindow.getAllWindows()[0];
-    if (mainWindow) {
-      mainWindow.webContents.send('dictation-status', isDictating);
+    // Update the dictation status window FIRST for immediate visual feedback
+    this.dictationStatusWindow.updateStatus(isDictating);
+
+    // Then send status to main window for Redux state (to prevent navigation)
+    const allWindows = BrowserWindow.getAllWindows();
+    if (allWindows.length > 0 && allWindows[0]) {
+      allWindows[0].webContents.send('dictation-status', isDictating);
     }
   }
 

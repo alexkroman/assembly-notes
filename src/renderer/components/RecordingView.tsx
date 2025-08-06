@@ -19,7 +19,6 @@ export const RecordingView: React.FC<RecordingViewProps> = ({
     (state) => (state.transcription as { error: string | null }).error
   );
   const uiStatus = useAppSelector((state) => state.ui.status);
-  const isDictating = useAppSelector((state) => state.recording.isDictating);
   const currentRecording = useAppSelector(
     (state) =>
       (
@@ -221,14 +220,6 @@ export const RecordingView: React.FC<RecordingViewProps> = ({
             >
               {buttonText}
             </button>
-            {isDictating && (
-              <div className="flex items-center gap-1.5 ml-2">
-                <span className="inline-block w-2 h-2 bg-red-500 rounded-full animate-pulse"></span>
-                <span className="text-xs text-red-400 font-medium">
-                  Dictating
-                </span>
-              </div>
-            )}
           </>
         )}
       </div>
@@ -372,14 +363,7 @@ export const RecordingView: React.FC<RecordingViewProps> = ({
           className="text-[10px] text-white/[0.60] font-normal tracking-wide"
           data-testid="status-display"
         >
-          {isDictating ? (
-            <span className="text-sm font-medium text-red-400 flex items-center gap-1.5">
-              <span className="inline-block w-2 h-2 bg-red-500 rounded-full animate-pulse"></span>
-              Dictating - Press Ctrl+Alt+D to stop
-            </span>
-          ) : (
-            (transcriptionError ?? uiStatus)
-          )}
+          {transcriptionError ?? uiStatus}
         </span>
       </div>
     </div>

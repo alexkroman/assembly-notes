@@ -45,6 +45,7 @@ const __dirname = path.dirname(__filename);
 import type { AutoUpdaterService } from './auto-updater.js';
 import { setupContainer, container, DI_TOKENS } from './container.js';
 import type { DatabaseService } from './database.js';
+import type { DictationStatusWindow } from './dictationStatusWindow.js';
 import { setupIpcHandlers } from './ipc-handlers.js';
 import log from './logger.js';
 import type { DictationService } from './services/dictationService.js';
@@ -78,6 +79,24 @@ function createWindow(): void {
   setupContainer(mainWindow);
   setupIpcHandlers(mainWindow, store);
 
+  // Set Content Security Policy based on environment
+  const isDevelopment = process.env['NODE_ENV'] !== 'production';
+  if (!isDevelopment) {
+    // Production CSP - more restrictive
+    mainWindow.webContents.session.webRequest.onHeadersReceived(
+      (details, callback) => {
+        callback({
+          responseHeaders: {
+            ...details.responseHeaders,
+            'Content-Security-Policy': [
+              "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src 'self' https://api.assemblyai.com wss://api.assemblyai.com",
+            ],
+          },
+        });
+      }
+    );
+  }
+
   // Now load the renderer - IPC handlers are ready
   void mainWindow.loadFile(path.join(__dirname, '../renderer/index.html'));
 
@@ -109,12 +128,29 @@ function createWindow(): void {
     DI_TOKENS.DictationService
   );
   dictationService.initialize();
+
+  // Show main window first to ensure app activation
+  mainWindow.show();
+
+  // Create dictation status window (skip in test environment)
+  if (process.env['NODE_ENV'] !== 'test') {
+    const dictationStatusWindow = container.resolve<DictationStatusWindow>(
+      DI_TOKENS.DictationStatusWindow
+    );
+    dictationStatusWindow.create();
+    dictationStatusWindow.show();
+  }
 }
 
 // Note: OAuth now uses temporary HTTP server instead of custom protocol
 
 void app.whenReady().then(() => {
   log.info('App is ready, initializing...');
+
+  // Activate the app on macOS to ensure dock icon shows properly
+  if (process.platform === 'darwin' && app.dock) {
+    void app.dock.show();
+  }
 
   createWindow();
 
@@ -196,12 +232,28 @@ app.on('window-all-closed', function () {
     );
     dictationService.cleanup();
 
+    // Cleanup dictation status window (if it exists)
+    if (process.env['NODE_ENV'] !== 'test') {
+      const dictationStatusWindow = container.resolve<DictationStatusWindow>(
+        DI_TOKENS.DictationStatusWindow
+      );
+      dictationStatusWindow.destroy();
+    }
+
     app.quit();
   }
 });
 
 app.on('before-quit', () => {
-  log.info('App is quitting, closing database');
+  log.info('App is quitting, cleaning up resources');
+
+  // Stop periodic update checks
+  const autoUpdaterService = container.resolve<AutoUpdaterService>(
+    DI_TOKENS.AutoUpdaterService
+  );
+  autoUpdaterService.stopPeriodicUpdateCheck();
+
+  // Close database
   const databaseService = container.resolve<DatabaseService>(
     DI_TOKENS.DatabaseService
   );

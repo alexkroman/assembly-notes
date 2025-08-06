@@ -68,6 +68,11 @@
   "[css]": {
     "editor.defaultFormatter": "esbenp.prettier-vscode"
   },
+
+  // Disable CSS validation for Tailwind directives
+  "css.validate": false,
+  "less.validate": false,
+  "scss.validate": false,
   "[yaml]": {
     "editor.defaultFormatter": "redhat.vscode-yaml"
   },
@@ -87,11 +92,13 @@
     "!**/__tests__/e2e/**"
   ],
 
-  // YAML settings
+  // YAML settings - disable validation to avoid GitHub Actions context warnings
   "yaml.schemas": {},
   "yaml.format.enable": true,
   "yaml.validate": false,
   "yaml.schemaStore.enable": false,
+  "yaml.customTags": [],
+  "redhat.telemetry.enabled": false,
 
   // Search and file exclusions
   "search.exclude": {

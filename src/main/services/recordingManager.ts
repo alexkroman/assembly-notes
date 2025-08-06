@@ -62,30 +62,34 @@ export class RecordingManager {
       microphone: false,
       system: false,
     };
+    let lastIsDictating = false;
 
     // Subscribe to Redux store changes
     this.store.subscribe(() => {
       const state = this.store.getState();
-      const { connectionStatus, status } = state.recording;
+      const { connectionStatus, status, isDictating } = state.recording;
 
-      // Check if both connections are established
-      if (
-        connectionStatus.microphone &&
-        connectionStatus.system &&
-        (!lastConnectionStatus.microphone || !lastConnectionStatus.system)
-      ) {
+      // In dictation mode, only check microphone connection
+      // In normal mode, check both connections
+      const connectionsReady = isDictating
+        ? connectionStatus.microphone && !lastConnectionStatus.microphone
+        : connectionStatus.microphone &&
+          connectionStatus.system &&
+          (!lastConnectionStatus.microphone || !lastConnectionStatus.system);
+
+      if (connectionsReady) {
         this.logger.info(
-          'RecordingManager: Both connections established, starting audio capture'
+          `RecordingManager: ${isDictating ? 'Microphone' : 'Both'} connections established, starting audio capture`
         );
         this.mainWindow.webContents.send('start-audio-capture');
       }
 
-      // Check if we're stopping
-      if (
-        status === 'idle' &&
-        lastConnectionStatus.microphone &&
-        lastConnectionStatus.system
-      ) {
+      // Check if we're stopping - use the PREVIOUS dictation state to determine what was connected
+      const wasPreviouslyConnected = lastIsDictating
+        ? lastConnectionStatus.microphone
+        : lastConnectionStatus.microphone && lastConnectionStatus.system;
+
+      if (status === 'idle' && wasPreviouslyConnected) {
         this.logger.info(
           'RecordingManager: Connections closed, stopping audio capture'
         );
@@ -94,6 +98,7 @@ export class RecordingManager {
       }
 
       lastConnectionStatus = { ...connectionStatus };
+      lastIsDictating = isDictating;
     });
   }
 
@@ -125,23 +130,15 @@ export class RecordingManager {
         return false;
       }
 
-      // Create connections with callbacks that dispatch Redux actions
-      this.connections = await this.transcriptionService.createConnections(
-        apiKey,
-        {
+      // Create microphone-only connection for dictation mode
+      this.connections =
+        await this.transcriptionService.createMicrophoneOnlyConnection(apiKey, {
           onTranscript: (data) => {
-            // Check if we're in dictation mode
-            const isDictating = this.store.getState().recording.isDictating;
-
-            if (isDictating) {
-              // In dictation mode, only emit final transcripts for insertion
-              // Only emit from microphone stream to avoid duplicates
-              if (!data.partial && data.streamType === 'microphone') {
-                this.transcriptionService.emitDictationText(data.text);
-              }
-              // Don't process partials or store transcripts in dictation mode
-              return;
+            // In dictation mode, only emit final transcripts for insertion
+            if (!data.partial && data.streamType === 'microphone') {
+              this.transcriptionService.emitDictationText(data.text);
             }
+            // Don't process partials or store transcripts in dictation mode
           },
           onError: (stream: string, error: unknown) => {
             const transcriptionError = new TranscriptionConnectionError(
@@ -166,8 +163,7 @@ export class RecordingManager {
               })
             );
           },
-        }
-      );
+        });
 
       // Start keep-alive interval
       this.startKeepAliveInterval();

@@ -288,18 +288,10 @@ export const RecordingsList: React.FC<RecordingsListProps> = ({
               </kbd>
             </div>
             <div className="text-[10px] text-white/60">
-              {isDictating ? (
-                <span className="text-sm font-medium text-red-400 flex items-center gap-1.5">
-                  <span className="inline-block w-2 h-2 bg-red-500 rounded-full animate-pulse"></span>
-                  Dictating
-                </span>
-              ) : (
-                <span>
-                  <span className="font-medium text-white/80">Dictation:</span>{' '}
-                  Press to dictate in any app. Words appear where your cursor
-                  is.
-                </span>
-              )}
+              <span>
+                <span className="font-medium text-white/80">Dictation:</span>{' '}
+                Press to dictate in any app. Words appear where your cursor is.
+              </span>
             </div>
           </div>
         </div>

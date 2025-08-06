@@ -1,5 +1,23 @@
 @import 'tailwindcss';
 
+@layer utilities {
+  @keyframes pulse-custom {
+    0%,
+    100% {
+      transform: scale(1);
+      opacity: 1;
+    }
+    50% {
+      transform: scale(1.2);
+      opacity: 0.8;
+    }
+  }
+
+  .animate-pulse-custom {
+    animation: pulse-custom 1.5s infinite;
+  }
+}
+
 @layer base {
   body {
     @apply m-0 h-screen overflow-hidden bg-[#1a1a1a] text-white font-sans;

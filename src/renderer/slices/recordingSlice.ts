@@ -10,6 +10,7 @@ const initialState: RecordingState = {
   error: null,
   connectionStatus: { microphone: false, system: false },
   isDictating: false,
+  isTransitioning: false,
 };
 
 const recordingSlice = createSlice({
