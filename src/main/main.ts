@@ -9,6 +9,11 @@ import { initMain as initAudioLoopback } from 'electron-audio-loopback';
 // Load environment variables from .env file
 dotenv.config();
 
+// Set different app name for development builds - MUST be done early!
+if (!app.isPackaged) {
+  app.setName('Assembly-Notes-Dev');
+}
+
 // Initialize Sentry only in production
 const sentryDsn =
   process.env['SENTRY_DSN'] ??
@@ -46,12 +51,11 @@ import type { DictationService } from './services/dictationService.js';
 import type { SettingsService } from './services/settingsService.js';
 import { store } from './store/store.js';
 
-initAudioLoopback();
+// Log app name for debugging
+log.info('Development mode:', !app.isPackaged);
+log.info('App name:', app.getName());
 
-// Set different app name for development builds
-if (process.env['NODE_ENV'] !== 'production' && !app.isPackaged) {
-  app.setName('Assembly-Notes-Dev');
-}
+initAudioLoopback();
 
 let mainWindow: BrowserWindow | null = null;
 
