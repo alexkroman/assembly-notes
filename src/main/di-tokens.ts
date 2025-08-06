@@ -13,4 +13,5 @@ export const DI_TOKENS = {
   AssemblyAIFactoryWithLemur: Symbol('AssemblyAIFactoryWithLemur'),
   SummarizationService: Symbol('SummarizationService'),
   HttpClient: Symbol('HttpClient'),
+  DictationService: Symbol('DictationService'),
 } as const;

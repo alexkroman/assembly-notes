@@ -46,6 +46,10 @@ const electronAPI = {
     ipcRenderer.on('summarization-completed', () => {
       callback();
     }),
+  onDictationStatus: (callback: (isDictating: boolean) => void) =>
+    ipcRenderer.on('dictation-status', (_event, isDictating) => {
+      callback(isDictating as boolean);
+    }),
   onConnectionStatus: (callback: (data: ConnectionStatusData) => void) =>
     ipcRenderer.on('connection-status', (_event, data) => {
       callback(data as ConnectionStatusData);

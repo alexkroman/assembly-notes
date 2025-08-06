@@ -41,6 +41,7 @@ import { setupContainer, container, DI_TOKENS } from './container.js';
 import type { DatabaseService } from './database.js';
 import { setupIpcHandlers } from './ipc-handlers.js';
 import log from './logger.js';
+import type { DictationService } from './services/dictationService.js';
 import type { SettingsService } from './services/settingsService.js';
 import { store } from './store/store.js';
 
@@ -97,6 +98,12 @@ function createWindow(): void {
     log.info(`Setting Sentry user ID: ${settings.userId}`);
     Sentry.setUser({ id: settings.userId });
   }
+
+  // Initialize dictation service
+  const dictationService = container.resolve<DictationService>(
+    DI_TOKENS.DictationService
+  );
+  dictationService.initialize();
 }
 
 // Note: OAuth now uses temporary HTTP server instead of custom protocol
@@ -177,6 +184,13 @@ app.on('window-all-closed', function () {
       DI_TOKENS.DatabaseService
     );
     databaseService.close();
+
+    // Cleanup dictation service
+    const dictationService = container.resolve<DictationService>(
+      DI_TOKENS.DictationService
+    );
+    dictationService.cleanup();
+
     app.quit();
   }
 });

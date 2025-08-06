@@ -18,6 +18,7 @@ export const recordingActions = {
     stream: 'microphone' | 'system';
     connected: boolean;
   }>('recording/updateConnectionStatus'),
+  setDictationMode: createAction<boolean>('recording/setDictationMode'),
 };
 
 // Transcription action creators

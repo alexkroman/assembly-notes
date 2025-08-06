@@ -94,6 +94,85 @@ export class RecordingManager {
     });
   }
 
+  isRecording(): boolean {
+    const state = this.store.getState();
+    return state.recording.status === 'recording';
+  }
+
+  async startTranscriptionForDictation(): Promise<boolean> {
+    try {
+      // Get API key from state
+      const state = this.store.getState();
+      const apiKey = state.settings.assemblyaiKey;
+
+      if (!apiKey) {
+        const error = new MissingApiKeyError();
+        this.errorLogger.logError(error, {
+          operation: 'startTranscriptionForDictation',
+          component: 'RecordingManager',
+        });
+        return false;
+      }
+
+      // Set recording status directly for dictation mode
+      // We can't use startRecording() as it requires a database recording
+      this.store.dispatch({
+        type: 'recording/start/fulfilled',
+        payload: { recordingId: 'dictation' },
+      });
+
+      // Create connections with callbacks that dispatch Redux actions
+      this.connections = await this.transcriptionService.createConnections(
+        apiKey,
+        {
+          onTranscript: (data) => {
+            // Check if we're in dictation mode via the DictationService
+            const isDictating = this.store.getState().recording.isDictating;
+
+            if (isDictating) {
+              // In dictation mode, only emit final transcripts for insertion
+              // Only emit from microphone stream to avoid duplicates
+              if (!data.partial && data.streamType === 'microphone') {
+                this.transcriptionService.emitDictationText(data.text);
+              }
+              // Don't process partials or store transcripts in dictation mode
+              return;
+            }
+          },
+          onError: (stream: string, error: unknown) => {
+            const transcriptionError = new TranscriptionConnectionError(
+              stream as 'microphone' | 'system',
+              error instanceof Error ? error.message : String(error)
+            );
+            this.errorLogger.logError(transcriptionError, {
+              operation: 'dictationTranscription',
+              component: 'RecordingManager',
+            });
+          },
+          onConnectionStatus: (stream: string, connected: boolean) => {
+            this.store.dispatch(
+              updateConnectionStatus({
+                stream: stream as 'microphone' | 'system',
+                connected,
+              })
+            );
+          },
+        }
+      );
+
+      // Start keep-alive interval
+      this.startKeepAliveInterval();
+
+      return true;
+    } catch (error) {
+      this.errorLogger.logError(error as Error, {
+        operation: 'startTranscriptionForDictation',
+        component: 'RecordingManager',
+      });
+      return false;
+    }
+  }
+
   async startTranscription(): Promise<boolean> {
     try {
       // MUST have a current recording from database before starting
@@ -143,33 +222,47 @@ export class RecordingManager {
         apiKey,
         {
           onTranscript: (data) => {
-            if (data.partial) {
-              // Handle partial transcripts - update buffer for immediate UI display
-              this.store.dispatch(
-                updateTranscriptBuffer({
-                  source: data.streamType,
-                  text: data.text,
-                })
-              );
+            // Check if we're in dictation mode via the DictationService
+            const isDictating = this.store.getState().recording.isDictating;
+
+            if (isDictating) {
+              // In dictation mode, only emit final transcripts for insertion
+              // Only emit from microphone stream to avoid duplicates
+              if (!data.partial && data.streamType === 'microphone') {
+                this.transcriptionService.emitDictationText(data.text);
+              }
+              // Don't process partials or store transcripts in dictation mode
+              return;
             } else {
-              // Handle final transcripts - add to segments and clear buffers
-              this.store.dispatch(
-                addTranscriptSegment({
-                  text: data.text,
-                  timestamp: Date.now(),
-                  isFinal: true,
-                  source: data.streamType,
-                })
-              );
-              // Clear the buffer for this source since we now have the final transcript
-              this.store.dispatch(
-                updateTranscriptBuffer({
-                  source: data.streamType,
-                  text: '',
-                })
-              );
-              // Auto-save transcript after receiving final transcript
-              this.recordingDataService.saveCurrentTranscription();
+              // Normal transcription mode
+              if (data.partial) {
+                // Handle partial transcripts - update buffer for immediate UI display
+                this.store.dispatch(
+                  updateTranscriptBuffer({
+                    source: data.streamType,
+                    text: data.text,
+                  })
+                );
+              } else {
+                // Handle final transcripts - add to segments and clear buffers
+                this.store.dispatch(
+                  addTranscriptSegment({
+                    text: data.text,
+                    timestamp: Date.now(),
+                    isFinal: true,
+                    source: data.streamType,
+                  })
+                );
+                // Clear the buffer for this source since we now have the final transcript
+                this.store.dispatch(
+                  updateTranscriptBuffer({
+                    source: data.streamType,
+                    text: '',
+                  })
+                );
+                // Auto-save transcript after receiving final transcript
+                this.recordingDataService.saveCurrentTranscription();
+              }
             }
           },
           onError: (stream: string, error: unknown) => {

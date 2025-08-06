@@ -9,6 +9,7 @@ const initialState: RecordingState = {
   startTime: null,
   error: null,
   connectionStatus: { microphone: false, system: false },
+  isDictating: false,
 };
 
 const recordingSlice = createSlice({
@@ -41,6 +42,9 @@ const recordingSlice = createSlice({
       .addCase(recordingActions.updateConnectionStatus, (state, action) => {
         state.connectionStatus[action.payload.stream] =
           action.payload.connected;
+      })
+      .addCase(recordingActions.setDictationMode, (state, action) => {
+        state.isDictating = action.payload;
       });
   },
 });

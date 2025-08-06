@@ -17,6 +17,7 @@ export const RecordingsList: React.FC<RecordingsListProps> = ({
   const dispatch = useAppDispatch();
   const settings = useAppSelector((state) => state.settings);
   const recordingStatus = useAppSelector((state) => state.recording.status);
+  const isDictating = useAppSelector((state) => state.recording.isDictating);
   const [searchQuery, setSearchQuery] = useState('');
   const [deleteModal, setDeleteModal] = useState<{
     isOpen: boolean;
@@ -103,7 +104,7 @@ export const RecordingsList: React.FC<RecordingsListProps> = ({
   return (
     <div
       id="recordingsListPage"
-      className="page active overflow-y-auto"
+      className="page active overflow-y-auto relative pb-12"
       data-testid="recordings-list"
     >
       <div className="px-3 py-1 bg-[#1a1a1a] sticky top-0 z-[100] mb-1.5">
@@ -256,6 +257,41 @@ export const RecordingsList: React.FC<RecordingsListProps> = ({
         }}
         onCancel={cancelDeleteRecording}
       />
+
+      {/* Dictation Help Overlay */}
+      <div className="fixed bottom-0 left-0 right-0 bg-[#1a1a1a]/95 backdrop-blur-sm border-t border-white/10 px-4 py-2 z-50">
+        <div className="flex items-center justify-between max-w-4xl mx-auto">
+          <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2">
+              <kbd className="px-2 py-0.5 text-[10px] font-semibold bg-white/10 rounded border border-white/20">
+                Ctrl
+              </kbd>
+              <span className="text-white/40 text-xs">+</span>
+              <kbd className="px-2 py-0.5 text-[10px] font-semibold bg-white/10 rounded border border-white/20">
+                Opt/Alt
+              </kbd>
+              <span className="text-white/40 text-xs">+</span>
+              <kbd className="px-2 py-0.5 text-[10px] font-semibold bg-white/10 rounded border border-white/20">
+                D
+              </kbd>
+            </div>
+            <div className="text-[10px] text-white/60">
+              {isDictating ? (
+                <span className="text-sm font-medium text-red-400 flex items-center gap-1.5">
+                  <span className="inline-block w-2 h-2 bg-red-500 rounded-full animate-pulse"></span>
+                  Dictating
+                </span>
+              ) : (
+                <span>
+                  <span className="font-medium text-white/80">Dictation:</span>{' '}
+                  Press to dictate in any app. Words appear where your cursor
+                  is.
+                </span>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   );
 };
