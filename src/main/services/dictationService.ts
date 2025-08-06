@@ -112,14 +112,14 @@ export class DictationService {
       this.isDictating = true;
       this.keyDownTime = Date.now();
 
-      // Add 1500ms delay before notifying to account for recording startup time
+      // Add 300ms delay before notifying to account for recording startup time
       // and clear transitioning state after the delay
       setTimeout(() => {
         // Notify renderer about dictation mode
         this.notifyDictationStatus(true);
         // Clear transitioning state after notification
         this.store.dispatch(setTransitioning(false));
-      }, 1500);
+      }, 300);
     } catch (error) {
       // Clear transitioning state on error
       this.store.dispatch(setTransitioning(false));

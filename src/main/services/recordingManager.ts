@@ -125,23 +125,15 @@ export class RecordingManager {
         return false;
       }
 
-      // Create connections with callbacks that dispatch Redux actions
-      this.connections = await this.transcriptionService.createConnections(
-        apiKey,
-        {
+      // Create microphone-only connection for dictation mode
+      this.connections =
+        await this.transcriptionService.createMicrophoneOnlyConnection(apiKey, {
           onTranscript: (data) => {
-            // Check if we're in dictation mode
-            const isDictating = this.store.getState().recording.isDictating;
-
-            if (isDictating) {
-              // In dictation mode, only emit final transcripts for insertion
-              // Only emit from microphone stream to avoid duplicates
-              if (!data.partial && data.streamType === 'microphone') {
-                this.transcriptionService.emitDictationText(data.text);
-              }
-              // Don't process partials or store transcripts in dictation mode
-              return;
+            // In dictation mode, only emit final transcripts for insertion
+            if (!data.partial && data.streamType === 'microphone') {
+              this.transcriptionService.emitDictationText(data.text);
             }
+            // Don't process partials or store transcripts in dictation mode
           },
           onError: (stream: string, error: unknown) => {
             const transcriptionError = new TranscriptionConnectionError(
@@ -165,9 +157,18 @@ export class RecordingManager {
                 connected,
               })
             );
+            // In dictation mode, we only need microphone connection
+            // Set system as "connected" to trigger audio capture
+            if (stream === 'microphone' && connected) {
+              this.store.dispatch(
+                updateConnectionStatus({
+                  stream: 'system',
+                  connected: true,
+                })
+              );
+            }
           },
-        }
-      );
+        });
 
       // Start keep-alive interval
       this.startKeepAliveInterval();

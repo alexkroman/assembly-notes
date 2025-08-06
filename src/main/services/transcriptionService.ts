@@ -76,6 +76,27 @@ export class TranscriptionService {
     };
   }
 
+  /**
+   * Creates transcription connection for microphone only (used in dictation mode)
+   */
+  async createMicrophoneOnlyConnection(
+    apiKey: string,
+    callbacks: TranscriptionCallbacks
+  ): Promise<TranscriptionConnection> {
+    const aai = await this.assemblyAIFactory.createClient(apiKey);
+
+    const microphoneTranscriber = await this.createTranscriber(
+      aai,
+      'microphone',
+      callbacks
+    );
+
+    return {
+      microphone: microphoneTranscriber,
+      system: null,
+    };
+  }
+
   private async createTranscriber(
     aai: IAssemblyAIClient,
     streamType: 'microphone' | 'system',
