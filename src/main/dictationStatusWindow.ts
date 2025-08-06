@@ -31,7 +31,7 @@ export class DictationStatusWindow {
       alwaysOnTop: true,
       skipTaskbar: true,
       resizable: false,
-      movable: false,
+      movable: true,
       focusable: false,
       webPreferences: {
         preload: path.join(
