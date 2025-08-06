@@ -21,12 +21,13 @@
 
 Download the latest version for your platform:
 
-| Platform                  | Download                                                                                                                        |
-| ------------------------- | ------------------------------------------------------------------------------------------------------------------------------- |
-| **macOS** (Apple Silicon) | [Download DMG](https://github.com/alexkroman/assembly-notes/releases/latest/download/Assembly-Notes-mac-arm64.dmg)              |
-| **macOS** (Intel)         | [Download DMG](https://github.com/alexkroman/assembly-notes/releases/latest/download/Assembly-Notes-mac-x64.dmg)                |
-| **Windows**               | [Download Installer](https://github.com/alexkroman/assembly-notes/releases/latest/download/Assembly-Notes-win-x64.exe)          |
-| **Linux**                 | [Download AppImage](https://github.com/alexkroman/assembly-notes/releases/latest/download/Assembly-Notes-linux-x86_64.AppImage) |
+| Platform                  | Download                                                                                                                       |
+| ------------------------- | ------------------------------------------------------------------------------------------------------------------------------ |
+| **macOS** (Apple Silicon) | [Download DMG](https://github.com/alexkroman/assembly-notes/releases/latest/download/Assembly-Notes-mac-arm64.dmg)             |
+| **macOS** (Intel)         | [Download DMG](https://github.com/alexkroman/assembly-notes/releases/latest/download/Assembly-Notes-mac-x64.dmg)               |
+| **Windows**               | [Download Installer](https://github.com/alexkroman/assembly-notes/releases/latest/download/Assembly-Notes-win-x64.exe)         |
+| **Linux** (x64)           | [Download AppImage](https://github.com/alexkroman/assembly-notes/releases/latest/download/Assembly-Notes-linux-x64.AppImage)   |
+| **Linux** (ARM64)         | [Download AppImage](https://github.com/alexkroman/assembly-notes/releases/latest/download/Assembly-Notes-linux-arm64.AppImage) |
 
 ## 🚀 Quick Start
 
@@ -89,10 +90,11 @@ npm run test:watch     # Run tests in watch mode
 npm run test:e2e       # Run end-to-end tests
 
 # Building
-npm run build:mac      # Build for macOS
-npm run build:win      # Build for Windows
-npm run build:linux    # Build for Linux
-npm run build:all      # Build for all platforms
+npm run build:mac        # Build for macOS
+npm run build:win        # Build for Windows
+npm run build:linux      # Build for Linux (x64 + ARM64)
+npm run build:linux:arm64 # Build for Linux ARM64 only
+npm run build:all        # Build for all platforms
 
 # Releases
 npm run release:patch  # Bug fixes (1.0.0 → 1.0.1)
