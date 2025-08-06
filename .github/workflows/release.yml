@@ -131,7 +131,7 @@ jobs:
 
       - name: Build Electron app (Linux x64)
         if: matrix.os == 'ubuntu-latest' && matrix.arch == 'x64'
-        run: npm run build:linux -- --x64
+        run: npm run build:linux:x64
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
@@ -160,7 +160,7 @@ jobs:
       - name: List artifacts for debugging
         run: |
           echo "Listing all artifacts:"
-          find artifacts/ -type f -name "*.dmg" -o -name "*.zip" -o -name "*.exe" -o -name "*.AppImage" || true
+          find artifacts/ -type f -name "*.dmg" -o -name "*.zip" -o -name "*.exe" -o -name "*.AppImage" -o -name "*.deb" || true
           ls -la artifacts/*/
 
       - name: Generate update metadata files
@@ -247,8 +247,10 @@ jobs:
             artifacts/release-windows-latest/*.blockmap
             artifacts/release-windows-latest/latest.yml
             artifacts/release-ubuntu-latest-x64/*.AppImage
+            artifacts/release-ubuntu-latest-x64/*.deb
             artifacts/release-ubuntu-latest-x64/latest-linux.yml
             artifacts/release-ubuntu-latest-arm64/*.AppImage
+            artifacts/release-ubuntu-latest-arm64/*.deb
             artifacts/release-ubuntu-latest-arm64/latest-linux-arm64.yml
           draft: false
           prerelease: false

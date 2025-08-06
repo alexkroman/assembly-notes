@@ -21,20 +21,26 @@
 
 Download the latest version for your platform:
 
-| Platform                  | Download                                                                                                                       |
-| ------------------------- | ------------------------------------------------------------------------------------------------------------------------------ |
-| **macOS** (Apple Silicon) | [Download DMG](https://github.com/alexkroman/assembly-notes/releases/latest/download/Assembly-Notes-mac-arm64.dmg)             |
-| **macOS** (Intel)         | [Download DMG](https://github.com/alexkroman/assembly-notes/releases/latest/download/Assembly-Notes-mac-x64.dmg)               |
-| **Windows**               | [Download Installer](https://github.com/alexkroman/assembly-notes/releases/latest/download/Assembly-Notes-win-x64.exe)         |
-| **Linux** (x64)           | [Download AppImage](https://github.com/alexkroman/assembly-notes/releases/latest/download/Assembly-Notes-linux-x64.AppImage)   |
-| **Linux** (ARM64)         | [Download AppImage](https://github.com/alexkroman/assembly-notes/releases/latest/download/Assembly-Notes-linux-arm64.AppImage) |
+| Platform                  | Download                                                                                                                          |
+| ------------------------- | --------------------------------------------------------------------------------------------------------------------------------- |
+| **macOS** (Apple Silicon) | [Download DMG](https://github.com/alexkroman/assembly-notes/releases/latest/download/Assembly-Notes-mac-arm64.dmg)                |
+| **macOS** (Intel)         | [Download DMG](https://github.com/alexkroman/assembly-notes/releases/latest/download/Assembly-Notes-mac-x64.dmg)                  |
+| **Windows**               | [Download Installer](https://github.com/alexkroman/assembly-notes/releases/latest/download/Assembly-Notes-win-x64.exe)            |
+| **Ubuntu/Debian** (x64)   | [DEB Package](https://github.com/alexkroman/assembly-notes/releases/latest/download/Assembly-Notes-linux-x64.deb) (Recommended)   |
+| **Ubuntu/Debian** (ARM64) | [DEB Package](https://github.com/alexkroman/assembly-notes/releases/latest/download/Assembly-Notes-linux-arm64.deb) (Recommended) |
+| **Other Linux** (x64)     | [AppImage](https://github.com/alexkroman/assembly-notes/releases/latest/download/Assembly-Notes-linux-x64.AppImage)               |
+| **Other Linux** (ARM64)   | [AppImage](https://github.com/alexkroman/assembly-notes/releases/latest/download/Assembly-Notes-linux-arm64.AppImage)             |
 
 ## 🚀 Quick Start
 
 ### For End Users
 
 1. **Download** the app for your platform from the table above
-2. **Install** and launch Assembly Notes
+2. **Install**:
+   - **Ubuntu/Debian**: `sudo dpkg -i Assembly-Notes-linux-*.deb`
+   - **macOS**: Open the DMG and drag to Applications
+   - **Windows**: Run the installer
+   - **Other Linux**: Make AppImage executable with `chmod +x` and run
 3. **Configure** your AssemblyAI API key in Settings
 4. **Optional**: Set up Slack integration for automatic posting
 5. **Start Recording** to begin transcribing your meetings!
@@ -92,8 +98,9 @@ npm run test:e2e       # Run end-to-end tests
 # Building
 npm run build:mac        # Build for macOS
 npm run build:win        # Build for Windows
-npm run build:linux      # Build for Linux (x64 + ARM64)
-npm run build:linux:arm64 # Build for Linux ARM64 only
+npm run build:linux       # Build for Linux x64 (AppImage + DEB)
+npm run build:linux:x64   # Build for Linux x64 (AppImage + DEB)
+npm run build:linux:arm64 # Build for Linux ARM64 (AppImage + DEB)
 npm run build:all        # Build for all platforms
 
 # Releases
