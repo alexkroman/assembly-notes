@@ -56,11 +56,6 @@ export class DictationStatusWindow {
     );
     void this.window.loadFile(htmlPath);
 
-    // Open DevTools in development mode for debugging
-    if (process.env['DEV_MODE'] === 'true') {
-      this.window.webContents.openDevTools({ mode: 'detach' });
-    }
-
     this.window.on('closed', () => {
       this.window = null;
     });

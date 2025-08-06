@@ -119,7 +119,7 @@ export class DictationService {
         this.notifyDictationStatus(true);
         // Clear transitioning state after notification
         this.store.dispatch(setTransitioning(false));
-      }, 300);
+      }, 400);
     } catch (error) {
       // Clear transitioning state on error
       this.store.dispatch(setTransitioning(false));
