@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 
 import { Modal } from './Modal.js';
 import { SlackOAuthConnectionOnly } from './SlackOAuthConnectionOnly.js';
+import { DEFAULT_DICTATION_STYLING_PROMPT } from '../../constants/dictationPrompts.js';
 import type { SettingsModalProps } from '../../types/components.js';
 import type { FullSettingsState } from '../../types/redux.js';
 import { useAppDispatch, useAppSelector } from '../hooks/redux.js';
@@ -30,8 +31,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ onClose }) => {
     prompts: [],
     autoStart: false,
     dictationStylingEnabled: false,
-    dictationStylingPrompt:
-      'Rewrite this dictated text in my personal writing style: conversational, direct, and well-structured. Fix grammar and add proper formatting while keeping the original meaning.',
+    dictationStylingPrompt: DEFAULT_DICTATION_STYLING_PROMPT,
     dictationSilenceTimeout: 2000,
   });
   const dispatch = useAppDispatch();
@@ -221,16 +221,38 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ onClose }) => {
             >
               Styling Instructions:
             </label>
-            <textarea
-              id="dictationStylingPrompt"
-              value={settings.dictationStylingPrompt}
-              onChange={(e) => {
-                handleInputChange('dictationStylingPrompt', e.target.value);
-              }}
-              placeholder="Enter instructions for how to style your dictated text..."
-              className="form-input h-20"
-              data-testid="dictation-styling-prompt"
-            />
+            <div className="flex flex-col">
+              <textarea
+                id="dictationStylingPrompt"
+                value={settings.dictationStylingPrompt}
+                onChange={(e) => {
+                  handleInputChange('dictationStylingPrompt', e.target.value);
+                }}
+                placeholder="Enter instructions for how to style your dictated text..."
+                className="form-input h-20"
+                data-testid="dictation-styling-prompt"
+              />
+              {settings.dictationStylingPrompt !==
+                DEFAULT_DICTATION_STYLING_PROMPT && (
+                <div className="mt-1 flex items-center gap-1">
+                  <button
+                    className="px-2 py-0.5 text-[10px] bg-white/[0.06] border border-white/[0.12] rounded-sm text-white/[0.60] cursor-pointer transition-all duration-200 hover:bg-white/[0.09] hover:text-white/[0.85] hover:border-white/[0.18] flex items-center gap-1"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      handleInputChange(
+                        'dictationStylingPrompt',
+                        DEFAULT_DICTATION_STYLING_PROMPT
+                      );
+                    }}
+                    title="Reset this prompt to its default content"
+                    type="button"
+                  >
+                    <span className="text-xs">↺</span>
+                    Revert to default
+                  </button>
+                </div>
+              )}
+            </div>
           </div>
 
           <div className="form-group">

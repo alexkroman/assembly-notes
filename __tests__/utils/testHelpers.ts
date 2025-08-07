@@ -1,3 +1,4 @@
+import { DEFAULT_DICTATION_STYLING_PROMPT } from '../../src/constants/dictationPrompts.js';
 import {
   SettingsSchema,
   SlackInstallation,
@@ -15,8 +16,7 @@ export const createMockSettings = (
   autoStart: false,
   slackInstallation: null,
   dictationStylingEnabled: false,
-  dictationStylingPrompt:
-    'Rewrite this dictated text in my personal writing style: conversational, direct, and well-structured. Fix grammar and add proper formatting while keeping the original meaning.',
+  dictationStylingPrompt: DEFAULT_DICTATION_STYLING_PROMPT,
   dictationSilenceTimeout: 2000,
   ...overrides,
 });

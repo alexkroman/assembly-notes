@@ -8,6 +8,7 @@ import { v4 as uuidv4 } from 'uuid';
 
 import { DI_TOKENS } from './di-tokens.js';
 import { DEFAULT_PROMPTS } from '../constants/defaultPrompts.js';
+import { DEFAULT_DICTATION_STYLING_PROMPT } from '../constants/dictationPrompts.js';
 import {
   PromptTemplate,
   Recording,
@@ -221,7 +222,7 @@ class DatabaseService {
         dictationStylingEnabled: (settingsMap.get('dictationStylingEnabled') ??
           false) as boolean,
         dictationStylingPrompt: (settingsMap.get('dictationStylingPrompt') ??
-          'Rewrite this dictated text in my personal writing style: conversational, direct, and well-structured. Fix grammar and add proper formatting while keeping the original meaning.') as string,
+          DEFAULT_DICTATION_STYLING_PROMPT) as string,
         dictationSilenceTimeout: (settingsMap.get('dictationSilenceTimeout') ??
           2000) as number,
         ...(userId !== undefined && { userId: userId as string }),
@@ -239,8 +240,7 @@ class DatabaseService {
         autoStart: false,
         // Dictation styling settings
         dictationStylingEnabled: false,
-        dictationStylingPrompt:
-          'Rewrite this dictated text in my personal writing style: conversational, direct, and well-structured. Fix grammar and add proper formatting while keeping the original meaning.',
+        dictationStylingPrompt: DEFAULT_DICTATION_STYLING_PROMPT,
         dictationSilenceTimeout: 2000,
       };
     }

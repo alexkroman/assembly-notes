@@ -1,6 +1,7 @@
 import type { Store } from '@reduxjs/toolkit';
 import { inject, injectable } from 'tsyringe';
 
+import { DEFAULT_DICTATION_STYLING_PROMPT } from '../../constants/dictationPrompts.js';
 import type { SlackInstallation, SettingsSchema } from '../../types/common.js';
 import type { DatabaseService } from '../database.js';
 import { DI_TOKENS } from '../di-tokens.js';
@@ -38,8 +39,7 @@ export class SettingsService {
       slackInstallation: dbSettings.slackInstallation,
       dictationStylingEnabled: dbSettings.dictationStylingEnabled || false,
       dictationStylingPrompt:
-        dbSettings.dictationStylingPrompt ||
-        'Rewrite this dictated text in my personal writing style: conversational, direct, and well-structured. Fix grammar and add proper formatting while keeping the original meaning.',
+        dbSettings.dictationStylingPrompt || DEFAULT_DICTATION_STYLING_PROMPT,
       dictationSilenceTimeout: dbSettings.dictationSilenceTimeout || 2000,
     };
   }

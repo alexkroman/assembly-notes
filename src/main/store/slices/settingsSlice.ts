@@ -1,5 +1,6 @@
 import { PayloadAction, createSlice } from '@reduxjs/toolkit';
 
+import { DEFAULT_DICTATION_STYLING_PROMPT } from '../../../constants/dictationPrompts.js';
 import type {
   FullSettingsState,
   SettingsState,
@@ -34,8 +35,7 @@ const initialState: SettingsState = {
   hasSlackConfigured: false,
   // Dictation styling settings
   dictationStylingEnabled: false,
-  dictationStylingPrompt:
-    'Rewrite this dictated text in my personal writing style: conversational, direct, and well-structured. Fix grammar and add proper formatting while keeping the original meaning.',
+  dictationStylingPrompt: DEFAULT_DICTATION_STYLING_PROMPT,
   dictationSilenceTimeout: 2000,
 };
 
