@@ -26,8 +26,8 @@
     "main": "dist/main/main.js"
   },
   "npmRebuild": true,
-  "buildDependenciesFromSource": true,
-  "nativeRebuilder": "sequential",
+  "buildDependenciesFromSource": false,
+  "nativeRebuilder": "rebuild",
   "asar": true,
   "mac": {
     "category": "public.app-category.productivity",
@@ -80,14 +80,12 @@
     "description": "Assembly-Notes provides real-time transcription of microphone and system audio with AI-generated meeting summaries.",
     "executableName": "assembly-notes",
     "desktop": {
-      "entry": {
-        "Name": "Assembly Notes",
-        "Comment": "Real-time transcription and meeting notes",
-        "Categories": "Office;AudioVideo;",
-        "Terminal": "false",
-        "Type": "Application",
-        "StartupNotify": "true"
-      }
+      "Name": "Assembly Notes",
+      "Comment": "Real-time transcription and meeting notes",
+      "Categories": "Office;AudioVideo;",
+      "Terminal": false,
+      "Type": "Application",
+      "StartupNotify": true
     },
     "maintainer": "Alex Kroman <alex@alexkroman.com>",
     "vendor": "Alex Kroman"
@@ -113,7 +111,10 @@
       "libxdamage1",
       "libxfixes3",
       "libxrender1",
-      "libxkbfile1"
+      "libxkbfile1",
+      "libstdc++6",
+      "libgcc1",
+      "libc6"
     ],
     "afterInstall": "./build/linux/after-install.sh",
     "afterRemove": "./build/linux/after-remove.sh"

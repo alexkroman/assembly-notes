@@ -37,7 +37,11 @@ Download the latest version for your platform:
 
 1. **Download** the app for your platform from the table above
 2. **Install**:
-   - **Ubuntu/Debian**: `sudo dpkg -i Assembly-Notes-linux-*.deb`
+   - **Ubuntu/Debian**:
+     ```bash
+     sudo dpkg -i Assembly-Notes-linux-*.deb
+     sudo apt-get install -f  # Fix any missing dependencies
+     ```
    - **macOS**: Open the DMG and drag to Applications
    - **Windows**: Run the installer
    - **Other Linux**: Make AppImage executable with `chmod +x` and run
