@@ -228,7 +228,7 @@ export class DictationService {
     try {
       await this.stylePromise;
     } catch (error) {
-      if (error instanceof Error && error.name === 'AbortError') {
+      if (error instanceof Error && error.message === 'AbortError') {
         log.debug('Styling operation was cancelled');
       } else {
         log.error('Failed to style text:', error);
