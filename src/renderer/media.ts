@@ -34,18 +34,10 @@ export async function acquireStreams(isDictationMode = false): Promise<{
 
   const displayStream = await navigator.mediaDevices.getDisplayMedia({
     audio: true,
-    video: true,
+    video: false,
   });
 
   await window.electronAPI.disableLoopbackAudio();
-
-  const videoTracks = displayStream
-    .getTracks()
-    .filter((t) => t.kind === 'video');
-  videoTracks.forEach((t) => {
-    t.stop();
-    displayStream.removeTrack(t);
-  });
 
   systemAudioStream = displayStream;
 
