@@ -79,7 +79,12 @@ const createDefaultState = (overrides = {}) => ({
     currentTranscript: '',
     isTranscribing: false,
   },
-  settings: { assemblyaiKey: 'test-api-key' },
+  settings: {
+    assemblyaiKey: 'test-api-key',
+    dictationStylingEnabled: false,
+    dictationStylingPrompt: 'Test prompt',
+    dictationSilenceTimeout: 2000,
+  },
 });
 
 const mockStore = {
@@ -107,6 +112,14 @@ const mockMainWindow = {
   webContents: { send: jest.fn() },
 } as unknown as BrowserWindow;
 
+const mockAssemblyAIFactory = {
+  createClient: jest.fn().mockReturnValue({
+    lemur: {
+      task: jest.fn().mockResolvedValue({ response: 'styled text' }),
+    },
+  }),
+} as any;
+
 describe('DictationService', () => {
   let dictationService: DictationService;
 
@@ -133,6 +146,9 @@ describe('DictationService', () => {
     });
     container.register(DI_TOKENS.DictationStatusWindow, {
       useValue: mockDictationStatusWindow,
+    });
+    container.register(DI_TOKENS.AssemblyAIFactoryWithLemur, {
+      useValue: mockAssemblyAIFactory,
     });
 
     dictationService = container.resolve(DictationService);
@@ -393,7 +409,7 @@ describe('DictationService', () => {
       const handler = mockTranscriptionService.onDictationText.mock.calls[0][0];
       handler('test text');
 
-      expect(robotjs.typeString).toHaveBeenCalledWith('test text ');
+      expect(robotjs.typeString).toHaveBeenCalledWith(' test text');
     });
 
     it('should not type text when dictating is not active', () => {

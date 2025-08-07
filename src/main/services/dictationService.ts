@@ -1,12 +1,13 @@
 import robotjs from '@jitsi/robotjs';
 import type { Store } from '@reduxjs/toolkit';
-import { globalShortcut, BrowserWindow } from 'electron';
+import { globalShortcut, BrowserWindow, clipboard } from 'electron';
 import log from 'electron-log';
 import { injectable, inject } from 'tsyringe';
 
 import { DI_TOKENS } from '../di-tokens.js';
 import type { DictationStatusWindow } from '../dictationStatusWindow.js';
 import { RecordingManager } from './recordingManager.js';
+import type { IAssemblyAIFactoryWithLemur } from './summarizationService.js';
 import { TranscriptionService } from './transcriptionService.js';
 import { setTransitioning } from '../store/slices/recordingSlice.js';
 import type { RootState, AppDispatch } from '../store/store.js';
@@ -17,6 +18,9 @@ export class DictationService {
   private keyDownTime: number | null = null;
   private transcriptionHandler: ((text: string) => void) | null = null;
   private dictationShortcut: string | null = null;
+  private silenceTimer: NodeJS.Timeout | null = null;
+  private styleAbortController: AbortController | null = null;
+  private stylePromise: Promise<void> | null = null;
 
   constructor(
     @inject(DI_TOKENS.TranscriptionService)
@@ -26,12 +30,13 @@ export class DictationService {
     @inject(DI_TOKENS.DictationStatusWindow)
     private dictationStatusWindow: DictationStatusWindow,
     @inject(DI_TOKENS.Store)
-    private store: Store<RootState> & { dispatch: AppDispatch }
+    private store: Store<RootState> & { dispatch: AppDispatch },
+    @inject(DI_TOKENS.AssemblyAIFactoryWithLemur)
+    private assemblyAIFactory: IAssemblyAIFactoryWithLemur
   ) {}
 
   public initialize(): void {
     try {
-      // Register Control+Option+D (macOS) or Ctrl+Alt+D (Windows/Linux) for dictation toggle
       const shortcut =
         process.platform === 'darwin' ? 'Control+Option+D' : 'Ctrl+Alt+D';
       const registered = globalShortcut.register(shortcut, () => {
@@ -52,13 +57,11 @@ export class DictationService {
   private handleDictationToggle(): void {
     const state = this.store.getState();
 
-    // Prevent toggle if we're in transition
     if (state.recording.isTransitioning) {
       log.info('Ignoring dictation toggle - transition in progress');
       return;
     }
 
-    // Check current dictation state from Redux
     if (!state.recording.isDictating) {
       void this.startDictation();
     } else {
@@ -69,59 +72,45 @@ export class DictationService {
   public async startDictation(): Promise<void> {
     const state = this.store.getState();
 
-    // Check Redux state for dictation and transition status
     if (state.recording.isDictating || state.recording.isTransitioning) {
       log.info('Already dictating or transitioning');
       return;
     }
 
-    // Check if a regular recording is already in progress
     if (this.recordingManager.isRecording()) {
       log.warn('Cannot start dictation while recording is in progress');
       return;
     }
 
-    // Set transitioning to true at the start
     this.store.dispatch(setTransitioning(true));
 
     log.info('Starting dictation mode');
 
     try {
-      // Set up transcription handler to capture text and insert it immediately
       this.transcriptionHandler = (text: string) => {
         this.handleDictationText(text);
       };
 
-      // Subscribe to transcription events
       this.transcriptionService.onDictationText(this.transcriptionHandler);
 
-      // Start transcription for dictation mode
       const started =
         await this.recordingManager.startTranscriptionForDictation();
       if (!started) {
         log.error('Failed to start transcription for dictation');
-        // Cleanup handler
         this.transcriptionService.offDictationText(this.transcriptionHandler);
         this.transcriptionHandler = null;
-        // Clear transitioning state on failure
         this.store.dispatch(setTransitioning(false));
         return;
       }
 
-      // Only set isDictating and notify after successful start
       this.isDictating = true;
       this.keyDownTime = Date.now();
 
-      // Add 300ms delay before notifying to account for recording startup time
-      // and clear transitioning state after the delay
       setTimeout(() => {
-        // Notify renderer about dictation mode
         this.notifyDictationStatus(true);
-        // Clear transitioning state after notification
         this.store.dispatch(setTransitioning(false));
       }, 400);
     } catch (error) {
-      // Clear transitioning state on error
       this.store.dispatch(setTransitioning(false));
       throw error;
     }
@@ -130,16 +119,20 @@ export class DictationService {
   public async stopDictation(): Promise<void> {
     const state = this.store.getState();
 
-    // Check Redux state for dictation and transition status
     if (!state.recording.isDictating || state.recording.isTransitioning) {
       log.info('Not dictating or already transitioning');
       return;
     }
 
-    // Set transitioning to true at the start
     this.store.dispatch(setTransitioning(true));
 
     this.isDictating = false;
+    this.clearSilenceTimer();
+
+    if (this.styleAbortController) {
+      this.styleAbortController.abort();
+      this.styleAbortController = null;
+    }
 
     const dictationDuration = this.keyDownTime
       ? Date.now() - this.keyDownTime
@@ -149,20 +142,15 @@ export class DictationService {
     );
 
     try {
-      // Notify renderer about dictation mode IMMEDIATELY
       this.notifyDictationStatus(false);
 
-      // Unsubscribe from transcription events
       if (this.transcriptionHandler) {
         this.transcriptionService.offDictationText(this.transcriptionHandler);
         this.transcriptionHandler = null;
       }
 
-      // Stop dictation transcription (uses proper Redux action)
-      // This includes all audio cleanup
       await this.recordingManager.stopTranscriptionForDictation();
     } finally {
-      // Clear transitioning state after all audio cleanup is complete
       this.store.dispatch(setTransitioning(false));
     }
   }
@@ -170,22 +158,262 @@ export class DictationService {
   private handleDictationText(text: string): void {
     if (!this.isDictating) return;
 
-    // For final transcripts, insert the complete text with a space after
-    // Each final represents a complete sentence or phrase
     try {
-      // Insert the final text followed by a space
-      robotjs.typeString(text + ' ');
-      log.debug(`Inserted final text: "${text} "`);
+      robotjs.typeString(' ' + text);
+      log.debug(`Inserted final text: "${text}"`);
+
+      this.resetSilenceTimer();
     } catch (error) {
       log.error('Failed to insert text in real-time:', error);
     }
   }
 
+  private resetSilenceTimer(): void {
+    const settings = this.store.getState().settings;
+    if (!settings.dictationStylingEnabled || !settings.assemblyaiKey) {
+      return;
+    }
+
+    if (this.silenceTimer) {
+      clearTimeout(this.silenceTimer);
+    }
+
+    const silenceTimeout = settings.dictationSilenceTimeout || 2000;
+    log.debug(`Resetting silence timer for ${String(silenceTimeout)}ms`);
+
+    this.silenceTimer = setTimeout(() => {
+      log.debug('Silence detected, triggering styling');
+      void this.triggerStyling();
+    }, silenceTimeout);
+  }
+
+  private clearSilenceTimer(): void {
+    if (this.silenceTimer) {
+      clearTimeout(this.silenceTimer);
+      this.silenceTimer = null;
+    }
+  }
+
+  private async triggerStyling(): Promise<void> {
+    if (!this.isDictating) {
+      return;
+    }
+
+    const settings = this.store.getState().settings;
+    if (!settings.dictationStylingEnabled || !settings.assemblyaiKey) {
+      return;
+    }
+
+    if (this.styleAbortController) {
+      log.debug('Cancelling previous styling operation');
+      this.styleAbortController.abort();
+      this.styleAbortController = null;
+    }
+
+    if (this.stylePromise) {
+      try {
+        await this.stylePromise;
+      } catch {
+        // Intentionally empty - ignoring cancelled operations
+      }
+    }
+
+    this.styleAbortController = new AbortController();
+    const { signal } = this.styleAbortController;
+
+    log.debug('Final transcript received, triggering styling');
+
+    this.stylePromise = this.performStyling(signal, settings);
+
+    try {
+      await this.stylePromise;
+    } catch (error) {
+      if (error instanceof Error && error.message === 'AbortError') {
+        log.debug('Styling operation was cancelled');
+      } else {
+        log.error('Failed to style text:', error);
+      }
+    } finally {
+      if (this.styleAbortController.signal === signal) {
+        this.styleAbortController = null;
+      }
+      this.stylePromise = null;
+    }
+  }
+
+  private async performStyling(
+    signal: AbortSignal,
+    settings: RootState['settings']
+  ): Promise<void> {
+    const throwIfAborted = (): void => {
+      if (signal.aborted) {
+        throw new Error('AbortError');
+      }
+    };
+
+    try {
+      throwIfAborted();
+
+      // Get all text from text box (includes everything spoken)
+      const fullText = await this.getAllTextFromTextBox();
+      throwIfAborted();
+
+      if (!fullText.trim()) {
+        log.debug('No text to style');
+        return;
+      }
+
+      log.debug(`Styling text: "${fullText}"`);
+
+      const styledText = await this.styleText(
+        fullText,
+        settings.dictationStylingPrompt,
+        settings.assemblyaiKey,
+        signal
+      );
+      throwIfAborted();
+
+      if (styledText && styledText !== fullText) {
+        await this.replaceAllTextWithStyled(styledText);
+        log.debug(`Replaced entire text box with styled text: "${styledText}"`);
+      } else {
+        log.debug('No styling applied - styled text was null or unchanged');
+        log.debug('styledText:', styledText);
+        log.debug('fullText:', fullText);
+      }
+    } finally {
+      // Nothing to clean up
+    }
+  }
+
+  private async styleText(
+    originalText: string,
+    stylePrompt: string,
+    apiKey: string,
+    signal?: AbortSignal
+  ): Promise<string | null> {
+    try {
+      log.debug('Styling text with AssemblyAI Lemur:', originalText);
+
+      const aai = await this.assemblyAIFactory.createClient(apiKey);
+      const lemur = aai.lemur;
+
+      const prompt = `Take this dictated text and rewrite it according to the following style instructions:
+
+${stylePrompt}
+
+Dictated text to reformat: "${originalText}"
+
+Return ONLY the reformatted text, nothing else. No explanations, no commentary, no additional content.`;
+
+      if (signal?.aborted) {
+        throw new Error('AbortError');
+      }
+
+      const response = await lemur.task({
+        prompt,
+        input_text: originalText,
+        final_model: 'anthropic/claude-sonnet-4-20250514',
+      });
+
+      if (signal?.aborted) {
+        throw new Error('AbortError');
+      }
+
+      log.debug('Lemur API response:', JSON.stringify(response, null, 2));
+
+      if (response.response) {
+        const styledText = response.response.replace(/^["']|["']$/g, '').trim();
+
+        log.debug('Styled text received:', styledText);
+        log.debug('Original text was:', originalText);
+        log.debug('Text changed:', styledText !== originalText);
+
+        return styledText !== originalText ? styledText : null;
+      }
+
+      log.warn('No response field in Lemur API response');
+      return null;
+    } catch (error) {
+      if (error instanceof Error && error.message === 'AbortError') {
+        log.debug('Styling operation was aborted');
+        throw error;
+      }
+      log.error('Failed to style text with Lemur API:', error);
+
+      log.debug('Using fallback styling for:', originalText);
+      const styledText = originalText
+        .split(/[.!?]+/)
+        .map((sentence) => {
+          const trimmed = sentence.trim();
+          if (trimmed.length === 0) return '';
+          return (
+            trimmed.charAt(0).toUpperCase() + trimmed.slice(1).toLowerCase()
+          );
+        })
+        .filter((s) => s.length > 0)
+        .join('. ');
+
+      return styledText !== originalText ? styledText + '.' : null;
+    }
+  }
+
+  private async getAllTextFromTextBox(): Promise<string> {
+    try {
+      // Select all text
+      robotjs.keyTap(
+        'a',
+        process.platform === 'darwin' ? ['command'] : ['control']
+      );
+
+      await new Promise((resolve) => setTimeout(resolve, 100));
+
+      // Copy to clipboard
+      robotjs.keyTap(
+        'c',
+        process.platform === 'darwin' ? ['command'] : ['control']
+      );
+
+      await new Promise((resolve) => setTimeout(resolve, 100));
+
+      const text = clipboard.readText();
+      log.debug(`Got text from text box: "${text}"`);
+      return text;
+    } catch (error) {
+      log.error('Failed to get text from text box:', error);
+      return '';
+    }
+  }
+
+  private async replaceAllTextWithStyled(styledText: string): Promise<void> {
+    try {
+      log.debug(`Replacing all text with styled version: "${styledText}"`);
+
+      // Select all text first
+      robotjs.keyTap(
+        'a',
+        process.platform === 'darwin' ? ['command'] : ['control']
+      );
+
+      await new Promise((resolve) => setTimeout(resolve, 100));
+
+      // Delete selected text
+      robotjs.keyTap('backspace');
+
+      await new Promise((resolve) => setTimeout(resolve, 50));
+
+      // Type the styled text directly (safer than paste)
+      robotjs.typeString(styledText);
+
+      log.debug('Successfully replaced all text with styled version');
+    } catch (error) {
+      log.error('Failed to replace text with styled version:', error);
+    }
+  }
+
   private notifyDictationStatus(isDictating: boolean): void {
-    // Update the dictation status window FIRST for immediate visual feedback
     this.dictationStatusWindow.updateStatus(isDictating);
 
-    // Then send status to main window for Redux state (to prevent navigation)
     const allWindows = BrowserWindow.getAllWindows();
     if (allWindows.length > 0 && allWindows[0]) {
       allWindows[0].webContents.send('dictation-status', isDictating);
@@ -197,11 +425,15 @@ export class DictationService {
   }
 
   public cleanup(): void {
-    // Only unregister the dictation shortcut, not all shortcuts
     if (this.dictationShortcut) {
       globalShortcut.unregister(this.dictationShortcut);
       this.dictationShortcut = null;
     }
+    if (this.styleAbortController) {
+      this.styleAbortController.abort();
+      this.styleAbortController = null;
+    }
+    this.clearSilenceTimer();
     if (this.isDictating) {
       void this.stopDictation();
     }

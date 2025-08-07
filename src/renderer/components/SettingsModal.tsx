@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 
 import { Modal } from './Modal.js';
 import { SlackOAuthConnectionOnly } from './SlackOAuthConnectionOnly.js';
+import { DEFAULT_DICTATION_STYLING_PROMPT } from '../../constants/dictationPrompts.js';
 import type { SettingsModalProps } from '../../types/components.js';
 import type { FullSettingsState } from '../../types/redux.js';
 import { useAppDispatch, useAppSelector } from '../hooks/redux.js';
@@ -29,6 +30,9 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ onClose }) => {
     summaryPrompt: 'Summarize the key points from this meeting transcript:',
     prompts: [],
     autoStart: false,
+    dictationStylingEnabled: false,
+    dictationStylingPrompt: DEFAULT_DICTATION_STYLING_PROMPT,
+    dictationSilenceTimeout: 2000,
   });
   const dispatch = useAppDispatch();
 
@@ -82,7 +86,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ onClose }) => {
 
   const handleInputChange = (
     field: keyof FullSettingsState,
-    value: string | boolean
+    value: string | boolean | number
   ) => {
     setSettings((prev: FullSettingsState) => ({ ...prev, [field]: value }));
   };
@@ -188,6 +192,99 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ onClose }) => {
           className={`form-input ${isAssemblyAIKeyMissing ? 'border-[#dc3545]' : ''}`}
         />
       </div>
+
+      <div className="form-group">
+        <label className="flex items-center gap-2 text-xs font-medium text-white/[0.85]">
+          <input
+            type="checkbox"
+            checked={settings.dictationStylingEnabled}
+            onChange={(e) => {
+              handleInputChange('dictationStylingEnabled', e.target.checked);
+            }}
+            className="rounded"
+            data-testid="dictation-styling-enabled"
+          />
+          Enable Dictation Auto-Styling
+        </label>
+        <p className="text-xs text-white/60 mt-1">
+          Automatically improve grammar and style of dictated text after 2+
+          seconds of silence
+        </p>
+      </div>
+
+      {settings.dictationStylingEnabled && (
+        <>
+          <div className="form-group">
+            <label
+              htmlFor="dictationStylingPrompt"
+              className="block mb-0.5 text-xs font-medium text-white/[0.85]"
+            >
+              Styling Instructions:
+            </label>
+            <div className="flex flex-col">
+              <textarea
+                id="dictationStylingPrompt"
+                value={settings.dictationStylingPrompt}
+                onChange={(e) => {
+                  handleInputChange('dictationStylingPrompt', e.target.value);
+                }}
+                placeholder="Enter instructions for how to style your dictated text..."
+                className="form-input h-20"
+                data-testid="dictation-styling-prompt"
+              />
+              {settings.dictationStylingPrompt !==
+                DEFAULT_DICTATION_STYLING_PROMPT && (
+                <div className="mt-1 flex items-center gap-1">
+                  <button
+                    className="px-2 py-0.5 text-[10px] bg-white/[0.06] border border-white/[0.12] rounded-sm text-white/[0.60] cursor-pointer transition-all duration-200 hover:bg-white/[0.09] hover:text-white/[0.85] hover:border-white/[0.18] flex items-center gap-1"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      handleInputChange(
+                        'dictationStylingPrompt',
+                        DEFAULT_DICTATION_STYLING_PROMPT
+                      );
+                    }}
+                    title="Reset this prompt to its default content"
+                    type="button"
+                  >
+                    <span className="text-xs">↺</span>
+                    Revert to default
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
+
+          <div className="form-group">
+            <label
+              htmlFor="dictationSilenceTimeout"
+              className="block mb-0.5 text-xs font-medium text-white/[0.85]"
+            >
+              Silence Timeout (milliseconds):
+            </label>
+            <input
+              type="number"
+              id="dictationSilenceTimeout"
+              value={settings.dictationSilenceTimeout}
+              onChange={(e) => {
+                handleInputChange(
+                  'dictationSilenceTimeout',
+                  parseInt(e.target.value) || 2000
+                );
+              }}
+              min="1000"
+              max="10000"
+              step="500"
+              className="form-input"
+              data-testid="dictation-silence-timeout"
+            />
+            <p className="text-xs text-white/60 mt-1">
+              How long to wait after silence before styling text (recommended:
+              2000-3000ms)
+            </p>
+          </div>
+        </>
+      )}
 
       <div className="form-group">
         <label className="block mb-0.5 text-xs font-medium text-white/[0.85]">

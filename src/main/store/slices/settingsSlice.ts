@@ -1,5 +1,6 @@
 import { PayloadAction, createSlice } from '@reduxjs/toolkit';
 
+import { DEFAULT_DICTATION_STYLING_PROMPT } from '../../../constants/dictationPrompts.js';
 import type {
   FullSettingsState,
   SettingsState,
@@ -32,6 +33,10 @@ const initialState: SettingsState = {
   // Add computed properties for safe trim operations
   hasAssemblyAIKey: false,
   hasSlackConfigured: false,
+  // Dictation styling settings
+  dictationStylingEnabled: false,
+  dictationStylingPrompt: DEFAULT_DICTATION_STYLING_PROMPT,
+  dictationSilenceTimeout: 2000,
 };
 
 const settingsSlice = createSlice({

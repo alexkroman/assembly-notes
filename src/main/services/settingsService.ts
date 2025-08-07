@@ -1,6 +1,7 @@
 import type { Store } from '@reduxjs/toolkit';
 import { inject, injectable } from 'tsyringe';
 
+import { DEFAULT_DICTATION_STYLING_PROMPT } from '../../constants/dictationPrompts.js';
 import type { SlackInstallation, SettingsSchema } from '../../types/common.js';
 import type { DatabaseService } from '../database.js';
 import { DI_TOKENS } from '../di-tokens.js';
@@ -36,6 +37,10 @@ export class SettingsService {
       prompts: dbSettings.prompts,
       autoStart: dbSettings.autoStart,
       slackInstallation: dbSettings.slackInstallation,
+      dictationStylingEnabled: dbSettings.dictationStylingEnabled || false,
+      dictationStylingPrompt:
+        dbSettings.dictationStylingPrompt || DEFAULT_DICTATION_STYLING_PROMPT,
+      dictationSilenceTimeout: dbSettings.dictationSilenceTimeout || 2000,
     };
   }
 
