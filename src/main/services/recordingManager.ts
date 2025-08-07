@@ -144,9 +144,35 @@ export class RecordingManager {
             // Don't process partials or store transcripts in dictation mode
           },
           onError: (stream: string, error: unknown) => {
+            const errorMessage =
+              error instanceof Error ? error.message : String(error);
+
+            // Check if it's a connection reset - these can be temporary
+            const isConnectionReset =
+              errorMessage.includes('Connection lost') ||
+              errorMessage.includes('ERR_CONNECTION_RESET') ||
+              errorMessage.includes('ECONNRESET');
+
+            if (isConnectionReset) {
+              // Log as warning for connection resets
+              this.logger.warn(
+                `Dictation ${stream} stream connection reset - may reconnect automatically`
+              );
+
+              // Show a less alarming message to the user
+              this.store.dispatch(
+                setRecordingError(
+                  `Dictation connection interrupted. Attempting to reconnect...`
+                )
+              );
+
+              // Don't stop dictation for connection resets
+              return;
+            }
+
             const transcriptionError = new TranscriptionConnectionError(
               stream as 'microphone' | 'system',
-              error instanceof Error ? error.message : String(error)
+              errorMessage
             );
             this.errorLogger.logError(transcriptionError, {
               operation: 'dictationTranscription',
@@ -282,9 +308,35 @@ export class RecordingManager {
             }
           },
           onError: (stream: string, error: unknown) => {
+            const errorMessage =
+              error instanceof Error ? error.message : String(error);
+
+            // Check if it's a connection reset - these can be temporary
+            const isConnectionReset =
+              errorMessage.includes('Connection lost') ||
+              errorMessage.includes('ERR_CONNECTION_RESET') ||
+              errorMessage.includes('ECONNRESET');
+
+            if (isConnectionReset) {
+              // Log as warning, not error, for connection resets
+              this.logger.warn(
+                `${stream} stream connection reset - may reconnect automatically`
+              );
+
+              // Show a less alarming message to the user
+              this.store.dispatch(
+                setRecordingError(
+                  `${stream === 'microphone' ? 'Microphone' : 'System audio'} connection interrupted. Attempting to reconnect...`
+                )
+              );
+
+              // Don't stop recording for connection resets - let it try to recover
+              return;
+            }
+
             const transcriptionError = new TranscriptionConnectionError(
               stream as 'microphone' | 'system',
-              error instanceof Error ? error.message : String(error)
+              errorMessage
             );
 
             this.errorLogger.logError(transcriptionError, {
@@ -299,7 +351,7 @@ export class RecordingManager {
               )
             );
 
-            // Check if it's a critical error
+            // Check if it's a critical error that requires stopping
             if (
               error instanceof Error &&
               (error.message.includes('Not authorized') ||
