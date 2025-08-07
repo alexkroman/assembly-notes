@@ -389,22 +389,21 @@ Return ONLY the reformatted text, nothing else. No explanations, no commentary, 
     try {
       log.debug(`Replacing all text with styled version: "${styledText}"`);
 
-      // Copy styled text to clipboard
-      clipboard.writeText(styledText);
-
-      // Select all text
+      // Select all text first
       robotjs.keyTap(
         'a',
         process.platform === 'darwin' ? ['command'] : ['control']
       );
 
+      await new Promise((resolve) => setTimeout(resolve, 100));
+
+      // Delete selected text
+      robotjs.keyTap('backspace');
+
       await new Promise((resolve) => setTimeout(resolve, 50));
 
-      // Paste to replace selected text
-      robotjs.keyTap(
-        'v',
-        process.platform === 'darwin' ? ['command'] : ['control']
-      );
+      // Type the styled text directly (safer than paste)
+      robotjs.typeString(styledText);
 
       log.debug('Successfully replaced all text with styled version');
     } catch (error) {
