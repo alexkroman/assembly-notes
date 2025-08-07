@@ -4,13 +4,20 @@
 # This is required for the sandbox to work properly on Ubuntu/Debian systems
 
 CHROME_SANDBOX="/opt/Assembly-Notes/chrome-sandbox"
+EXECUTABLE="/opt/Assembly-Notes/assembly-notes"
 
+# Fix chrome-sandbox permissions
 if [ -f "$CHROME_SANDBOX" ]; then
-    # Set the suid bit on chrome-sandbox
-    chmod 4755 "$CHROME_SANDBOX"
-    
-    # Ensure proper ownership
-    chown root:root "$CHROME_SANDBOX"
+    echo "Setting chrome-sandbox permissions..."
+    # Ensure proper ownership and permissions
+    chown root:root "$CHROME_SANDBOX" || echo "Warning: Could not change chrome-sandbox ownership"
+    chmod 4755 "$CHROME_SANDBOX" || echo "Warning: Could not set chrome-sandbox permissions"
+fi
+
+# Create symlink for command-line access
+if [ -f "$EXECUTABLE" ]; then
+    echo "Creating command-line symlink..."
+    ln -sf "$EXECUTABLE" "/usr/bin/assembly-notes" 2>/dev/null || echo "Warning: Could not create /usr/bin symlink"
 fi
 
 # Create desktop file symlink for easier access

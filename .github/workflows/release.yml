@@ -157,12 +157,6 @@ jobs:
         with:
           path: artifacts/
 
-      - name: List artifacts for debugging
-        run: |
-          echo "Listing all artifacts:"
-          find artifacts/ -type f -name "*.dmg" -o -name "*.zip" -o -name "*.exe" -o -name "*.AppImage" -o -name "*.deb" || true
-          ls -la artifacts/*/
-
       - name: Generate update metadata files
         run: |
           # Generate latest-mac.yml for macOS (using ZIP file for autoupdater)
@@ -199,60 +193,45 @@ jobs:
           EOF
           fi
 
-          # Generate latest-linux.yml for Linux x64 (using AppImage file for autoupdater)
-          APPIMAGE_FILE_X64=$(find artifacts/release-ubuntu-latest-x64/ -name "*-x64.AppImage" 2>/dev/null | head -1)
-          if [ -n "$APPIMAGE_FILE_X64" ] && [ -f "$APPIMAGE_FILE_X64" ]; then
-            APPIMAGE_SIZE=$(stat -c%s "$APPIMAGE_FILE_X64" 2>/dev/null || stat -f%z "$APPIMAGE_FILE_X64")
-            APPIMAGE_NAME=$(basename "$APPIMAGE_FILE_X64")
-            cat > artifacts/release-ubuntu-latest-x64/latest-linux.yml << EOF
-          version: ${GITHUB_REF#refs/tags/v}
-          files:
-            - url: $APPIMAGE_NAME
-              sha512: $(shasum -a 512 "$APPIMAGE_FILE_X64" | cut -d' ' -f1)
-              size: $APPIMAGE_SIZE
-          path: $APPIMAGE_NAME
-          sha512: $(shasum -a 512 "$APPIMAGE_FILE_X64" | cut -d' ' -f1)
-          releaseDate: $(date -u +"%Y-%m-%dT%H:%M:%S.%3NZ")
-          EOF
-          fi
+          # Note: Linux doesn't support auto-updates in the same way as macOS/Windows
+          # AppImage files need to be manually replaced by users
 
-          # Generate latest-linux-arm64.yml for Linux ARM64 (using AppImage file for autoupdater)
-          APPIMAGE_FILE_ARM64=$(find artifacts/release-ubuntu-latest-arm64/ -name "*-arm64.AppImage" 2>/dev/null | head -1)
-          if [ -n "$APPIMAGE_FILE_ARM64" ] && [ -f "$APPIMAGE_FILE_ARM64" ]; then
-            APPIMAGE_SIZE=$(stat -c%s "$APPIMAGE_FILE_ARM64" 2>/dev/null || stat -f%z "$APPIMAGE_FILE_ARM64")
-            APPIMAGE_NAME=$(basename "$APPIMAGE_FILE_ARM64")
-            cat > artifacts/release-ubuntu-latest-arm64/latest-linux-arm64.yml << EOF
-          version: ${GITHUB_REF#refs/tags/v}
-          files:
-            - url: $APPIMAGE_NAME
-              sha512: $(shasum -a 512 "$APPIMAGE_FILE_ARM64" | cut -d' ' -f1)
-              size: $APPIMAGE_SIZE
-          path: $APPIMAGE_NAME
-          sha512: $(shasum -a 512 "$APPIMAGE_FILE_ARM64" | cut -d' ' -f1)
-          releaseDate: $(date -u +"%Y-%m-%dT%H:%M:%S.%3NZ")
-          EOF
-          fi
-
+      - name: Prepare release files
+        id: prepare-files
+        run: |
+          mkdir -p release-files
+          
+          # Copy all release files to a single directory, handling missing files gracefully
+          echo "Copying macOS files..."
+          cp artifacts/release-macos-latest/*.dmg release-files/ 2>/dev/null || true
+          cp artifacts/release-macos-latest/*.zip release-files/ 2>/dev/null || true
+          cp artifacts/release-macos-latest/*.blockmap release-files/ 2>/dev/null || true
+          cp artifacts/release-macos-latest/latest-mac.yml release-files/ 2>/dev/null || true
+          
+          echo "Copying Windows files..."
+          cp artifacts/release-windows-latest/*.exe release-files/ 2>/dev/null || true
+          cp artifacts/release-windows-latest/*.zip release-files/ 2>/dev/null || true
+          cp artifacts/release-windows-latest/*.blockmap release-files/ 2>/dev/null || true
+          cp artifacts/release-windows-latest/latest.yml release-files/ 2>/dev/null || true
+          
+          echo "Copying Linux x64 files..."
+          cp artifacts/release-ubuntu-latest-x64/*.AppImage release-files/ 2>/dev/null || true
+          cp artifacts/release-ubuntu-latest-x64/*.deb release-files/ 2>/dev/null || true
+          
+          echo "Copying Linux ARM64 files..."
+          cp artifacts/release-ubuntu-latest-arm64/*.AppImage release-files/ 2>/dev/null || true
+          cp artifacts/release-ubuntu-latest-arm64/*.deb release-files/ 2>/dev/null || true
+          
+          echo "Files to be released:"
+          ls -la release-files/
+          
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v1
         with:
           body: ${{ needs.release-notes.outputs.release-notes }}
-          files: |
-            artifacts/release-macos-latest/*.dmg
-            artifacts/release-macos-latest/*.zip
-            artifacts/release-macos-latest/*.blockmap
-            artifacts/release-macos-latest/latest-mac.yml
-            artifacts/release-windows-latest/*.exe
-            artifacts/release-windows-latest/*.zip
-            artifacts/release-windows-latest/*.blockmap
-            artifacts/release-windows-latest/latest.yml
-            artifacts/release-ubuntu-latest-x64/*.AppImage
-            artifacts/release-ubuntu-latest-x64/*.deb
-            artifacts/release-ubuntu-latest-x64/latest-linux.yml
-            artifacts/release-ubuntu-latest-arm64/*.AppImage
-            artifacts/release-ubuntu-latest-arm64/*.deb
-            artifacts/release-ubuntu-latest-arm64/latest-linux-arm64.yml
+          files: release-files/*
           draft: false
           prerelease: false
+          fail_on_unmatched_files: false
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
