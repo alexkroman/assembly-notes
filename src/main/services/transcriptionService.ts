@@ -109,14 +109,56 @@ export class TranscriptionService {
 
     // Set up event handlers
     transcriber.on('open', () => {
+      logger.info(`AssemblyAI ${streamType} connection opened`);
       callbacks.onConnectionStatus?.(streamType, true);
     });
 
     transcriber.on('error', (error: Error) => {
-      callbacks.onError?.(streamType, error);
+      logger.error(`AssemblyAI ${streamType} error:`, error);
+
+      // Check for connection reset errors
+      if (
+        error.message.includes('ERR_CONNECTION_RESET') ||
+        error.message.includes('ECONNRESET') ||
+        error.message.includes('WebSocket') ||
+        error.message.includes('connection')
+      ) {
+        logger.info(`Attempting to handle connection error for ${streamType}`);
+
+        // Notify about the error but don't crash
+        callbacks.onError?.(
+          streamType,
+          new Error(
+            `Connection lost for ${streamType} stream. It may reconnect automatically.`
+          )
+        );
+
+        if (app.isPackaged) {
+          Sentry.captureException(error, {
+            level: 'warning',
+            tags: {
+              service: 'transcription',
+              stream: streamType,
+              errorType: 'connection_reset',
+            },
+          });
+        }
+      } else {
+        callbacks.onError?.(streamType, error);
+
+        if (app.isPackaged) {
+          Sentry.captureException(error, {
+            tags: {
+              service: 'transcription',
+              stream: streamType,
+            },
+          });
+        }
+      }
     });
 
     transcriber.on('close', () => {
+      logger.info(`AssemblyAI ${streamType} connection closed`);
       callbacks.onConnectionStatus?.(streamType, false);
     });
 
@@ -133,7 +175,37 @@ export class TranscriptionService {
       }
     );
 
-    await transcriber.connect();
+    // Connect with retry logic
+    const maxRetries = 3;
+    let retryCount = 0;
+
+    while (retryCount < maxRetries) {
+      try {
+        await transcriber.connect();
+        logger.info(`AssemblyAI ${streamType} connected successfully`);
+        return transcriber;
+      } catch (error) {
+        retryCount++;
+        logger.error(
+          `AssemblyAI ${streamType} connection attempt ${String(retryCount)} failed:`,
+          error
+        );
+
+        if (retryCount >= maxRetries) {
+          throw new Error(
+            `Failed to connect ${streamType} after ${String(maxRetries)} attempts: ${String(error)}`
+          );
+        }
+
+        // Wait before retrying (exponential backoff)
+        const waitTime = Math.min(1000 * Math.pow(2, retryCount - 1), 5000);
+        logger.info(
+          `Retrying ${streamType} connection in ${String(waitTime)}ms...`
+        );
+        await new Promise((resolve) => setTimeout(resolve, waitTime));
+      }
+    }
+
     return transcriber;
   }
 
