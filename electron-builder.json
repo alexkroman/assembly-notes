@@ -19,7 +19,8 @@
     "node_modules/electron-audio-loopback/**/*",
     "node_modules/better-sqlite3/**/*",
     "node_modules/@jitsi/robotjs/**/*",
-    "node_modules/**/*.node"
+    "node_modules/**/*.node",
+    "**/*.node"
   ],
   "extraMetadata": {
     "main": "dist/main/main.js"
