@@ -34,7 +34,15 @@ export async function acquireStreams(isDictationMode = false): Promise<{
 
   const displayStream = await navigator.mediaDevices.getDisplayMedia({
     audio: true,
-    video: false,
+    video: true,
+  });
+
+  // Remove video tracks that we don't need
+  // Note: You may find bugs if you don't remove video tracks
+  const videoTracks = displayStream.getVideoTracks();
+  videoTracks.forEach((track) => {
+    track.stop();
+    displayStream.removeTrack(track);
   });
 
   await window.electronAPI.disableLoopbackAudio();
