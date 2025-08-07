@@ -18,7 +18,7 @@ export class DictationService {
   private keyDownTime: number | null = null;
   private transcriptionHandler: ((text: string) => void) | null = null;
   private dictationShortcut: string | null = null;
-  private dictationBuffer = '';
+  private silenceTimer: NodeJS.Timeout | null = null;
   private styleAbortController: AbortController | null = null;
   private stylePromise: Promise<void> | null = null;
 
@@ -105,7 +105,6 @@ export class DictationService {
 
       this.isDictating = true;
       this.keyDownTime = Date.now();
-      this.dictationBuffer = '';
 
       setTimeout(() => {
         this.notifyDictationStatus(true);
@@ -128,7 +127,7 @@ export class DictationService {
     this.store.dispatch(setTransitioning(true));
 
     this.isDictating = false;
-    this.dictationBuffer = '';
+    this.clearSilenceTimer();
 
     if (this.styleAbortController) {
       this.styleAbortController.abort();
@@ -159,17 +158,39 @@ export class DictationService {
   private handleDictationText(text: string): void {
     if (!this.isDictating) return;
 
-    this.dictationBuffer += (this.dictationBuffer ? ' ' : '') + text;
-
     try {
-      robotjs.typeString(text + ' ');
-      log.debug(
-        `Inserted final text: "${text}", buffer now: "${this.dictationBuffer}"`
-      );
+      robotjs.typeString(' ' + text);
+      log.debug(`Inserted final text: "${text}"`);
 
-      void this.triggerStyling();
+      this.resetSilenceTimer();
     } catch (error) {
       log.error('Failed to insert text in real-time:', error);
+    }
+  }
+
+  private resetSilenceTimer(): void {
+    const settings = this.store.getState().settings;
+    if (!settings.dictationStylingEnabled || !settings.assemblyaiKey) {
+      return;
+    }
+
+    if (this.silenceTimer) {
+      clearTimeout(this.silenceTimer);
+    }
+
+    const silenceTimeout = settings.dictationSilenceTimeout || 2000;
+    log.debug(`Resetting silence timer for ${String(silenceTimeout)}ms`);
+
+    this.silenceTimer = setTimeout(() => {
+      log.debug('Silence detected, triggering styling');
+      void this.triggerStyling();
+    }, silenceTimeout);
+  }
+
+  private clearSilenceTimer(): void {
+    if (this.silenceTimer) {
+      clearTimeout(this.silenceTimer);
+      this.silenceTimer = null;
     }
   }
 
@@ -233,34 +254,35 @@ export class DictationService {
     try {
       throwIfAborted();
 
-      const allText = await this.getAllTextFromTextBox();
+      // Get all text from text box (includes everything spoken)
+      const fullText = await this.getAllTextFromTextBox();
       throwIfAborted();
 
-      if (!allText.trim()) {
-        log.debug('No text found in text box to style');
+      if (!fullText.trim()) {
+        log.debug('No text to style');
         return;
       }
 
-      log.debug(`Styling entire text box content: "${allText}"`);
+      log.debug(`Styling text: "${fullText}"`);
 
       const styledText = await this.styleText(
-        allText,
+        fullText,
         settings.dictationStylingPrompt,
         settings.assemblyaiKey,
         signal
       );
       throwIfAborted();
 
-      if (styledText && styledText !== allText) {
+      if (styledText && styledText !== fullText) {
         await this.replaceAllTextWithStyled(styledText);
         log.debug(`Replaced entire text box with styled text: "${styledText}"`);
       } else {
         log.debug('No styling applied - styled text was null or unchanged');
         log.debug('styledText:', styledText);
-        log.debug('allText:', allText);
+        log.debug('fullText:', fullText);
       }
     } finally {
-      this.dictationBuffer = '';
+      // Nothing to clean up
     }
   }
 
@@ -338,6 +360,7 @@ Return ONLY the reformatted text, nothing else. No explanations, no commentary, 
 
   private async getAllTextFromTextBox(): Promise<string> {
     try {
+      // Select all text
       robotjs.keyTap(
         'a',
         process.platform === 'darwin' ? ['command'] : ['control']
@@ -345,6 +368,7 @@ Return ONLY the reformatted text, nothing else. No explanations, no commentary, 
 
       await new Promise((resolve) => setTimeout(resolve, 100));
 
+      // Copy to clipboard
       robotjs.keyTap(
         'c',
         process.platform === 'darwin' ? ['command'] : ['control']
@@ -353,7 +377,6 @@ Return ONLY the reformatted text, nothing else. No explanations, no commentary, 
       await new Promise((resolve) => setTimeout(resolve, 100));
 
       const text = clipboard.readText();
-
       log.debug(`Got text from text box: "${text}"`);
       return text;
     } catch (error) {
@@ -366,18 +389,22 @@ Return ONLY the reformatted text, nothing else. No explanations, no commentary, 
     try {
       log.debug(`Replacing all text with styled version: "${styledText}"`);
 
+      // Copy styled text to clipboard
+      clipboard.writeText(styledText);
+
+      // Select all text
       robotjs.keyTap(
         'a',
         process.platform === 'darwin' ? ['command'] : ['control']
       );
 
-      await new Promise((resolve) => setTimeout(resolve, 150));
-
-      robotjs.keyTap('backspace');
-
       await new Promise((resolve) => setTimeout(resolve, 50));
 
-      robotjs.typeString(styledText);
+      // Paste to replace selected text
+      robotjs.keyTap(
+        'v',
+        process.platform === 'darwin' ? ['command'] : ['control']
+      );
 
       log.debug('Successfully replaced all text with styled version');
     } catch (error) {
@@ -407,6 +434,7 @@ Return ONLY the reformatted text, nothing else. No explanations, no commentary, 
       this.styleAbortController.abort();
       this.styleAbortController = null;
     }
+    this.clearSilenceTimer();
     if (this.isDictating) {
       void this.stopDictation();
     }
