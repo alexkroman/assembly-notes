@@ -14,6 +14,10 @@ const initialState: SettingsState = {
   error: null,
   hasAssemblyAIKey: false,
   hasSlackConfigured: false,
+  dictationStylingEnabled: false,
+  dictationStylingPrompt:
+    'Please improve the grammar, punctuation, and clarity of this dictated text while maintaining the original meaning and tone.',
+  dictationSilenceTimeout: 2000,
 };
 
 const settingsSlice = createSlice({

@@ -14,6 +14,10 @@ export const createMockSettings = (
   prompts: [],
   autoStart: false,
   slackInstallation: null,
+  dictationStylingEnabled: false,
+  dictationStylingPrompt:
+    'Rewrite this dictated text in my personal writing style: conversational, direct, and well-structured. Fix grammar and add proper formatting while keeping the original meaning.',
+  dictationSilenceTimeout: 2000,
   ...overrides,
 });
 

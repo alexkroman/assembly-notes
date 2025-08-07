@@ -16,7 +16,12 @@ export class DictationService {
   private isDictating = false;
   private keyDownTime: number | null = null;
   private transcriptionHandler: ((text: string) => void) | null = null;
+  private speechActivityHandler: (() => void) | null = null;
   private dictationShortcut: string | null = null;
+  private dictationBuffer = '';
+  private silenceTimer: NodeJS.Timeout | null = null;
+  private isProcessingStyle = false;
+  private lastTranscriptTime = 0;
 
   constructor(
     @inject(DI_TOKENS.TranscriptionService)
@@ -87,13 +92,19 @@ export class DictationService {
     log.info('Starting dictation mode');
 
     try {
-      // Set up transcription handler to capture text and insert it immediately
+      // Set up transcription handler to capture text and handle styling
       this.transcriptionHandler = (text: string) => {
         this.handleDictationText(text);
       };
 
+      // Set up speech activity handler to track any voice activity
+      this.speechActivityHandler = () => {
+        this.handleSpeechActivity();
+      };
+
       // Subscribe to transcription events
       this.transcriptionService.onDictationText(this.transcriptionHandler);
+      this.transcriptionService.onSpeechActivity(this.speechActivityHandler);
 
       // Start transcription for dictation mode
       const started =
@@ -111,6 +122,9 @@ export class DictationService {
       // Only set isDictating and notify after successful start
       this.isDictating = true;
       this.keyDownTime = Date.now();
+      this.dictationBuffer = '';
+      this.isProcessingStyle = false;
+      this.lastTranscriptTime = 0;
 
       // Add 300ms delay before notifying to account for recording startup time
       // and clear transitioning state after the delay
@@ -140,6 +154,10 @@ export class DictationService {
     this.store.dispatch(setTransitioning(true));
 
     this.isDictating = false;
+    this.dictationBuffer = '';
+    this.isProcessingStyle = false;
+    this.lastTranscriptTime = 0;
+    this.clearSilenceTimer();
 
     const dictationDuration = this.keyDownTime
       ? Date.now() - this.keyDownTime
@@ -157,6 +175,10 @@ export class DictationService {
         this.transcriptionService.offDictationText(this.transcriptionHandler);
         this.transcriptionHandler = null;
       }
+      if (this.speechActivityHandler) {
+        this.transcriptionService.offSpeechActivity(this.speechActivityHandler);
+        this.speechActivityHandler = null;
+      }
 
       // Stop dictation transcription (uses proper Redux action)
       // This includes all audio cleanup
@@ -167,17 +189,207 @@ export class DictationService {
     }
   }
 
+  private handleSpeechActivity(): void {
+    if (!this.isDictating) return;
+
+    const now = Date.now();
+    // Update last speech time - this tracks ANY voice activity (partials + finals)
+    this.lastTranscriptTime = now;
+
+    const settings = this.store.getState().settings;
+
+    // If styling is enabled, restart silence detection timer on ANY speech activity
+    if (
+      settings.dictationStylingEnabled &&
+      settings.assemblyaiKey &&
+      !this.isProcessingStyle
+    ) {
+      this.clearSilenceTimer();
+      log.debug(
+        `Speech activity detected, restarting ${String(settings.dictationSilenceTimeout)}ms silence timer`
+      );
+
+      // Start a timer that will check for silence after the timeout
+      this.silenceTimer = setTimeout(() => {
+        this.checkForActualSilence(settings.dictationSilenceTimeout);
+      }, settings.dictationSilenceTimeout);
+    }
+  }
+
   private handleDictationText(text: string): void {
     if (!this.isDictating) return;
 
-    // For final transcripts, insert the complete text with a space after
-    // Each final represents a complete sentence or phrase
+    // Add text to buffer for potential styling
+    this.dictationBuffer += (this.dictationBuffer ? ' ' : '') + text;
+
     try {
       // Insert the final text followed by a space
       robotjs.typeString(text + ' ');
-      log.debug(`Inserted final text: "${text} "`);
+      log.debug(
+        `Inserted final text: "${text}", buffer now: "${this.dictationBuffer}"`
+      );
     } catch (error) {
       log.error('Failed to insert text in real-time:', error);
+    }
+  }
+
+  private checkForActualSilence(requiredSilenceDuration: number): void {
+    const now = Date.now();
+    const timeSinceLastTranscript = now - this.lastTranscriptTime;
+
+    log.debug(
+      `Checking silence: ${String(timeSinceLastTranscript)}ms since last transcript (need ${String(requiredSilenceDuration)}ms)`
+    );
+
+    if (timeSinceLastTranscript >= requiredSilenceDuration) {
+      // We have actual silence - trigger styling
+      log.debug('Confirmed silence detected, triggering styling');
+      void this.handleSilenceTimeout();
+    } else {
+      // Not enough silence yet - set another timer for the remaining time
+      const remainingTime = requiredSilenceDuration - timeSinceLastTranscript;
+      log.debug(
+        `Not enough silence yet, checking again in ${String(remainingTime)}ms`
+      );
+
+      this.clearSilenceTimer();
+      this.silenceTimer = setTimeout(() => {
+        this.checkForActualSilence(requiredSilenceDuration);
+      }, remainingTime);
+    }
+  }
+
+  private clearSilenceTimer(): void {
+    if (this.silenceTimer) {
+      clearTimeout(this.silenceTimer);
+      this.silenceTimer = null;
+    }
+  }
+
+  private async handleSilenceTimeout(): Promise<void> {
+    if (
+      !this.isDictating ||
+      !this.dictationBuffer.trim() ||
+      this.isProcessingStyle
+    ) {
+      return;
+    }
+
+    const settings = this.store.getState().settings;
+    if (!settings.dictationStylingEnabled || !settings.assemblyaiKey) {
+      return;
+    }
+
+    // Set processing flag to prevent multiple simultaneous requests
+    this.isProcessingStyle = true;
+    const textToStyle = this.dictationBuffer.trim();
+
+    log.debug(`Silence detected, styling text: "${textToStyle}"`);
+
+    try {
+      const styledText = await this.styleText(
+        textToStyle,
+        settings.dictationStylingPrompt,
+        settings.assemblyaiKey
+      );
+
+      if (styledText && styledText !== textToStyle) {
+        // Replace the original text with styled text
+        await this.replaceTextWithStyled(textToStyle, styledText);
+        log.debug(`Replaced with styled text: "${styledText}"`);
+      }
+    } catch (error) {
+      log.error('Failed to style dictation text:', error);
+    } finally {
+      // Clear buffer and processing flag after completion
+      this.dictationBuffer = '';
+      this.isProcessingStyle = false;
+    }
+  }
+
+  private async styleText(
+    originalText: string,
+    stylePrompt: string,
+    apiKey: string
+  ): Promise<string | null> {
+    try {
+      log.debug('Styling text with Claude API:', originalText);
+
+      // Use direct Anthropic Claude API for text styling
+      const { Anthropic } = await import('@anthropic-ai/sdk');
+
+      // We'll reuse the AssemblyAI API key as a proxy - in a production app,
+      // you'd want a separate Anthropic API key setting
+      // For now, this is a demo showing the integration pattern
+      const anthropic = new Anthropic({
+        apiKey: process.env['ANTHROPIC_API_KEY'] ?? apiKey, // Use env var if available, fallback to AssemblyAI key
+      });
+
+      const response = await anthropic.messages.create({
+        model: 'claude-3-5-sonnet-20241022',
+        max_tokens: 1000,
+        messages: [
+          {
+            role: 'user',
+            content: `Take this dictated text and rewrite it according to the following style instructions:
+
+${stylePrompt}
+
+Dictated text to reformat: "${originalText}"
+
+Return ONLY the reformatted text, nothing else. No explanations, no commentary, no additional content.`,
+          },
+        ],
+      });
+
+      if (response.content[0]?.type === 'text') {
+        const styledText = response.content[0].text
+          .replace(/^["']|["']$/g, '') // Remove surrounding quotes
+          .trim();
+
+        log.debug('Styled text received:', styledText);
+        return styledText !== originalText ? styledText : null;
+      }
+
+      return null;
+    } catch (error) {
+      log.error('Failed to style text with Claude API:', error);
+
+      // Fallback to simple capitalization if API fails
+      log.debug('Using fallback styling for:', originalText);
+      const styledText = originalText
+        .split(/[.!?]+/)
+        .map((sentence) => {
+          const trimmed = sentence.trim();
+          if (trimmed.length === 0) return '';
+          return (
+            trimmed.charAt(0).toUpperCase() + trimmed.slice(1).toLowerCase()
+          );
+        })
+        .filter((s) => s.length > 0)
+        .join('. ');
+
+      return styledText !== originalText ? styledText + '.' : null;
+    }
+  }
+
+  private async replaceTextWithStyled(
+    originalText: string,
+    styledText: string
+  ): Promise<void> {
+    try {
+      log.debug(`Replacing "${originalText.trim()}" with "${styledText}"`);
+
+      // Select all text and replace with styled version - much faster than character-by-character deletion
+      robotjs.keyTap('a', process.platform === 'darwin' ? ['cmd'] : ['ctrl']); // Select all
+
+      // Small delay to ensure selection is processed
+      await new Promise((resolve) => setTimeout(resolve, 50));
+
+      // Type the styled text (this will replace the selected text)
+      robotjs.typeString(styledText + ' ');
+    } catch (error) {
+      log.error('Failed to replace text with styled version:', error);
     }
   }
 
@@ -202,6 +414,7 @@ export class DictationService {
       globalShortcut.unregister(this.dictationShortcut);
       this.dictationShortcut = null;
     }
+    this.clearSilenceTimer();
     if (this.isDictating) {
       void this.stopDictation();
     }

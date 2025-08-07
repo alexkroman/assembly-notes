@@ -50,6 +50,7 @@ export class AssemblyAIFactory implements IAssemblyAIFactory {
 @injectable()
 export class TranscriptionService {
   private dictationListeners: ((text: string) => void)[] = [];
+  private speechActivityListeners: (() => void)[] = [];
 
   constructor(
     @inject(DI_TOKENS.AssemblyAIFactory)
@@ -230,6 +231,32 @@ export class TranscriptionService {
   emitDictationText(text: string): void {
     this.dictationListeners.forEach((listener) => {
       listener(text);
+    });
+  }
+
+  /**
+   * Register a listener for speech activity (any voice activity - partials or finals)
+   */
+  onSpeechActivity(listener: () => void): void {
+    this.speechActivityListeners.push(listener);
+  }
+
+  /**
+   * Unregister a speech activity listener
+   */
+  offSpeechActivity(listener: () => void): void {
+    const index = this.speechActivityListeners.indexOf(listener);
+    if (index > -1) {
+      this.speechActivityListeners.splice(index, 1);
+    }
+  }
+
+  /**
+   * Emit speech activity to all listeners
+   */
+  emitSpeechActivity(): void {
+    this.speechActivityListeners.forEach((listener) => {
+      listener();
     });
   }
 }

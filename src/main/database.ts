@@ -217,6 +217,13 @@ class DatabaseService {
           null) as SlackInstallation | null,
         slackChannels: (settingsMap.get('slackChannels') ?? '') as string,
         autoStart: (settingsMap.get('autoStart') ?? false) as boolean,
+        // Dictation styling settings
+        dictationStylingEnabled: (settingsMap.get('dictationStylingEnabled') ??
+          false) as boolean,
+        dictationStylingPrompt: (settingsMap.get('dictationStylingPrompt') ??
+          'Rewrite this dictated text in my personal writing style: conversational, direct, and well-structured. Fix grammar and add proper formatting while keeping the original meaning.') as string,
+        dictationSilenceTimeout: (settingsMap.get('dictationSilenceTimeout') ??
+          2000) as number,
         ...(userId !== undefined && { userId: userId as string }),
       };
     } catch (error) {
@@ -230,6 +237,11 @@ class DatabaseService {
         slackInstallation: null,
         slackChannels: '',
         autoStart: false,
+        // Dictation styling settings
+        dictationStylingEnabled: false,
+        dictationStylingPrompt:
+          'Rewrite this dictated text in my personal writing style: conversational, direct, and well-structured. Fix grammar and add proper formatting while keeping the original meaning.',
+        dictationSilenceTimeout: 2000,
       };
     }
   }

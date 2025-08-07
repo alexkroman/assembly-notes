@@ -36,6 +36,11 @@ export class SettingsService {
       prompts: dbSettings.prompts,
       autoStart: dbSettings.autoStart,
       slackInstallation: dbSettings.slackInstallation,
+      dictationStylingEnabled: dbSettings.dictationStylingEnabled || false,
+      dictationStylingPrompt:
+        dbSettings.dictationStylingPrompt ||
+        'Rewrite this dictated text in my personal writing style: conversational, direct, and well-structured. Fix grammar and add proper formatting while keeping the original meaning.',
+      dictationSilenceTimeout: dbSettings.dictationSilenceTimeout || 2000,
     };
   }
 

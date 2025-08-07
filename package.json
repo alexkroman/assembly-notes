@@ -59,6 +59,7 @@
     "test:autoupdate": "USE_LOCAL_UPDATE_SERVER=true UPDATE_FEED_URL=http://localhost:8000 open release/mac-arm64/Assembly-Notes.app"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "^0.58.0",
     "@jitsi/robotjs": "^0.6.17",
     "@reduxjs/toolkit": "^2.8.2",
     "@sentry/electron": "^6.9.0",

@@ -249,6 +249,10 @@ describe('DatabaseService', () => {
         slackInstallation: null,
         slackChannels: 'channel1,channel2',
         autoStart: false,
+        dictationStylingEnabled: false,
+        dictationStylingPrompt:
+          'Rewrite this dictated text in my personal writing style: conversational, direct, and well-structured. Fix grammar and add proper formatting while keeping the original meaning.',
+        dictationSilenceTimeout: 2000,
       });
     });
 
@@ -273,6 +277,10 @@ describe('DatabaseService', () => {
         slackInstallation: null,
         slackChannels: '',
         autoStart: false,
+        dictationStylingEnabled: false,
+        dictationStylingPrompt:
+          'Rewrite this dictated text in my personal writing style: conversational, direct, and well-structured. Fix grammar and add proper formatting while keeping the original meaning.',
+        dictationSilenceTimeout: 2000,
       });
     });
 
@@ -311,6 +319,10 @@ describe('DatabaseService', () => {
         slackInstallation: null,
         slackChannels: '',
         autoStart: false,
+        dictationStylingEnabled: false,
+        dictationStylingPrompt:
+          'Rewrite this dictated text in my personal writing style: conversational, direct, and well-structured. Fix grammar and add proper formatting while keeping the original meaning.',
+        dictationSilenceTimeout: 2000,
       });
     });
   });

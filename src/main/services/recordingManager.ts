@@ -134,6 +134,9 @@ export class RecordingManager {
       this.connections =
         await this.transcriptionService.createMicrophoneOnlyConnection(apiKey, {
           onTranscript: (data) => {
+            // Emit speech activity for ANY transcript (partial or final) in dictation mode
+            this.transcriptionService.emitSpeechActivity();
+
             // In dictation mode, only emit final transcripts for insertion
             if (!data.partial && data.streamType === 'microphone') {
               this.transcriptionService.emitDictationText(data.text);
@@ -236,6 +239,9 @@ export class RecordingManager {
             const isDictating = this.store.getState().recording.isDictating;
 
             if (isDictating) {
+              // Emit speech activity for ANY transcript (partial or final) in dictation mode
+              this.transcriptionService.emitSpeechActivity();
+
               // In dictation mode, only emit final transcripts for insertion
               // Only emit from microphone stream to avoid duplicates
               if (!data.partial && data.streamType === 'microphone') {
