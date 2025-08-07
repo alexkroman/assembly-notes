@@ -113,7 +113,7 @@ const mockMainWindow = {
 } as unknown as BrowserWindow;
 
 const mockAssemblyAIFactory = {
-  create: jest.fn().mockReturnValue({
+  createClient: jest.fn().mockReturnValue({
     lemur: {
       task: jest.fn().mockResolvedValue({ response: 'styled text' }),
     },
