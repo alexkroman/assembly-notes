@@ -36,7 +36,7 @@
     "build:linux:arm64": "npm run build:all && npm run build-icons && electron-builder --linux --arm64",
     "build-icons": "node scripts/generate-icons.js",
     "pack": "electron-builder --dir",
-    "postinstall": "electron-builder install-app-deps && npx @electron/rebuild -f -w better-sqlite3",
+    "postinstall": "electron-builder install-app-deps",
     "lint": "npm run typecheck && eslint .",
     "lint:fix": "eslint . --fix",
     "format": "prettier --write .",
@@ -80,7 +80,6 @@
   "devDependencies": {
     "@commitlint/cli": "^19.8.1",
     "@commitlint/config-conventional": "^19.8.1",
-    "@electron/rebuild": "^4.0.1",
     "@eslint/js": "^9.32.0",
     "@playwright/test": "^1.54.2",
     "@tailwindcss/postcss": "^4.1.11",
