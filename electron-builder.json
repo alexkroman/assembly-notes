@@ -24,8 +24,7 @@
   "extraMetadata": {
     "main": "dist/main/main.js"
   },
-  "npmRebuild": false,
-  "nodeGypRebuild": false,
+  "npmRebuild": true,
   "buildDependenciesFromSource": true,
   "nativeRebuilder": "sequential",
   "asar": true,
