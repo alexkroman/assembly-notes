@@ -158,16 +158,16 @@ export const RecordingView: React.FC<RecordingViewProps> = ({
 
   const getButtonClass = () => {
     let baseClass =
-      'px-2 py-1 text-xs font-semibold rounded-sm cursor-pointer transition-all duration-200 h-7 tracking-wide w-[85px] bg-[#28a745]/20 border border-[#28a745]/50 text-[#28a745] hover:bg-[#28a745]/30';
+      'px-2 py-1 text-xs font-semibold rounded-sm cursor-pointer transition-all duration-200 h-7 tracking-wide w-[90px] bg-[#28a745]/20 border border-[#28a745]/50 text-[#28a745] hover:bg-[#28a745]/30';
     if (isRecording)
       baseClass =
-        'px-2 py-1 text-xs font-semibold rounded-sm cursor-pointer transition-all duration-200 h-7 tracking-wide w-[85px] bg-[#dc3545]/20 border-[#dc3545]/50 text-[#dc3545] hover:bg-[#dc3545]/30';
+        'px-2 py-1 text-xs font-semibold rounded-sm cursor-pointer transition-all duration-200 h-7 tracking-wide w-[90px] bg-[#dc3545]/20 border-[#dc3545]/50 text-[#dc3545] hover:bg-[#dc3545]/30';
     if (isStopping || isStoppingForNavigation)
       baseClass =
-        'px-2 py-1 text-xs font-semibold rounded-sm cursor-not-allowed transition-all duration-200 h-7 tracking-wide w-[85px] bg-[#ffc107]/20 border-[#ffc107]/50 text-[#ffc107] opacity-80';
+        'px-2 py-1 text-xs font-semibold rounded-sm cursor-not-allowed transition-all duration-200 h-7 tracking-wide w-[90px] bg-[#ffc107]/20 border-[#ffc107]/50 text-[#ffc107] opacity-80';
     if (isStarting)
       baseClass =
-        'px-2 py-1 text-xs font-semibold rounded-sm cursor-pointer transition-all duration-200 h-7 tracking-wide w-[85px] bg-[#28a745]/20 border border-[#28a745]/50 text-[#28a745] hover:bg-[#28a745]/30';
+        'px-2 py-1 text-xs font-semibold rounded-sm cursor-pointer transition-all duration-200 h-7 tracking-wide w-[90px] bg-[#28a745]/20 border border-[#28a745]/50 text-[#28a745] hover:bg-[#28a745]/30';
     return baseClass;
   };
 
@@ -199,7 +199,7 @@ export const RecordingView: React.FC<RecordingViewProps> = ({
       <div className="px-2 py-1 pt-2 bg-[#1a1a1a] flex justify-start items-center gap-1.5 flex-shrink-0 h-10">
         <input
           type="text"
-          className="text-base font-semibold px-2.5 py-1.5 bg-white/[0.06] border border-white/[0.18] rounded-sm text-white w-80 h-8 flex-shrink-0 text-left transition-all duration-200 m-0 cursor-text hover:bg-white/[0.09] hover:border-white/[0.24] focus:outline-none focus:border-white/[0.45] focus:bg-white/[0.12] focus:shadow-[0_0_0_2px_rgba(255,255,255,0.1)] placeholder:text-white/[0.35]"
+          className="text-base font-semibold px-2.5 py-1.5 bg-white/[0.06] border border-white/[0.18] rounded-sm text-white flex-1 h-8 text-left transition-all duration-200 m-0 cursor-text hover:bg-white/[0.09] hover:border-white/[0.24] focus:outline-none focus:border-white/[0.45] focus:bg-white/[0.12] focus:shadow-[0_0_0_2px_rgba(255,255,255,0.1)] placeholder:text-white/[0.35]"
           data-testid="recording-title-input"
           placeholder="Recording title..."
           value={recordingTitle}
@@ -227,7 +227,7 @@ export const RecordingView: React.FC<RecordingViewProps> = ({
       <div className="px-2 py-1 bg-transparent flex-shrink-0 h-9">
         <div className="flex items-center gap-1.5 flex-nowrap">
           <select
-            className="px-2 py-1 text-xs bg-white/[0.09] border border-white/[0.18] rounded-sm text-white min-w-[90px] h-7 overflow-hidden text-ellipsis whitespace-nowrap transition-all duration-200 hover:bg-white/[0.12] hover:border-white/[0.24] focus:outline-none focus:border-white/[0.45] focus:bg-white/[0.12]"
+            className="px-2 py-1 text-xs bg-white/[0.09] border border-white/[0.18] rounded-sm text-white flex-1 h-7 overflow-hidden text-ellipsis whitespace-nowrap transition-all duration-200 hover:bg-white/[0.12] hover:border-white/[0.24] focus:outline-none focus:border-white/[0.45] focus:bg-white/[0.12]"
             data-testid="prompt-btn"
             value={selectedPromptIndex}
             onChange={(e) => {
@@ -271,7 +271,7 @@ export const RecordingView: React.FC<RecordingViewProps> = ({
           {hasSlackConfigured && (
             <>
               <select
-                className="px-2 py-1 text-xs bg-white/[0.09] border border-white/[0.18] rounded-sm text-white min-w-[90px] h-7 overflow-hidden text-ellipsis whitespace-nowrap transition-all duration-200 hover:bg-white/[0.12] hover:border-white/[0.24] focus:outline-none focus:border-white/[0.45] focus:bg-white/[0.12]"
+                className="px-2 py-1 text-xs bg-white/[0.09] border border-white/[0.18] rounded-sm text-white flex-1 h-7 overflow-hidden text-ellipsis whitespace-nowrap transition-all duration-200 hover:bg-white/[0.12] hover:border-white/[0.24] focus:outline-none focus:border-white/[0.45] focus:bg-white/[0.12]"
                 data-testid="channel-btn"
                 value={selectedChannelId}
                 onChange={(e) => {
