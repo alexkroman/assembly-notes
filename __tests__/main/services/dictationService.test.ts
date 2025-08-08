@@ -409,7 +409,21 @@ describe('DictationService', () => {
       const handler = mockTranscriptionService.onDictationText.mock.calls[0][0];
       handler('test text');
 
-      expect(robotjs.typeString).toHaveBeenCalledWith(' test text');
+      expect(robotjs.typeString).toHaveBeenCalledWith('test text');
+    });
+
+    it('should add space before subsequent text insertions', async () => {
+      mockRecordingManager.startTranscriptionForDictation.mockResolvedValue(
+        true
+      );
+      await dictationService.startDictation();
+      const handler = mockTranscriptionService.onDictationText.mock.calls[0][0];
+
+      handler('first text');
+      expect(robotjs.typeString).toHaveBeenCalledWith('first text');
+
+      handler('second text');
+      expect(robotjs.typeString).toHaveBeenCalledWith(' second text');
     });
 
     it('should not type text when dictating is not active', () => {

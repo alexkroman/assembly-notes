@@ -1,6 +1,6 @@
 import robotjs from '@jitsi/robotjs';
 import type { Store } from '@reduxjs/toolkit';
-import { globalShortcut, BrowserWindow, clipboard } from 'electron';
+import { globalShortcut, BrowserWindow } from 'electron';
 import log from 'electron-log';
 import { injectable, inject } from 'tsyringe';
 
@@ -21,6 +21,8 @@ export class DictationService {
   private silenceTimer: NodeJS.Timeout | null = null;
   private styleAbortController: AbortController | null = null;
   private stylePromise: Promise<void> | null = null;
+  private unstyledTextBuffer: string[] = [];
+  private isFirstInsertion = true;
 
   constructor(
     @inject(DI_TOKENS.TranscriptionService)
@@ -87,6 +89,10 @@ export class DictationService {
     log.info('Starting dictation mode');
 
     try {
+      // Clear the buffer and reset first insertion flag at the start of dictation
+      this.unstyledTextBuffer = [];
+      this.isFirstInsertion = true;
+
       this.transcriptionHandler = (text: string) => {
         this.handleDictationText(text);
       };
@@ -142,6 +148,21 @@ export class DictationService {
     );
 
     try {
+      // If there's any buffered text when stopping, insert it
+      const settings = this.store.getState().settings;
+      if (
+        settings.dictationStylingEnabled &&
+        this.unstyledTextBuffer.length > 0
+      ) {
+        const bufferedText = this.unstyledTextBuffer.join(' ');
+        const safeText = this.sanitizeTextForTyping(bufferedText);
+        const textToInsert = this.isFirstInsertion ? safeText : ' ' + safeText;
+        robotjs.typeString(textToInsert);
+        log.debug(`Inserted remaining buffered text on stop: "${safeText}"`);
+        this.unstyledTextBuffer = [];
+        this.isFirstInsertion = false;
+      }
+
       this.notifyDictationStatus(false);
 
       if (this.transcriptionHandler) {
@@ -158,14 +179,27 @@ export class DictationService {
   private handleDictationText(text: string): void {
     if (!this.isDictating) return;
 
-    try {
-      robotjs.typeString(' ' + text);
-      log.debug(`Inserted final text: "${text}"`);
+    const settings = this.store.getState().settings;
 
-      this.resetSilenceTimer();
-    } catch (error) {
-      log.error('Failed to insert text in real-time:', error);
+    // Only insert text if stylization is disabled
+    // When stylization is enabled, text will be inserted after styling
+    if (!settings.dictationStylingEnabled) {
+      try {
+        const safeText = this.sanitizeTextForTyping(text);
+        const textToInsert = this.isFirstInsertion ? safeText : ' ' + safeText;
+        robotjs.typeString(textToInsert);
+        log.debug(`Inserted final text: "${safeText}"`);
+        this.isFirstInsertion = false;
+      } catch (error) {
+        log.error('Failed to insert text in real-time:', error);
+      }
+    } else {
+      // Buffer the text for styling
+      this.unstyledTextBuffer.push(text);
+      log.debug(`Buffering text for styling: "${text}"`);
     }
+
+    this.resetSilenceTimer();
   }
 
   private resetSilenceTimer(): void {
@@ -254,16 +288,18 @@ export class DictationService {
     try {
       throwIfAborted();
 
-      // Get all text from text box (includes everything spoken)
-      const fullText = await this.getAllTextFromTextBox();
+      // Use buffered text for styling and immediately clear the buffer
+      const fullText = this.unstyledTextBuffer.join(' ').trim();
+      this.unstyledTextBuffer = []; // Clear buffer immediately after capturing text
+
       throwIfAborted();
 
-      if (!fullText.trim()) {
-        log.debug('No text to style');
+      if (!fullText) {
+        log.debug('No buffered text to style');
         return;
       }
 
-      log.debug(`Styling text: "${fullText}"`);
+      log.debug(`Styling buffered text: "${fullText}"`);
 
       const styledText = await this.styleText(
         fullText,
@@ -274,12 +310,19 @@ export class DictationService {
       throwIfAborted();
 
       if (styledText && styledText !== fullText) {
-        await this.replaceAllTextWithStyled(styledText);
-        log.debug(`Replaced entire text box with styled text: "${styledText}"`);
+        // Insert styled text
+        const safeText = this.sanitizeTextForTyping(styledText);
+        const textToInsert = this.isFirstInsertion ? safeText : ' ' + safeText;
+        robotjs.typeString(textToInsert);
+        log.debug(`Inserted styled text: "${safeText}"`);
+        this.isFirstInsertion = false;
       } else {
-        log.debug('No styling applied - styled text was null or unchanged');
-        log.debug('styledText:', styledText);
-        log.debug('fullText:', fullText);
+        // If styling failed or returned unchanged, insert the original text
+        log.debug('No styling applied - inserting original text');
+        const safeText = this.sanitizeTextForTyping(fullText);
+        const textToInsert = this.isFirstInsertion ? safeText : ' ' + safeText;
+        robotjs.typeString(textToInsert);
+        this.isFirstInsertion = false;
       }
     } finally {
       // Nothing to clean up
@@ -358,57 +401,10 @@ Return ONLY the reformatted text, nothing else. No explanations, no commentary, 
     }
   }
 
-  private async getAllTextFromTextBox(): Promise<string> {
-    try {
-      // Select all text
-      robotjs.keyTap(
-        'a',
-        process.platform === 'darwin' ? ['command'] : ['control']
-      );
-
-      await new Promise((resolve) => setTimeout(resolve, 100));
-
-      // Copy to clipboard
-      robotjs.keyTap(
-        'c',
-        process.platform === 'darwin' ? ['command'] : ['control']
-      );
-
-      await new Promise((resolve) => setTimeout(resolve, 100));
-
-      const text = clipboard.readText();
-      log.debug(`Got text from text box: "${text}"`);
-      return text;
-    } catch (error) {
-      log.error('Failed to get text from text box:', error);
-      return '';
-    }
-  }
-
-  private async replaceAllTextWithStyled(styledText: string): Promise<void> {
-    try {
-      log.debug(`Replacing all text with styled version: "${styledText}"`);
-
-      // Select all text first
-      robotjs.keyTap(
-        'a',
-        process.platform === 'darwin' ? ['command'] : ['control']
-      );
-
-      await new Promise((resolve) => setTimeout(resolve, 100));
-
-      // Delete selected text
-      robotjs.keyTap('backspace');
-
-      await new Promise((resolve) => setTimeout(resolve, 50));
-
-      // Type the styled text directly (safer than paste)
-      robotjs.typeString(styledText);
-
-      log.debug('Successfully replaced all text with styled version');
-    } catch (error) {
-      log.error('Failed to replace text with styled version:', error);
-    }
+  private sanitizeTextForTyping(text: string): string {
+    // Keep only alphanumeric characters, spaces, and common punctuation
+    // This prevents any control characters or special keys from being typed
+    return text.replace(/[^a-zA-Z0-9\s.,!?;:'"()-]/g, '').trim();
   }
 
   private notifyDictationStatus(isDictating: boolean): void {
