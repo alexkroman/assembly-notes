@@ -326,6 +326,79 @@ export class SlackIntegrationService {
       // Convert markdown to Slack's mrkdwn format
       const slackMessage = this.convertMarkdownToSlackMrkdwn(message);
 
+      // Slack blocks have a 3000 character limit for text fields
+      // If message is too long, we'll split it into multiple blocks
+      const MAX_TEXT_LENGTH = 3000;
+      const blocks = [];
+
+      if (slackMessage.length <= MAX_TEXT_LENGTH) {
+        // Single block for short messages
+        blocks.push({
+          type: 'section',
+          text: {
+            type: 'mrkdwn',
+            text: slackMessage,
+          },
+        });
+      } else {
+        // Split long messages into multiple blocks
+        const chunks = [];
+        let currentChunk = '';
+        const lines = slackMessage.split('\n');
+
+        for (const line of lines) {
+          // If adding this line would exceed the limit, start a new chunk
+          if (currentChunk.length + line.length + 1 > MAX_TEXT_LENGTH) {
+            if (currentChunk) {
+              chunks.push(currentChunk);
+            }
+            currentChunk = line;
+          } else {
+            currentChunk += (currentChunk ? '\n' : '') + line;
+          }
+        }
+
+        // Add the last chunk
+        if (currentChunk) {
+          chunks.push(currentChunk);
+        }
+
+        // Create a block for each chunk
+        for (const chunk of chunks) {
+          blocks.push({
+            type: 'section',
+            text: {
+              type: 'mrkdwn',
+              text: chunk,
+            },
+          });
+        }
+      }
+
+      // Prepare the payload
+      interface SlackMessagePayload {
+        channel: string;
+        text: string;
+        blocks?: {
+          type: string;
+          text: {
+            type: string;
+            text: string;
+          };
+        }[];
+      }
+
+      const payload: SlackMessagePayload = {
+        channel: targetChannelId,
+        text: slackMessage.substring(0, MAX_TEXT_LENGTH), // Fallback text also needs to be limited
+      };
+
+      // Only add blocks if we have valid blocks to send
+      if (blocks.length > 0 && blocks.length <= 50) {
+        // Slack has a 50 block limit
+        payload.blocks = blocks;
+      }
+
       const response = await this.httpClient.post(
         'https://slack.com/api/chat.postMessage',
         {
@@ -333,19 +406,7 @@ export class SlackIntegrationService {
             Authorization: `Bearer ${installation.botToken}`,
             'Content-Type': 'application/json',
           },
-          body: JSON.stringify({
-            channel: targetChannelId,
-            text: slackMessage,
-            blocks: [
-              {
-                type: 'section',
-                text: {
-                  type: 'mrkdwn',
-                  text: slackMessage,
-                },
-              },
-            ],
-          }),
+          body: JSON.stringify(payload),
         }
       );
 
@@ -355,7 +416,41 @@ export class SlackIntegrationService {
         return { success: true };
       } else {
         const error = result.error ?? 'Unknown error';
-        this.logger.error('Failed to post to Slack:', error);
+        this.logger.error('Failed to post to Slack:', error, {
+          messageLength: message.length,
+          blocksCount: blocks.length,
+        });
+
+        // If blocks are invalid, try sending without blocks (plain text only)
+        if (error === 'invalid_blocks') {
+          this.logger.info(
+            'Retrying without blocks due to invalid_blocks error'
+          );
+          const fallbackResponse = await this.httpClient.post(
+            'https://slack.com/api/chat.postMessage',
+            {
+              headers: {
+                Authorization: `Bearer ${installation.botToken}`,
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({
+                channel: targetChannelId,
+                text: slackMessage.substring(0, MAX_TEXT_LENGTH),
+              }),
+            }
+          );
+
+          const fallbackResult = await fallbackResponse.json();
+          if (fallbackResult.ok === true) {
+            return { success: true };
+          } else {
+            return {
+              success: false,
+              error: fallbackResult.error ?? 'Unknown error',
+            };
+          }
+        }
+
         return { success: false, error };
       }
     } catch (error) {
