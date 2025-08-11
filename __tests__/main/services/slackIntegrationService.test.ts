@@ -502,7 +502,11 @@ describe('SlackIntegrationService', () => {
       });
       expect(mockLogger.error).toHaveBeenCalledWith(
         'Failed to post to Slack:',
-        'channel_not_found'
+        'channel_not_found',
+        expect.objectContaining({
+          messageLength: expect.any(Number),
+          blocksCount: expect.any(Number),
+        })
       );
     });
 
