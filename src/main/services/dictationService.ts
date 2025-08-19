@@ -268,7 +268,9 @@ export class DictationService {
         log.error('Failed to style text:', error);
       }
     } finally {
-      if (this.styleAbortController.signal === signal) {
+      // Only clear the controller if it's still the same one we created
+      // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
+      if (this.styleAbortController?.signal === signal) {
         this.styleAbortController = null;
       }
       this.stylePromise = null;

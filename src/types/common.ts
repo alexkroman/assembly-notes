@@ -39,6 +39,9 @@ export interface SettingsSchema {
   dictationStylingEnabled: boolean;
   dictationStylingPrompt: string;
   dictationSilenceTimeout: number; // milliseconds
+  // Audio processing settings
+  microphoneGain?: number; // Microphone volume level (0.0 to 2.0, default 1.0)
+  systemAudioGain?: number; // System audio volume level (0.0 to 2.0, default 0.7)
 }
 
 export interface Recording {
@@ -46,6 +49,7 @@ export interface Recording {
   title?: string;
   transcript?: string;
   summary?: string;
+  audio_filename?: string;
   created_at: number;
   updated_at: number;
 }

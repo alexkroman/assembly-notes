@@ -37,6 +37,9 @@ const initialState: SettingsState = {
   dictationStylingEnabled: false,
   dictationStylingPrompt: DEFAULT_DICTATION_STYLING_PROMPT,
   dictationSilenceTimeout: 2000,
+  // Audio processing settings
+  microphoneGain: 1.0, // Default microphone volume (full volume)
+  systemAudioGain: 0.7, // Default system audio volume (reduced to prevent overpowering)
 };
 
 const settingsSlice = createSlice({

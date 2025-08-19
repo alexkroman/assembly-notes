@@ -14,5 +14,6 @@ export const DI_TOKENS = {
   SummarizationService: Symbol('SummarizationService'),
   HttpClient: Symbol('HttpClient'),
   DictationService: Symbol('DictationService'),
+  AudioRecordingService: Symbol('AudioRecordingService'),
   DictationStatusWindow: Symbol('DictationStatusWindow'),
 } as const;

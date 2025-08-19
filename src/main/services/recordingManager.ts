@@ -12,6 +12,7 @@ import {
 } from '../../errors/index.js';
 import { DI_TOKENS } from '../di-tokens.js';
 import type Logger from '../logger.js';
+import { AudioRecordingService } from './audioRecordingService.js';
 import { RecordingDataService } from './recordingDataService.js';
 import { SummarizationService } from './summarizationService.js';
 import {
@@ -51,7 +52,9 @@ export class RecordingManager {
     @inject(DI_TOKENS.TranscriptionService)
     private transcriptionService: TranscriptionService,
     @inject(DI_TOKENS.SummarizationService)
-    private summarizationService: SummarizationService
+    private summarizationService: SummarizationService,
+    @inject(DI_TOKENS.AudioRecordingService)
+    private audioRecordingService: AudioRecordingService
   ) {
     this.errorLogger = new ErrorLogger(this.logger);
     this.setupStoreSubscriptions();
@@ -62,32 +65,29 @@ export class RecordingManager {
       microphone: false,
       system: false,
     };
-    let lastIsDictating = false;
 
     // Subscribe to Redux store changes
     this.store.subscribe(() => {
       const state = this.store.getState();
       const { connectionStatus, status, isDictating } = state.recording;
 
-      // In dictation mode, only check microphone connection
-      // In normal mode, check both connections
-      const connectionsReady = isDictating
-        ? connectionStatus.microphone && !lastConnectionStatus.microphone
-        : connectionStatus.microphone &&
-          connectionStatus.system &&
-          (!lastConnectionStatus.microphone || !lastConnectionStatus.system);
+      // In dictation mode or combined stream mode (which we always use for meetings),
+      // only check microphone connection
+      const connectionsReady =
+        connectionStatus.microphone && !lastConnectionStatus.microphone;
 
       if (connectionsReady) {
+        const modeDescription = isDictating
+          ? 'Microphone'
+          : 'Combined audio stream';
         this.logger.info(
-          `RecordingManager: ${isDictating ? 'Microphone' : 'Both'} connections established, starting audio capture`
+          `RecordingManager: ${modeDescription} connections established, starting audio capture`
         );
         this.mainWindow.webContents.send('start-audio-capture');
       }
 
-      // Check if we're stopping - use the PREVIOUS dictation state to determine what was connected
-      const wasPreviouslyConnected = lastIsDictating
-        ? lastConnectionStatus.microphone
-        : lastConnectionStatus.microphone && lastConnectionStatus.system;
+      // Check if we're stopping - always just check microphone since we use combined stream
+      const wasPreviouslyConnected = lastConnectionStatus.microphone;
 
       if (status === 'idle' && wasPreviouslyConnected) {
         this.logger.info(
@@ -98,7 +98,6 @@ export class RecordingManager {
       }
 
       lastConnectionStatus = { ...connectionStatus };
-      lastIsDictating = isDictating;
     });
   }
 
@@ -257,9 +256,9 @@ export class RecordingManager {
       }
 
       // Create connections with callbacks that dispatch Redux actions
-      this.connections = await this.transcriptionService.createConnections(
-        apiKey,
-        {
+      // Always use combined connection for meeting transcription (refactored pipeline)
+      this.connections =
+        await this.transcriptionService.createCombinedConnection(apiKey, {
           onTranscript: (data) => {
             // Check if we're in dictation mode via the DictationService
             const isDictating = this.store.getState().recording.isDictating;
@@ -369,11 +368,17 @@ export class RecordingManager {
               })
             );
           },
-        }
-      );
+        });
+
+      // Log the mode being used
+      this.logger.info('Using combined audio stream with echo cancellation');
 
       // Start keep-alive interval
       this.startKeepAliveInterval();
+
+      // Start audio recording
+      const recordingId = currentState.recordings.currentRecording.id;
+      this.audioRecordingService.startRecording(recordingId);
 
       return true;
     } catch (error) {
@@ -412,6 +417,20 @@ export class RecordingManager {
 
       // THIRD: Clear local connections after closing
       this.connections = { microphone: null, system: null };
+
+      // Stop audio recording and save the file
+      const recordingId = this.store.getState().recordings.currentRecording?.id;
+      if (recordingId) {
+        const audioFilename =
+          await this.audioRecordingService.stopRecording(recordingId);
+        if (audioFilename) {
+          // Update the recording with the audio filename
+          this.recordingDataService.updateAudioFilename(
+            recordingId,
+            audioFilename
+          );
+        }
+      }
 
       await this.store.dispatch(stopRecording());
       return true;
@@ -455,6 +474,8 @@ export class RecordingManager {
   }
 
   sendMicrophoneAudio(audioData: ArrayBuffer): void {
+    const state = this.store.getState();
+
     // Only send audio if we have an active connection
     if (this.connections.microphone) {
       this.transcriptionService.sendAudio(
@@ -462,13 +483,23 @@ export class RecordingManager {
         audioData
       );
     }
+
+    // Save audio data for recording
+    const recordingId = state.recordings.currentRecording?.id;
+    if (recordingId && state.recording.status === 'recording') {
+      // All audio comes through combined stream for meetings
+      this.audioRecordingService.appendAudioData(
+        recordingId,
+        audioData,
+        'combined'
+      );
+    }
   }
 
-  sendSystemAudio(audioData: ArrayBuffer): void {
-    // Only send audio if we have an active connection
-    if (this.connections.system) {
-      this.transcriptionService.sendAudio(this.connections.system, audioData);
-    }
+  sendSystemAudio(_audioData: ArrayBuffer): void {
+    // System audio is already mixed in the combined stream, so we don't process it separately
+    // This method is kept for backward compatibility but does nothing
+    return;
   }
 
   async summarizeTranscript(transcript?: string): Promise<boolean> {
@@ -511,9 +542,10 @@ export class RecordingManager {
           `Summarization complete - sending summary event for recording: ${String(currentRecordingId)}`
         );
 
-        // Send summary to UI - UI will handle both state update and database write
+        // Send summary to UI with recording ID - UI will validate and handle both state update and database write
         this.mainWindow.webContents.send('summary', {
           text: summary,
+          recordingId: currentRecordingId,
         });
 
         // Save to database and update Redux state via RecordingDataService

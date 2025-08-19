@@ -32,7 +32,9 @@ declare global {
 
       // Event listeners
       onTranscript: (callback: (data: TranscriptData) => void) => void;
-      onSummary: (callback: (data: { text: string }) => void) => void;
+      onSummary: (
+        callback: (data: { text: string; recordingId: string }) => void
+      ) => void;
       onSummarizationStarted: (callback: () => void) => void;
       onSummarizationCompleted: (callback: () => void) => void;
       onDictationStatus: (callback: (isDictating: boolean) => void) => void;
@@ -96,6 +98,8 @@ declare global {
       deleteRecording: (id: string) => Promise<boolean>;
       updateRecordingTitle: (id: string, title: string) => Promise<void>;
       updateRecordingSummary: (id: string, summary: string) => Promise<void>;
+      getAudioFilePath: (recordingId: string) => Promise<string | null>;
+      showAudioInFolder: (recordingId: string) => Promise<boolean>;
     };
 
     logger: {

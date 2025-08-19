@@ -114,6 +114,7 @@ jobs:
           APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
           CSC_LINK: ${{ secrets.CSC_LINK }}
           CSC_KEY_PASSWORD: ${{ secrets.CSC_KEY_PASSWORD }}
+          PUBLISH_FOR_PULL_REQUEST: true
 
       - name: Build Electron app (Windows)
         if: matrix.os == 'windows-latest'
@@ -122,6 +123,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           npm_config_cache: .npm
+          PUBLISH_FOR_PULL_REQUEST: true
 
       - name: Install Linux dependencies
         if: matrix.os == 'ubuntu-latest'
@@ -145,7 +147,10 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: release-${{ matrix.os }}${{ matrix.arch && format('-{0}', matrix.arch) || '' }}
-          path: release/
+          path: |
+            release/
+            !release/builder-debug.yml
+            !release/builder-effective-config.yaml
 
   # Create GitHub release with all build artifacts
   create-release:
@@ -207,12 +212,14 @@ jobs:
           cp artifacts/release-macos-latest/*.zip release-files/ 2>/dev/null || true
           cp artifacts/release-macos-latest/*.blockmap release-files/ 2>/dev/null || true
           cp artifacts/release-macos-latest/latest-mac.yml release-files/ 2>/dev/null || true
+          cp artifacts/release-macos-latest/app-update.yml release-files/app-update-mac.yml 2>/dev/null || true
 
           echo "Copying Windows files..."
           cp artifacts/release-windows-latest/*.exe release-files/ 2>/dev/null || true
           cp artifacts/release-windows-latest/*.zip release-files/ 2>/dev/null || true
           cp artifacts/release-windows-latest/*.blockmap release-files/ 2>/dev/null || true
           cp artifacts/release-windows-latest/latest.yml release-files/ 2>/dev/null || true
+          cp artifacts/release-windows-latest/app-update.yml release-files/app-update-win.yml 2>/dev/null || true
 
           echo "Copying Linux x64 files..."
           cp artifacts/release-ubuntu-latest-x64/*.AppImage release-files/ 2>/dev/null || true

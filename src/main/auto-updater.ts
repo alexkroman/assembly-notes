@@ -108,7 +108,9 @@ export class AutoUpdaterService {
         releaseDate: info.releaseDate || '',
       };
       this.store.dispatch(updateAvailable(serializedInfo));
-      this.mainWindow.webContents.send('update-available', serializedInfo);
+      if (!this.mainWindow.isDestroyed()) {
+        this.mainWindow.webContents.send('update-available', serializedInfo);
+      }
     });
 
     autoUpdater.on('update-not-available', (info: UpdateInfo) => {
@@ -117,11 +119,23 @@ export class AutoUpdaterService {
     });
 
     autoUpdater.on('error', (err: Error) => {
+      // Silently ignore all network-related errors - these are expected in various network conditions
+      if (
+        err.message.includes('ERR_INTERNET_DISCONNECTED') ||
+        err.message.includes('ERR_NAME_NOT_RESOLVED') ||
+        err.message.includes('ERR_NETWORK_CHANGED') ||
+        err.message.includes('ERR_TIMED_OUT')
+      ) {
+        return;
+      }
+
       this.logger.error('Error in auto-updater:', err);
       this.store.dispatch(setError(err.message));
 
       // Send error to renderer
-      this.mainWindow.webContents.send('update-error', err.message);
+      if (!this.mainWindow.isDestroyed()) {
+        this.mainWindow.webContents.send('update-error', err.message);
+      }
     });
 
     autoUpdater.on('download-progress', (progressObj: ProgressInfo) => {
@@ -136,7 +150,9 @@ export class AutoUpdaterService {
         `Download progress: ${progressObj.percent.toFixed(2)}%`
       );
       this.store.dispatch(updateProgress(progressObj));
-      this.mainWindow.webContents.send('download-progress', progressObj);
+      if (!this.mainWindow.isDestroyed()) {
+        this.mainWindow.webContents.send('download-progress', progressObj);
+      }
     });
 
     autoUpdater.on('update-downloaded', (info: UpdateInfo) => {
@@ -148,10 +164,9 @@ export class AutoUpdaterService {
         releaseDate: info.releaseDate || '',
       };
       this.store.dispatch(downloadComplete(serializedInfo));
-      this.mainWindow.webContents.send('update-downloaded', serializedInfo);
 
-      // Notify user that update is ready
       if (!this.mainWindow.isDestroyed()) {
+        this.mainWindow.webContents.send('update-downloaded', serializedInfo);
         this.mainWindow.webContents.send('update-ready-to-install', info);
       }
     });
@@ -176,7 +191,14 @@ export class AutoUpdaterService {
     );
     // Use checkForUpdates instead of checkForUpdatesAndNotify to avoid native notifications
     // The modal dialog will be shown via the update-available event handler
-    void autoUpdater.checkForUpdates();
+    void autoUpdater.checkForUpdates().catch((error: unknown) => {
+      // Silently ignore missing app-update.yml - this happens in dev builds or improperly packaged apps
+      if (error instanceof Error && error.message.includes('app-update.yml')) {
+        return;
+      }
+      // Re-throw other errors to be handled by the error event
+      throw error;
+    });
   }
 
   async checkForUpdates(): Promise<void> {
@@ -184,7 +206,11 @@ export class AutoUpdaterService {
       this.logger.info('Manually checking for updates...');
       const result = await autoUpdater.checkForUpdates();
       this.logger.info('Update check result:', result);
-    } catch (error) {
+    } catch (error: unknown) {
+      // Silently ignore missing app-update.yml
+      if (error instanceof Error && error.message.includes('app-update.yml')) {
+        return;
+      }
       this.logger.error('Error checking for updates:', error);
       throw error;
     }

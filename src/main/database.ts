@@ -58,6 +58,7 @@ class DatabaseService {
         title TEXT,
         transcript TEXT,
         summary TEXT,
+        audio_filename TEXT,
         created_at INTEGER NOT NULL,
         updated_at INTEGER NOT NULL
       )
@@ -135,6 +136,13 @@ class DatabaseService {
       this.db.exec('ALTER TABLE recordings DROP COLUMN duration');
     } catch {
       // Column may not exist, ignore error
+    }
+
+    // Add audio_filename column if it doesn't exist (migration)
+    try {
+      this.db.exec('ALTER TABLE recordings ADD COLUMN audio_filename TEXT');
+    } catch {
+      // Column may already exist, ignore error
     }
   }
 
@@ -275,8 +283,8 @@ class DatabaseService {
       const now = Date.now();
       const stmt = this.db.prepare(`
         INSERT OR REPLACE INTO recordings 
-        (id, title, transcript, summary, created_at, updated_at) 
-        VALUES (?, ?, ?, ?, ?, ?)
+        (id, title, transcript, summary, audio_filename, created_at, updated_at) 
+        VALUES (?, ?, ?, ?, ?, ?, ?)
       `);
 
       stmt.run(
@@ -284,6 +292,7 @@ class DatabaseService {
         recording.title ?? null,
         recording.transcript ?? null,
         recording.summary ?? null,
+        recording.audio_filename ?? null,
         recording.created_at ?? now,
         recording.updated_at ?? now
       );
@@ -446,6 +455,10 @@ class DatabaseService {
 
   updateRecordingSummary(id: string, summary: string): void {
     this.updateRecording(id, { summary });
+  }
+
+  updateRecordingAudioFilename(id: string, audioFilename: string): void {
+    this.updateRecording(id, { audio_filename: audioFilename });
   }
 
   close(): void {

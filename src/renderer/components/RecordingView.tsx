@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useCallback } from 'react';
+import React, { useEffect, useRef, useCallback, useState } from 'react';
 
 import type { RecordingViewProps } from '../../types/components.js';
 import { useAppSelector } from '../hooks/redux';
@@ -15,10 +15,6 @@ export const RecordingView: React.FC<RecordingViewProps> = ({
 }) => {
   const { isNewRecording } = useAppSelector((state) => state.ui);
   const settings = useAppSelector((state) => state.settings);
-  const transcriptionError = useAppSelector(
-    (state) => (state.transcription as { error: string | null }).error
-  );
-  const uiStatus = useAppSelector((state) => state.ui.status);
   const currentRecording = useAppSelector(
     (state) =>
       (
@@ -57,12 +53,67 @@ export const RecordingView: React.FC<RecordingViewProps> = ({
   const transcriptRef = useRef<HTMLPreElement>(null);
   const isUserScrolled = useRef(false);
   const lastTranscriptLength = useRef(0);
+  const audioRef = useRef<HTMLAudioElement>(null);
+  const titleInputRef = useRef<HTMLInputElement>(null);
+  const [audioUrl, setAudioUrl] = useState<string | null>(null);
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [currentTime, setCurrentTime] = useState(0);
+  const [duration, setDuration] = useState(0);
+  const recordingStartTime = useRef<number | null>(null);
 
   useEffect(() => {
     if (summaryRef.current) {
       summaryRef.current.value = summary;
     }
   }, [summary]);
+
+  // Track recording duration
+  useEffect(() => {
+    let intervalId: NodeJS.Timeout | null = null;
+
+    if (isRecording) {
+      recordingStartTime.current ??= Date.now();
+
+      // Update duration every 100ms for smooth display
+      intervalId = setInterval(() => {
+        const elapsed =
+          (Date.now() - (recordingStartTime.current ?? Date.now())) / 1000;
+        setCurrentTime(elapsed);
+        setDuration(elapsed);
+      }, 100);
+    } else {
+      recordingStartTime.current = null;
+      // When recording stops, reset currentTime to 0
+      if (!audioUrl) {
+        setCurrentTime(0);
+      }
+    }
+
+    return () => {
+      if (intervalId) {
+        clearInterval(intervalId);
+      }
+    };
+  }, [isRecording]);
+
+  // Load audio file when recording changes or stops
+  useEffect(() => {
+    async function loadAudio() {
+      if (recordingId) {
+        const filepath = await window.electronAPI.getAudioFilePath(recordingId);
+        if (filepath) {
+          // Convert file path to file:// URL for audio element
+          const fileUrl = `file://${filepath}`;
+          setAudioUrl(fileUrl);
+        } else {
+          setAudioUrl(null);
+        }
+      } else {
+        setAudioUrl(null);
+      }
+    }
+    void loadAudio();
+  }, [recordingId, isNewRecording, isRecording]);
 
   // Listen for dictation status changes
   useEffect(() => {
@@ -98,8 +149,60 @@ export const RecordingView: React.FC<RecordingViewProps> = ({
     handleToggleRecording,
   ]);
 
+  // Focus and select title input when it's a new recording
+  useEffect(() => {
+    if (isNewRecording && titleInputRef.current) {
+      // Small delay to ensure the component is fully rendered
+      setTimeout(() => {
+        if (titleInputRef.current) {
+          titleInputRef.current.focus();
+          titleInputRef.current.select();
+        }
+      }, 100);
+    }
+  }, [isNewRecording, recordingId]);
+
   const handleSummaryChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     setSummary(e.target.value);
+  };
+
+  const handlePlayPause = () => {
+    if (!audioRef.current) return;
+
+    if (isPlaying) {
+      audioRef.current.pause();
+      setIsPlaying(false);
+    } else {
+      void audioRef.current.play();
+      setIsPlaying(true);
+    }
+  };
+
+  const handleTimeUpdate = () => {
+    if (audioRef.current) {
+      setCurrentTime(audioRef.current.currentTime);
+    }
+  };
+
+  const handleLoadedMetadata = () => {
+    if (audioRef.current) {
+      setDuration(audioRef.current.duration);
+    }
+  };
+
+  const handleSeek = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const time = parseFloat(e.target.value);
+    if (audioRef.current) {
+      audioRef.current.currentTime = time;
+      setCurrentTime(time);
+    }
+  };
+
+  const formatTime = (seconds: number): string => {
+    if (isNaN(seconds)) return '0:00';
+    const mins = Math.floor(seconds / 60);
+    const secs = Math.floor(seconds % 60);
+    return `${mins.toString()}:${secs.toString().padStart(2, '0')}`;
   };
 
   const checkIfAtBottom = useCallback((element: HTMLElement) => {
@@ -144,37 +247,6 @@ export const RecordingView: React.FC<RecordingViewProps> = ({
     scrollToBottom,
   ]);
 
-  const getButtonText = () => {
-    if (isStopping || isStoppingForNavigation) {
-      return 'Stopping...';
-    }
-    if (isStarting) {
-      return 'Starting...';
-    }
-    return isRecording ? 'Stop' : 'Start';
-  };
-
-  const buttonText = getButtonText();
-
-  const getButtonClass = () => {
-    let baseClass =
-      'px-2 py-1 text-xs font-semibold rounded-sm cursor-pointer transition-all duration-200 h-7 tracking-wide w-[90px] bg-[#28a745]/20 border border-[#28a745]/50 text-[#28a745] hover:bg-[#28a745]/30';
-    if (isRecording)
-      baseClass =
-        'px-2 py-1 text-xs font-semibold rounded-sm cursor-pointer transition-all duration-200 h-7 tracking-wide w-[90px] bg-[#dc3545]/20 border-[#dc3545]/50 text-[#dc3545] hover:bg-[#dc3545]/30';
-    if (isStopping || isStoppingForNavigation)
-      baseClass =
-        'px-2 py-1 text-xs font-semibold rounded-sm cursor-not-allowed transition-all duration-200 h-7 tracking-wide w-[90px] bg-[#ffc107]/20 border-[#ffc107]/50 text-[#ffc107] opacity-80';
-    if (isStarting)
-      baseClass =
-        'px-2 py-1 text-xs font-semibold rounded-sm cursor-pointer transition-all duration-200 h-7 tracking-wide w-[90px] bg-[#28a745]/20 border border-[#28a745]/50 text-[#28a745] hover:bg-[#28a745]/30';
-    return baseClass;
-  };
-
-  const isButtonDisabled = () => {
-    return isStopping || isStarting || isStoppingForNavigation;
-  };
-
   // Check if Slack is configured using the same method as SlackOAuthConnectionOnly
   const hasSlackConfigured = Boolean(settings.slackInstallation);
 
@@ -198,6 +270,7 @@ export const RecordingView: React.FC<RecordingViewProps> = ({
 
       <div className="px-2 py-1 pt-2 bg-[#1a1a1a] flex justify-start items-center gap-1.5 flex-shrink-0 h-10">
         <input
+          ref={titleInputRef}
           type="text"
           className="text-base font-semibold px-2.5 py-1.5 bg-white/[0.06] border border-white/[0.18] rounded-sm text-white flex-1 h-8 text-left transition-all duration-200 m-0 cursor-text hover:bg-white/[0.09] hover:border-white/[0.24] focus:outline-none focus:border-white/[0.45] focus:bg-white/[0.12] focus:shadow-[0_0_0_2px_rgba(255,255,255,0.1)] placeholder:text-white/[0.35]"
           data-testid="recording-title-input"
@@ -207,21 +280,6 @@ export const RecordingView: React.FC<RecordingViewProps> = ({
             setRecordingTitle(e.target.value);
           }}
         />
-        {isNewRecording && (
-          <>
-            <button
-              type="button"
-              className={getButtonClass().replace('h-7', 'h-8')}
-              data-testid="record-button"
-              onClick={() => {
-                void handleToggleRecording();
-              }}
-              disabled={isButtonDisabled()}
-            >
-              {buttonText}
-            </button>
-          </>
-        )}
       </div>
 
       <div className="px-2 py-1 bg-transparent flex-shrink-0 h-9">
@@ -358,13 +416,100 @@ export const RecordingView: React.FC<RecordingViewProps> = ({
         </div>
       </div>
 
-      <div className="px-2 py-1 pb-1.5 bg-transparent text-center flex-shrink-0 h-6 flex items-center justify-center">
-        <span
-          className="text-[10px] text-white/[0.60] font-normal tracking-wide"
-          data-testid="status-display"
+      {/* Unified Audio/Recording Control - Always visible */}
+      <div className="px-2 py-1 bg-[#1a1a1a] flex items-center gap-1 flex-shrink-0 h-10">
+        <button
+          type="button"
+          className={`px-2 py-1 text-xs font-semibold rounded-sm transition-all duration-200 h-7 tracking-wide w-[85px] ${
+            isRecording || isPlaying
+              ? 'cursor-pointer bg-[#dc3545]/20 border border-[#dc3545]/50 text-[#dc3545] hover:bg-[#dc3545]/30'
+              : isStopping || isStarting
+                ? 'cursor-not-allowed bg-[#ffc107]/20 border border-[#ffc107]/50 text-[#ffc107] opacity-80'
+                : (audioUrl && !isNewRecording) || isNewRecording
+                  ? 'cursor-pointer bg-white/[0.09] border border-white/[0.18] text-white/[0.85] hover:bg-white/[0.12] hover:text-white'
+                  : 'cursor-not-allowed bg-white/[0.04] border border-white/[0.08] text-white/[0.25]'
+          }`}
+          onClick={() => {
+            if (isRecording) {
+              void handleToggleRecording();
+            } else if (isPlaying) {
+              handlePlayPause();
+            } else if (!audioUrl) {
+              void handleToggleRecording();
+            } else if (audioUrl) {
+              handlePlayPause();
+            }
+          }}
+          disabled={isStopping || isStarting}
         >
-          {transcriptionError ?? uiStatus}
+          {isStopping
+            ? 'Stopping...'
+            : isStarting
+              ? 'Starting...'
+              : isRecording || isPlaying
+                ? 'Stop'
+                : !audioUrl
+                  ? 'Record'
+                  : 'Play'}
+        </button>
+        <span
+          className={`text-[10px] min-w-[35px] text-right ${isRecording ? 'text-[#dc3545]' : audioUrl ? 'text-white/[0.6]' : 'text-white/[0.25]'}`}
+        >
+          {formatTime(currentTime)}
         </span>
+        <input
+          type="range"
+          min="0"
+          max={isRecording ? 100 : duration || 1}
+          step="0.01"
+          value={isRecording ? 100 : currentTime}
+          onChange={handleSeek}
+          disabled={!audioUrl || isRecording}
+          className={`flex-1 h-1 rounded-lg appearance-none slider ${
+            isRecording
+              ? 'recording-slider bg-white/[0.08] cursor-not-allowed'
+              : audioUrl
+                ? 'bg-white/[0.2] cursor-pointer'
+                : 'bg-white/[0.08] cursor-not-allowed'
+          }`}
+          style={{
+            background: isRecording
+              ? `linear-gradient(to right, #dc3545 0%, #dc3545 100%, rgba(255, 255, 255, 0.3) 100%, rgba(255, 255, 255, 0.3) 100%)`
+              : audioUrl && duration > 0
+                ? `linear-gradient(to right, #28a745 0%, #28a745 ${((currentTime / duration) * 100).toFixed(2)}%, rgba(255, 255, 255, 0.3) ${((currentTime / duration) * 100).toFixed(2)}%, rgba(255, 255, 255, 0.3) 100%)`
+                : undefined,
+          }}
+        />
+        <span
+          className={`text-[10px] min-w-[35px] ${isRecording ? 'text-[#dc3545]' : audioUrl ? 'text-white/[0.6]' : 'text-white/[0.25]'}`}
+        >
+          {formatTime(duration)}
+        </span>
+        {audioUrl && !isRecording && (
+          <button
+            type="button"
+            className="text-[10px] text-white/[0.5] hover:text-white/[0.8] transition-colors duration-200 cursor-pointer ml-1 px-1"
+            title="Show audio file in Finder"
+            onClick={() => {
+              if (recordingId) {
+                void window.electronAPI.showAudioInFolder(recordingId);
+              }
+            }}
+          >
+            📁
+          </button>
+        )}
+        {audioUrl && (
+          <audio
+            ref={audioRef}
+            src={audioUrl}
+            onTimeUpdate={handleTimeUpdate}
+            onLoadedMetadata={handleLoadedMetadata}
+            onEnded={() => {
+              setIsPlaying(false);
+            }}
+          />
+        )}
       </div>
     </div>
   );

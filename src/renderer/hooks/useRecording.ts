@@ -76,6 +76,30 @@ export const useRecording = (recordingId: string | null) => {
     .filter(Boolean)
     .join(' ');
 
+  // Immediate Redux updates + debounced database writes
+  const handleSummaryChange = useCallback(
+    (summaryText: string) => {
+      if (!recordingId) return;
+
+      // Update Redux immediately for UI responsiveness
+      dispatch(updateCurrentRecordingSummary(summaryText));
+
+      // Clear existing timeout
+      if (summaryDebounceRef.current) {
+        clearTimeout(summaryDebounceRef.current);
+      }
+
+      // Capture current recording ID for closure
+      const currentRecordingId = recordingId;
+
+      // Debounce database update
+      summaryDebounceRef.current = setTimeout(() => {
+        void updateSummary({ id: currentRecordingId, summary: summaryText });
+      }, 300); // Wait 300ms after user stops typing
+    },
+    [recordingId, updateSummary, dispatch]
+  );
+
   useEffect(() => {
     // Clear any pending debounced updates when recording changes
     if (titleDebounceRef.current) {
@@ -89,9 +113,16 @@ export const useRecording = (recordingId: string | null) => {
   }, [recordingId]);
 
   useEffect(() => {
-    const handleSummary = (data: { text: string }) => {
-      // Update summary via debounced database write
-      handleSummaryChange(data.text);
+    const handleSummary = (data: { text: string; recordingId: string }) => {
+      // Only update summary if it's for the current recording
+      if (recordingId && data.recordingId === recordingId) {
+        // Update summary via debounced database write
+        handleSummaryChange(data.text);
+      } else {
+        window.logger.warn(
+          `Ignoring summary for different recording. Current: ${recordingId ?? 'none'}, Received: ${data.recordingId}`
+        );
+      }
     };
 
     const handleSummarizationStarted = () => {
@@ -116,7 +147,7 @@ export const useRecording = (recordingId: string | null) => {
       window.electronAPI.removeAllListeners('summarization-completed');
       // Don't remove audio capture listeners - they're global
     };
-  }, [dispatch, recordingId]);
+  }, [dispatch, recordingId, handleSummaryChange]);
 
   const handleToggleRecording = async () => {
     try {
@@ -215,29 +246,6 @@ export const useRecording = (recordingId: string | null) => {
       }, 300); // Wait 300ms after user stops typing
     },
     [recordingId, updateTitle, dispatch]
-  );
-
-  const handleSummaryChange = useCallback(
-    (summaryText: string) => {
-      if (!recordingId) return;
-
-      // Update Redux immediately for UI responsiveness
-      dispatch(updateCurrentRecordingSummary(summaryText));
-
-      // Clear existing timeout
-      if (summaryDebounceRef.current) {
-        clearTimeout(summaryDebounceRef.current);
-      }
-
-      // Capture current recording ID for closure
-      const currentRecordingId = recordingId;
-
-      // Debounce database update
-      summaryDebounceRef.current = setTimeout(() => {
-        void updateSummary({ id: currentRecordingId, summary: summaryText });
-      }, 300); // Wait 300ms after user stops typing
-    },
-    [recordingId, updateSummary, dispatch]
   );
 
   // Cleanup timeouts on unmount
