@@ -10,15 +10,26 @@ export async function acquireStreams(isDictationMode = false): Promise<{
   try {
     const constraints = {
       audio: {
-        echoCancellation: true, // Always enable browser's echo cancellation
-        noiseSuppression: true,
-        autoGainControl: true,
-        // Additional constraints to improve echo cancellation
+        // Core audio processing for meeting scenarios
+        echoCancellation: true, // Critical for removing Zoom audio from your mic
+        noiseSuppression: true, // Reduces background noise
+        autoGainControl: true, // Normalizes your voice volume
+
+        // Google-specific enhancements (Chrome)
         googEchoCancellation: true,
         googAutoGainControl: true,
         googNoiseSuppression: true,
-        googHighpassFilter: true,
-        googTypingNoiseDetection: true,
+        googHighpassFilter: true, // Removes low-frequency rumble
+        googTypingNoiseDetection: true, // Filters keyboard noise
+
+        // Additional meeting-optimized constraints
+        googAudioMirroring: false, // Prevents audio feedback loops
+        googNoiseReduction: true, // Extra noise reduction
+
+        // Optimize for speech (meetings are primarily voice)
+        sampleRate: 16000, // Optimal for speech recognition
+        sampleSize: 16, // Good quality for speech
+        channelCount: 1, // Mono is fine for speech
       } as MediaTrackConstraints,
       video: false,
     };

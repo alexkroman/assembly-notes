@@ -17,26 +17,7 @@ export async function startAudioProcessing(
     combinedAudioContext = new AudioContext({ sampleRate: 16000 });
     await combinedAudioContext.audioWorklet.addModule('./audio-processor.js');
 
-    // Create a mixer node to combine the audio sources
-    const mixerNode = combinedAudioContext.createGain();
-    mixerNode.gain.value = 1.0;
-
-    // Create source for microphone (with echo cancellation)
-    const micSource = combinedAudioContext.createMediaStreamSource(micStream);
-    const micGain = combinedAudioContext.createGain();
-    micGain.gain.value = microphoneGainValue; // Use configurable microphone volume
-    micSource.connect(micGain);
-    micGain.connect(mixerNode);
-
-    // Create source for system audio
-    const systemSource =
-      combinedAudioContext.createMediaStreamSource(systemStream);
-    const systemGain = combinedAudioContext.createGain();
-    systemGain.gain.value = systemAudioGainValue; // Use configurable system audio volume
-    systemSource.connect(systemGain);
-    systemGain.connect(mixerNode);
-
-    // Connect mixer to the worklet
+    // Create the worklet node for audio processing first
     combinedWorkletNode = new AudioWorkletNode(
       combinedAudioContext,
       'audio-processor'
@@ -50,10 +31,56 @@ export async function startAudioProcessing(
       }
     };
 
-    mixerNode.connect(combinedWorkletNode);
+    // Create a mixer node to combine the audio sources
+    const mixerNode = combinedAudioContext.createGain();
+    mixerNode.gain.value = 1.0;
+
+    // Add a compressor for better dynamic range (helpful for meetings)
+    const compressor = combinedAudioContext.createDynamicsCompressor();
+    compressor.threshold.value = -30; // Start compression at -30dB
+    compressor.knee.value = 10; // Smooth transition into compression
+    compressor.ratio.value = 4; // 4:1 compression ratio
+    compressor.attack.value = 0.003; // Fast attack for speech
+    compressor.release.value = 0.25; // Moderate release
+
+    // Add a highpass filter to remove low-frequency rumble
+    const highpassFilter = combinedAudioContext.createBiquadFilter();
+    highpassFilter.type = 'highpass';
+    highpassFilter.frequency.value = 80; // Cut frequencies below 80Hz
+    highpassFilter.Q.value = 1.0;
+
+    // Create source for microphone (with echo cancellation)
+    const micSource = combinedAudioContext.createMediaStreamSource(micStream);
+    const micGain = combinedAudioContext.createGain();
+    micGain.gain.value = microphoneGainValue; // Use configurable microphone volume
+    micSource.connect(micGain);
+    micGain.connect(mixerNode);
+
+    // Create source for system audio (Zoom meeting)
+    const systemSource =
+      combinedAudioContext.createMediaStreamSource(systemStream);
+    const systemGain = combinedAudioContext.createGain();
+    systemGain.gain.value = systemAudioGainValue; // Use configurable system audio volume
+
+    // Add a limiter to prevent Zoom audio from being too loud
+    const systemLimiter = combinedAudioContext.createDynamicsCompressor();
+    systemLimiter.threshold.value = -10; // Limit loud sounds
+    systemLimiter.knee.value = 0; // Hard knee for limiting
+    systemLimiter.ratio.value = 20; // High ratio for limiting
+    systemLimiter.attack.value = 0.001; // Very fast attack
+    systemLimiter.release.value = 0.1; // Fast release
+
+    systemSource.connect(systemGain);
+    systemGain.connect(systemLimiter);
+    systemLimiter.connect(mixerNode);
+
+    // Connect the audio processing chain
+    mixerNode.connect(highpassFilter);
+    highpassFilter.connect(compressor);
+    compressor.connect(combinedWorkletNode);
 
     window.logger.info(
-      `Using combined audio stream with mixing (mic: ${String(microphoneGainValue)}, system: ${String(systemAudioGainValue)}) and echo cancellation`
+      `Using meeting-optimized audio: mic=${String(microphoneGainValue)}, system=${String(systemAudioGainValue)}, with echo cancellation, compression, and filtering`
     );
     return;
   }
