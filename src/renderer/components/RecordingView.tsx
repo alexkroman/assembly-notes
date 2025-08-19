@@ -54,6 +54,7 @@ export const RecordingView: React.FC<RecordingViewProps> = ({
   const isUserScrolled = useRef(false);
   const lastTranscriptLength = useRef(0);
   const audioRef = useRef<HTMLAudioElement>(null);
+  const titleInputRef = useRef<HTMLInputElement>(null);
   const [audioUrl, setAudioUrl] = useState<string | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
@@ -147,6 +148,19 @@ export const RecordingView: React.FC<RecordingViewProps> = ({
     isStarting,
     handleToggleRecording,
   ]);
+
+  // Focus and select title input when it's a new recording
+  useEffect(() => {
+    if (isNewRecording && titleInputRef.current) {
+      // Small delay to ensure the component is fully rendered
+      setTimeout(() => {
+        if (titleInputRef.current) {
+          titleInputRef.current.focus();
+          titleInputRef.current.select();
+        }
+      }, 100);
+    }
+  }, [isNewRecording, recordingId]);
 
   const handleSummaryChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     setSummary(e.target.value);
@@ -256,6 +270,7 @@ export const RecordingView: React.FC<RecordingViewProps> = ({
 
       <div className="px-2 py-1 pt-2 bg-[#1a1a1a] flex justify-start items-center gap-1.5 flex-shrink-0 h-10">
         <input
+          ref={titleInputRef}
           type="text"
           className="text-base font-semibold px-2.5 py-1.5 bg-white/[0.06] border border-white/[0.18] rounded-sm text-white flex-1 h-8 text-left transition-all duration-200 m-0 cursor-text hover:bg-white/[0.09] hover:border-white/[0.24] focus:outline-none focus:border-white/[0.45] focus:bg-white/[0.12] focus:shadow-[0_0_0_2px_rgba(255,255,255,0.1)] placeholder:text-white/[0.35]"
           data-testid="recording-title-input"
