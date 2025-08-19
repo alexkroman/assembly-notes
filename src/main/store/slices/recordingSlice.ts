@@ -13,6 +13,7 @@ const initialState: RecordingState = {
     system: false,
   },
   isDictating: false,
+  isTransitioning: false,
 };
 
 // Async thunk for starting recording - returns only serializable data
@@ -124,6 +125,9 @@ const recordingSlice = createSlice({
     setDictationMode: (state, action: PayloadAction<boolean>) => {
       state.isDictating = action.payload;
     },
+    setTransitioning: (state, action: PayloadAction<boolean>) => {
+      state.isTransitioning = action.payload;
+    },
   },
   extraReducers: (builder) => {
     builder
@@ -191,6 +195,7 @@ export const {
   updateConnectionStatus,
   reset: resetRecording,
   setDictationMode,
+  setTransitioning,
 } = recordingSlice.actions;
 
 export default recordingSlice.reducer;

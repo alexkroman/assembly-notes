@@ -149,6 +149,12 @@ const electronAPI = {
     ipcRenderer.on('slack-oauth-error', (_event, error) => {
       callback(error as string);
     }),
+
+  // Dictation status window
+  onDictationStatusUpdate: (callback: (isDictating: boolean) => void) =>
+    ipcRenderer.on('dictation-status-update', (_event, isDictating) => {
+      callback(isDictating as boolean);
+    }),
 };
 
 const logger = {

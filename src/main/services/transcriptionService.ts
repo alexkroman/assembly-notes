@@ -50,6 +50,7 @@ export class AssemblyAIFactory implements IAssemblyAIFactory {
 @injectable()
 export class TranscriptionService {
   private dictationListeners: ((text: string) => void)[] = [];
+  private speechActivityListeners: (() => void)[] = [];
 
   constructor(
     @inject(DI_TOKENS.AssemblyAIFactory)
@@ -76,6 +77,27 @@ export class TranscriptionService {
     };
   }
 
+  /**
+   * Creates transcription connection for microphone only (used in dictation mode)
+   */
+  async createMicrophoneOnlyConnection(
+    apiKey: string,
+    callbacks: TranscriptionCallbacks
+  ): Promise<TranscriptionConnection> {
+    const aai = await this.assemblyAIFactory.createClient(apiKey);
+
+    const microphoneTranscriber = await this.createTranscriber(
+      aai,
+      'microphone',
+      callbacks
+    );
+
+    return {
+      microphone: microphoneTranscriber,
+      system: null,
+    };
+  }
+
   private async createTranscriber(
     aai: IAssemblyAIClient,
     streamType: 'microphone' | 'system',
@@ -87,14 +109,56 @@ export class TranscriptionService {
 
     // Set up event handlers
     transcriber.on('open', () => {
+      logger.info(`AssemblyAI ${streamType} connection opened`);
       callbacks.onConnectionStatus?.(streamType, true);
     });
 
     transcriber.on('error', (error: Error) => {
-      callbacks.onError?.(streamType, error);
+      logger.error(`AssemblyAI ${streamType} error:`, error);
+
+      // Check for connection reset errors
+      if (
+        error.message.includes('ERR_CONNECTION_RESET') ||
+        error.message.includes('ECONNRESET') ||
+        error.message.includes('WebSocket') ||
+        error.message.includes('connection')
+      ) {
+        logger.info(`Attempting to handle connection error for ${streamType}`);
+
+        // Notify about the error but don't crash
+        callbacks.onError?.(
+          streamType,
+          new Error(
+            `Connection lost for ${streamType} stream. It may reconnect automatically.`
+          )
+        );
+
+        if (app.isPackaged) {
+          Sentry.captureException(error, {
+            level: 'warning',
+            tags: {
+              service: 'transcription',
+              stream: streamType,
+              errorType: 'connection_reset',
+            },
+          });
+        }
+      } else {
+        callbacks.onError?.(streamType, error);
+
+        if (app.isPackaged) {
+          Sentry.captureException(error, {
+            tags: {
+              service: 'transcription',
+              stream: streamType,
+            },
+          });
+        }
+      }
     });
 
     transcriber.on('close', () => {
+      logger.info(`AssemblyAI ${streamType} connection closed`);
       callbacks.onConnectionStatus?.(streamType, false);
     });
 
@@ -111,7 +175,37 @@ export class TranscriptionService {
       }
     );
 
-    await transcriber.connect();
+    // Connect with retry logic
+    const maxRetries = 3;
+    let retryCount = 0;
+
+    while (retryCount < maxRetries) {
+      try {
+        await transcriber.connect();
+        logger.info(`AssemblyAI ${streamType} connected successfully`);
+        return transcriber;
+      } catch (error) {
+        retryCount++;
+        logger.error(
+          `AssemblyAI ${streamType} connection attempt ${String(retryCount)} failed:`,
+          error
+        );
+
+        if (retryCount >= maxRetries) {
+          throw new Error(
+            `Failed to connect ${streamType} after ${String(maxRetries)} attempts: ${String(error)}`
+          );
+        }
+
+        // Wait before retrying (exponential backoff)
+        const waitTime = Math.min(1000 * Math.pow(2, retryCount - 1), 5000);
+        logger.info(
+          `Retrying ${streamType} connection in ${String(waitTime)}ms...`
+        );
+        await new Promise((resolve) => setTimeout(resolve, waitTime));
+      }
+    }
+
     return transcriber;
   }
 
@@ -209,6 +303,32 @@ export class TranscriptionService {
   emitDictationText(text: string): void {
     this.dictationListeners.forEach((listener) => {
       listener(text);
+    });
+  }
+
+  /**
+   * Register a listener for speech activity (any voice activity - partials or finals)
+   */
+  onSpeechActivity(listener: () => void): void {
+    this.speechActivityListeners.push(listener);
+  }
+
+  /**
+   * Unregister a speech activity listener
+   */
+  offSpeechActivity(listener: () => void): void {
+    const index = this.speechActivityListeners.indexOf(listener);
+    if (index > -1) {
+      this.speechActivityListeners.splice(index, 1);
+    }
+  }
+
+  /**
+   * Emit speech activity to all listeners
+   */
+  emitSpeechActivity(): void {
+    this.speechActivityListeners.forEach((listener) => {
+      listener();
     });
   }
 }

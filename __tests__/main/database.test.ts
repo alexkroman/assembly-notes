@@ -1,6 +1,7 @@
 import 'reflect-metadata';
 import { container } from 'tsyringe';
 
+import { DEFAULT_DICTATION_STYLING_PROMPT } from '../../src/constants/dictationPrompts';
 import { DatabaseService } from '../../src/main/database';
 import { DI_TOKENS } from '../../src/main/di-tokens';
 import { Recording } from '../../src/types/common';
@@ -249,6 +250,9 @@ describe('DatabaseService', () => {
         slackInstallation: null,
         slackChannels: 'channel1,channel2',
         autoStart: false,
+        dictationStylingEnabled: false,
+        dictationStylingPrompt: DEFAULT_DICTATION_STYLING_PROMPT,
+        dictationSilenceTimeout: 2000,
       });
     });
 
@@ -273,6 +277,9 @@ describe('DatabaseService', () => {
         slackInstallation: null,
         slackChannels: '',
         autoStart: false,
+        dictationStylingEnabled: false,
+        dictationStylingPrompt: DEFAULT_DICTATION_STYLING_PROMPT,
+        dictationSilenceTimeout: 2000,
       });
     });
 
@@ -311,6 +318,9 @@ describe('DatabaseService', () => {
         slackInstallation: null,
         slackChannels: '',
         autoStart: false,
+        dictationStylingEnabled: false,
+        dictationStylingPrompt: DEFAULT_DICTATION_STYLING_PROMPT,
+        dictationSilenceTimeout: 2000,
       });
     });
   });

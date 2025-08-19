@@ -35,6 +35,10 @@ export interface SettingsSchema {
   slackChannels: string; // Comma-separated favorite channel names
   autoStart: boolean;
   userId?: string; // Unique user identifier
+  // Dictation styling settings
+  dictationStylingEnabled: boolean;
+  dictationStylingPrompt: string;
+  dictationSilenceTimeout: number; // milliseconds
 }
 
 export interface Recording {

@@ -19,6 +19,9 @@ export const RecordingsList: React.FC<RecordingsListProps> = ({
   const recordingStatus = useAppSelector((state) => state.recording.status);
   const isDictating = useAppSelector((state) => state.recording.isDictating);
   const [searchQuery, setSearchQuery] = useState('');
+  const [hoveredRecordingId, setHoveredRecordingId] = useState<string | null>(
+    null
+  );
   const [deleteModal, setDeleteModal] = useState<{
     isOpen: boolean;
     recordingId: string | null;
@@ -96,8 +99,59 @@ export const RecordingsList: React.FC<RecordingsListProps> = ({
     setDeleteModal({ isOpen: false, recordingId: null });
   };
 
-  const formatDate = (timestamp: number) => {
-    return new Date(timestamp).toLocaleString();
+  const formatTime = (timestamp: number) => {
+    const date = new Date(timestamp);
+    const options: Intl.DateTimeFormatOptions = {
+      hour: 'numeric',
+      minute: '2-digit',
+      hour12: true,
+    };
+    const timeString = date.toLocaleString('en-US', options);
+    // Split time and AM/PM, will return time wrapped in span elements
+    const [time, period] = timeString.split(' ');
+    return { time, period };
+  };
+
+  const formatDateHeader = (timestamp: number) => {
+    const date = new Date(timestamp);
+    const today = new Date();
+    const yesterday = new Date(today);
+    yesterday.setDate(yesterday.getDate() - 1);
+
+    const isToday = date.toDateString() === today.toDateString();
+    const isYesterday = date.toDateString() === yesterday.toDateString();
+
+    if (isToday) {
+      return 'Today';
+    } else if (isYesterday) {
+      return 'Yesterday';
+    } else {
+      const options: Intl.DateTimeFormatOptions = {
+        weekday: 'long',
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
+      };
+      return date.toLocaleDateString('en-US', options);
+    }
+  };
+
+  // Group recordings by date
+  const groupRecordingsByDate = (recordingsList: typeof recordings) => {
+    const grouped = recordingsList.reduce<Record<string, typeof recordings>>(
+      (groups, recording) => {
+        const date = new Date(recording.created_at).toDateString();
+        groups[date] ??= [];
+        groups[date].push(recording);
+        return groups;
+      },
+      {}
+    );
+
+    // Sort dates in descending order (most recent first)
+    return Object.entries(grouped).sort(([dateA], [dateB]) => {
+      return new Date(dateB).getTime() - new Date(dateA).getTime();
+    });
   };
 
   const isAssemblyAIKeyMissing = !(settings.assemblyaiKey || '').trim();
@@ -105,10 +159,10 @@ export const RecordingsList: React.FC<RecordingsListProps> = ({
   return (
     <div
       id="recordingsListPage"
-      className="page active overflow-y-auto relative pb-12"
+      className="page active relative h-full flex flex-col"
       data-testid="recordings-list"
     >
-      <div className="px-3 py-1 bg-[#1a1a1a] sticky top-0 z-[100] mb-1.5">
+      <div className="px-3 py-1 bg-[#1a1a1a] flex-shrink-0 z-[100] mb-1.5">
         <div className="flex items-center gap-3 h-8">
           <div className="flex-1">
             <input
@@ -163,7 +217,7 @@ export const RecordingsList: React.FC<RecordingsListProps> = ({
         </div>
       </div>
 
-      <div className="flex-1">
+      <div className="flex-1 overflow-y-auto pb-10">
         {error ? (
           <div className="flex items-center justify-center py-20">
             <div className="text-center">
@@ -210,38 +264,65 @@ export const RecordingsList: React.FC<RecordingsListProps> = ({
             </div>
           </div>
         ) : (
-          <div className="flex flex-col gap-2 p-3 pb-4">
-            {recordings.map((recording) => (
-              <div
-                key={recording.id}
-                className="bg-white/[0.06] rounded-lg px-4 py-3 cursor-pointer transition-all duration-200 hover:bg-white/[0.09] hover:shadow-md shadow-sm relative"
-                data-testid="recording-item"
-                onClick={() => {
-                  onNavigateToRecording(recording.id);
-                }}
-              >
-                <div className="flex justify-between items-center group/item">
-                  <h3 className="m-0 text-sm font-medium text-white flex-1">
-                    {recording.title ?? 'Untitled Recording'}
-                  </h3>
-                  <div className="flex items-center ml-auto">
-                    <span className="text-xs text-white/[0.60] transition-opacity duration-200 group-hover/item:opacity-0">
-                      {formatDate(recording.created_at)}
-                    </span>
-                    <button
-                      type="button"
-                      className="opacity-0 text-[#dc3545]/80 text-xs cursor-pointer px-2 py-1 rounded transition-all duration-200 whitespace-nowrap ml-2 group-hover/item:opacity-100 hover:bg-[#dc3545]/20 hover:text-[#dc3545] absolute right-4"
-                      onClick={(e) => {
-                        handleDeleteRecording(recording.id, e);
+          <div className="flex flex-col gap-4 p-3">
+            {groupRecordingsByDate(recordings).map(
+              ([dateString, dateRecordings]) => (
+                <div key={dateString} className="flex flex-col gap-1.5">
+                  <h2 className="text-xs font-semibold text-white/[0.70] uppercase tracking-wider mb-1">
+                    {formatDateHeader(new Date(dateString).getTime())}
+                  </h2>
+                  {dateRecordings.map((recording) => (
+                    <div
+                      key={recording.id}
+                      className="bg-white/[0.06] rounded-lg px-4 py-2 cursor-pointer transition-all duration-200 hover:bg-white/[0.09] hover:shadow-md shadow-sm relative"
+                      data-testid="recording-item"
+                      onMouseEnter={() => {
+                        setHoveredRecordingId(recording.id);
                       }}
-                      title="Delete recording"
+                      onMouseLeave={() => {
+                        setHoveredRecordingId(null);
+                      }}
+                      onClick={() => {
+                        onNavigateToRecording(recording.id);
+                      }}
                     >
-                      Delete
-                    </button>
-                  </div>
+                      <div className="flex justify-between items-center">
+                        <h3 className="m-0 text-sm font-medium text-white flex-1">
+                          {recording.title ?? 'Untitled Recording'}
+                        </h3>
+                        <div className="flex items-center ml-auto">
+                          <span
+                            className={`text-xs text-white/[0.60] transition-opacity duration-200 ${hoveredRecordingId === recording.id ? 'opacity-0' : ''}`}
+                          >
+                            {(() => {
+                              const { time, period } = formatTime(
+                                recording.created_at
+                              );
+                              return (
+                                <>
+                                  {time}{' '}
+                                  <span className="text-[9px]">{period}</span>
+                                </>
+                              );
+                            })()}
+                          </span>
+                          <button
+                            type="button"
+                            className={`text-[#dc3545]/80 text-xs cursor-pointer px-2 py-1 rounded transition-all duration-200 whitespace-nowrap ml-2 hover:bg-[#dc3545]/20 hover:text-[#dc3545] absolute right-4 ${hoveredRecordingId === recording.id ? 'opacity-100' : 'opacity-0'}`}
+                            onClick={(e) => {
+                              handleDeleteRecording(recording.id, e);
+                            }}
+                            title="Delete recording"
+                          >
+                            Delete
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
                 </div>
-              </div>
-            ))}
+              )
+            )}
           </div>
         )}
       </div>
@@ -260,7 +341,7 @@ export const RecordingsList: React.FC<RecordingsListProps> = ({
       />
 
       {/* Dictation Help Overlay */}
-      <div className="fixed bottom-0 left-0 right-0 bg-[#1a1a1a]/95 backdrop-blur-sm border-t border-white/10 px-4 py-2 z-50">
+      <div className="absolute bottom-0 left-0 right-0 bg-[#1a1a1a] px-4 py-2 z-50">
         <div className="relative flex items-center justify-between max-w-4xl mx-auto">
           {/* Disabled overlay when recording */}
           {isRecordingActive && !isDictating && (
@@ -288,18 +369,10 @@ export const RecordingsList: React.FC<RecordingsListProps> = ({
               </kbd>
             </div>
             <div className="text-[10px] text-white/60">
-              {isDictating ? (
-                <span className="text-sm font-medium text-red-400 flex items-center gap-1.5">
-                  <span className="inline-block w-2 h-2 bg-red-500 rounded-full animate-pulse"></span>
-                  Dictating
-                </span>
-              ) : (
-                <span>
-                  <span className="font-medium text-white/80">Dictation:</span>{' '}
-                  Press to dictate in any app. Words appear where your cursor
-                  is.
-                </span>
-              )}
+              <span>
+                <span className="font-medium text-white/80">Dictation:</span>{' '}
+                Press to dictate in any app. Words appear where your cursor is.
+              </span>
             </div>
           </div>
         </div>

@@ -1,6 +1,7 @@
 import { createSlice, type PayloadAction } from '@reduxjs/toolkit';
 
 import { settingsActions } from './syncActionTypes.js';
+import { DEFAULT_DICTATION_STYLING_PROMPT } from '../../constants/dictationPrompts.js';
 import type { SettingsState } from '../../types/redux.js';
 
 const initialState: SettingsState = {
@@ -14,6 +15,9 @@ const initialState: SettingsState = {
   error: null,
   hasAssemblyAIKey: false,
   hasSlackConfigured: false,
+  dictationStylingEnabled: false,
+  dictationStylingPrompt: DEFAULT_DICTATION_STYLING_PROMPT,
+  dictationSilenceTimeout: 2000,
 };
 
 const settingsSlice = createSlice({

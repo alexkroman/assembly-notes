@@ -1,3 +1,4 @@
+import { DEFAULT_DICTATION_STYLING_PROMPT } from '../../src/constants/dictationPrompts.js';
 import {
   SettingsSchema,
   SlackInstallation,
@@ -14,6 +15,9 @@ export const createMockSettings = (
   prompts: [],
   autoStart: false,
   slackInstallation: null,
+  dictationStylingEnabled: false,
+  dictationStylingPrompt: DEFAULT_DICTATION_STYLING_PROMPT,
+  dictationSilenceTimeout: 2000,
   ...overrides,
 });
 
