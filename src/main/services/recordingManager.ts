@@ -542,9 +542,10 @@ export class RecordingManager {
           `Summarization complete - sending summary event for recording: ${String(currentRecordingId)}`
         );
 
-        // Send summary to UI - UI will handle both state update and database write
+        // Send summary to UI with recording ID - UI will validate and handle both state update and database write
         this.mainWindow.webContents.send('summary', {
           text: summary,
+          recordingId: currentRecordingId,
         });
 
         // Save to database and update Redux state via RecordingDataService

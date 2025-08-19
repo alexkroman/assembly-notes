@@ -32,7 +32,9 @@ declare global {
 
       // Event listeners
       onTranscript: (callback: (data: TranscriptData) => void) => void;
-      onSummary: (callback: (data: { text: string }) => void) => void;
+      onSummary: (
+        callback: (data: { text: string; recordingId: string }) => void
+      ) => void;
       onSummarizationStarted: (callback: () => void) => void;
       onSummarizationCompleted: (callback: () => void) => void;
       onDictationStatus: (callback: (isDictating: boolean) => void) => void;
