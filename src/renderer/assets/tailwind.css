@@ -162,6 +162,15 @@
   .slider:focus {
     @apply outline-none;
   }
+
+  /* Recording slider styles - red thumb */
+  .recording-slider::-webkit-slider-thumb {
+    @apply appearance-none w-3 h-3 bg-[#dc3545] rounded-full cursor-not-allowed transition-all duration-150;
+  }
+
+  .recording-slider::-moz-range-thumb {
+    @apply w-3 h-3 bg-[#dc3545] rounded-full cursor-not-allowed border-0 transition-all duration-150;
+  }
 }
 
 /* Custom scrollbar styles for dark mode */
