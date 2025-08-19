@@ -1,7 +1,4 @@
-import {
-  cleanupEchoCancellation,
-  processEchoCancellation,
-} from './echo-cancellation';
+import { cleanupEchoCancellation } from './echo-cancellation';
 
 let microphoneStream: MediaStream | null = null;
 let systemAudioStream: MediaStream | null = null;
@@ -60,16 +57,12 @@ export async function acquireStreams(isDictationMode = false): Promise<{
 
     systemAudioStream = displayStream;
 
-    // Process echo cancellation to remove system audio from microphone
-    window.logger.info('Processing echo cancellation...');
-    const processedMicStream = processEchoCancellation(
-      microphoneStream,
-      systemAudioStream
-    );
-    window.logger.info('Echo cancellation processing complete');
+    // Don't play system audio through our app since it's already playing through the OS
+    // We'll need to use echo cancellation to remove it from the microphone
+    window.logger.info('System audio captured, using echo cancellation...');
 
     return {
-      microphoneStream: processedMicStream,
+      microphoneStream, // For now, use browser's built-in echo cancellation
       systemAudioStream,
     };
   } catch (error) {
