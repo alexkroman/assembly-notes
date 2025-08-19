@@ -90,7 +90,7 @@
     "executableName": "assembly-notes",
     "desktop": {
       "entry": {
-        "Name": "Assembly Notes",
+        "Name": "Assembly-Notes",
         "Comment": "Real-time transcription and meeting notes",
         "Categories": "Office;AudioVideo;",
         "Terminal": false,

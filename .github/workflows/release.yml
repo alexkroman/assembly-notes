@@ -106,7 +106,7 @@ jobs:
 
       - name: Build Electron app (macOS)
         if: matrix.os == 'macos-latest'
-        run: npm run build:mac:notarized
+        run: npm run build:release:mac
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           APPLE_ID: ${{ secrets.APPLE_ID }}
@@ -114,16 +114,14 @@ jobs:
           APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
           CSC_LINK: ${{ secrets.CSC_LINK }}
           CSC_KEY_PASSWORD: ${{ secrets.CSC_KEY_PASSWORD }}
-          PUBLISH_FOR_PULL_REQUEST: true
 
       - name: Build Electron app (Windows)
         if: matrix.os == 'windows-latest'
         run: |
-          npm run build:win
+          npm run build:release:win
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           npm_config_cache: .npm
-          PUBLISH_FOR_PULL_REQUEST: true
 
       - name: Install Linux dependencies
         if: matrix.os == 'ubuntu-latest'
@@ -151,6 +149,10 @@ jobs:
             release/
             !release/builder-debug.yml
             !release/builder-effective-config.yaml
+            !release/mac-arm64/
+            !release/mac-x64/
+            !release/win-unpacked/
+            !release/linux-unpacked/
 
   # Create GitHub release with all build artifacts
   create-release:
@@ -162,44 +164,10 @@ jobs:
         with:
           path: artifacts/
 
-      - name: Generate update metadata files
+      - name: List artifacts structure
         run: |
-          # Generate latest-mac.yml for macOS (using ZIP file for autoupdater)
-          if [ -f artifacts/release-macos-latest/*.zip ]; then
-            ZIP_FILE=$(ls artifacts/release-macos-latest/*.zip | head -1)
-            ZIP_SIZE=$(stat -c%s "$ZIP_FILE" 2>/dev/null || stat -f%z "$ZIP_FILE")
-            ZIP_NAME=$(basename "$ZIP_FILE")
-            cat > artifacts/release-macos-latest/latest-mac.yml << EOF
-          version: ${GITHUB_REF#refs/tags/v}
-          files:
-            - url: $ZIP_NAME
-              sha512: $(shasum -a 512 "$ZIP_FILE" | cut -d' ' -f1)
-              size: $ZIP_SIZE
-          path: $ZIP_NAME
-          sha512: $(shasum -a 512 "$ZIP_FILE" | cut -d' ' -f1)
-          releaseDate: $(date -u +"%Y-%m-%dT%H:%M:%S.%3NZ")
-          EOF
-          fi
-
-          # Generate latest.yml for Windows (using ZIP file for autoupdater)
-          if [ -f artifacts/release-windows-latest/*.zip ]; then
-            ZIP_FILE=$(ls artifacts/release-windows-latest/*.zip | head -1)
-            ZIP_SIZE=$(stat -c%s "$ZIP_FILE" 2>/dev/null || stat -f%z "$ZIP_FILE")
-            ZIP_NAME=$(basename "$ZIP_FILE")
-            cat > artifacts/release-windows-latest/latest.yml << EOF
-          version: ${GITHUB_REF#refs/tags/v}
-          files:
-            - url: $ZIP_NAME
-              sha512: $(shasum -a 512 "$ZIP_FILE" | cut -d' ' -f1)
-              size: $ZIP_SIZE
-          path: $ZIP_NAME
-          sha512: $(shasum -a 512 "$ZIP_FILE" | cut -d' ' -f1)
-          releaseDate: $(date -u +"%Y-%m-%dT%H:%M:%S.%3NZ")
-          EOF
-          fi
-
-          # Note: Linux doesn't support auto-updates in the same way as macOS/Windows
-          # AppImage files need to be manually replaced by users
+          echo "Artifacts structure:"
+          find artifacts -type f -name "*.yml" -o -name "*.yaml" | sort
 
       - name: Prepare release files
         id: prepare-files
@@ -208,26 +176,26 @@ jobs:
 
           # Copy all release files to a single directory, handling missing files gracefully
           echo "Copying macOS files..."
-          cp artifacts/release-macos-latest/*.dmg release-files/ 2>/dev/null || true
-          cp artifacts/release-macos-latest/*.zip release-files/ 2>/dev/null || true
-          cp artifacts/release-macos-latest/*.blockmap release-files/ 2>/dev/null || true
-          cp artifacts/release-macos-latest/latest-mac.yml release-files/ 2>/dev/null || true
-          cp artifacts/release-macos-latest/app-update.yml release-files/app-update-mac.yml 2>/dev/null || true
+          cp artifacts/release-macos-latest/release/*.dmg release-files/ 2>/dev/null || true
+          cp artifacts/release-macos-latest/release/*.zip release-files/ 2>/dev/null || true
+          cp artifacts/release-macos-latest/release/*.blockmap release-files/ 2>/dev/null || true
+          cp artifacts/release-macos-latest/release/latest-mac.yml release-files/ 2>/dev/null || true
 
           echo "Copying Windows files..."
-          cp artifacts/release-windows-latest/*.exe release-files/ 2>/dev/null || true
-          cp artifacts/release-windows-latest/*.zip release-files/ 2>/dev/null || true
-          cp artifacts/release-windows-latest/*.blockmap release-files/ 2>/dev/null || true
-          cp artifacts/release-windows-latest/latest.yml release-files/ 2>/dev/null || true
-          cp artifacts/release-windows-latest/app-update.yml release-files/app-update-win.yml 2>/dev/null || true
+          cp artifacts/release-windows-latest/release/*.exe release-files/ 2>/dev/null || true
+          cp artifacts/release-windows-latest/release/*.zip release-files/ 2>/dev/null || true
+          cp artifacts/release-windows-latest/release/*.blockmap release-files/ 2>/dev/null || true
+          cp artifacts/release-windows-latest/release/latest.yml release-files/ 2>/dev/null || true
 
           echo "Copying Linux x64 files..."
-          cp artifacts/release-ubuntu-latest-x64/*.AppImage release-files/ 2>/dev/null || true
-          cp artifacts/release-ubuntu-latest-x64/*.deb release-files/ 2>/dev/null || true
+          cp artifacts/release-ubuntu-latest-x64/release/*.AppImage release-files/ 2>/dev/null || true
+          cp artifacts/release-ubuntu-latest-x64/release/*.deb release-files/ 2>/dev/null || true
+          cp artifacts/release-ubuntu-latest-x64/release/latest-linux.yml release-files/latest-linux-x64.yml 2>/dev/null || true
 
           echo "Copying Linux ARM64 files..."
-          cp artifacts/release-ubuntu-latest-arm64/*.AppImage release-files/ 2>/dev/null || true
-          cp artifacts/release-ubuntu-latest-arm64/*.deb release-files/ 2>/dev/null || true
+          cp artifacts/release-ubuntu-latest-arm64/release/*.AppImage release-files/ 2>/dev/null || true
+          cp artifacts/release-ubuntu-latest-arm64/release/*.deb release-files/ 2>/dev/null || true
+          cp artifacts/release-ubuntu-latest-arm64/release/latest-linux.yml release-files/latest-linux-arm64.yml 2>/dev/null || true
 
           echo "Files to be released:"
           ls -la release-files/
