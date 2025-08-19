@@ -11,6 +11,7 @@ import type Logger from '../logger.js';
 interface AudioBuffer {
   microphone: Float32Array[];
   system: Float32Array[];
+  combined?: Float32Array[]; // For combined stream mode
 }
 
 @injectable()
@@ -38,6 +39,7 @@ export class AudioRecordingService {
     this.recordingBuffers.set(recordingId, {
       microphone: [],
       system: [],
+      combined: [],
     });
     this.logger.info(`Started audio recording for ${recordingId}`);
   }
@@ -45,7 +47,7 @@ export class AudioRecordingService {
   appendAudioData(
     recordingId: string,
     audioData: ArrayBuffer,
-    source: 'microphone' | 'system'
+    source: 'microphone' | 'system' | 'combined'
   ): void {
     const buffer = this.recordingBuffers.get(recordingId);
     if (!buffer) {
@@ -61,7 +63,13 @@ export class AudioRecordingService {
       float32Data[i] = (int16Data[i] ?? 0) / 32768.0;
     }
 
-    buffer[source].push(float32Data);
+    // Handle combined stream separately
+    if (source === 'combined') {
+      buffer.combined ??= [];
+      buffer.combined.push(float32Data);
+    } else {
+      buffer[source].push(float32Data);
+    }
   }
 
   async stopRecording(recordingId: string): Promise<string | null> {
@@ -71,11 +79,11 @@ export class AudioRecordingService {
     }
 
     try {
-      // Combine microphone and system audio
-      const combinedBuffer = this.combineAudioBuffers(
-        buffer.microphone,
-        buffer.system
-      );
+      // Use combined buffer if available, otherwise combine microphone and system
+      const combinedBuffer =
+        buffer.combined && buffer.combined.length > 0
+          ? this.concatenateBuffers(buffer.combined)
+          : this.combineAudioBuffers(buffer.microphone, buffer.system);
 
       // Generate filename
       const filename = `${recordingId}.wav`;
@@ -138,6 +146,23 @@ export class AudioRecordingService {
     }
 
     return combined;
+  }
+
+  private concatenateBuffers(buffers: Float32Array[]): Float32Array {
+    // Calculate total length
+    const totalLength = buffers.reduce((sum, buf) => sum + buf.length, 0);
+
+    // Create concatenated buffer
+    const concatenated = new Float32Array(totalLength);
+
+    // Copy all buffers
+    let offset = 0;
+    for (const buf of buffers) {
+      concatenated.set(buf, offset);
+      offset += buf.length;
+    }
+
+    return concatenated;
   }
 
   getAudioFilePath(filename: string): string {

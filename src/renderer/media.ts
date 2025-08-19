@@ -57,12 +57,14 @@ export async function acquireStreams(isDictationMode = false): Promise<{
 
     systemAudioStream = displayStream;
 
-    // Don't play system audio through our app since it's already playing through the OS
-    // We'll need to use echo cancellation to remove it from the microphone
-    window.logger.info('System audio captured, using echo cancellation...');
+    // Audio will be mixed in the audio processing stage
+    // Chrome's echo cancellation on the microphone will remove the system audio echo
+    window.logger.info(
+      'Streams acquired, will be mixed with echo cancellation in audio processor'
+    );
 
     return {
-      microphoneStream, // For now, use browser's built-in echo cancellation
+      microphoneStream,
       systemAudioStream,
     };
   } catch (error) {

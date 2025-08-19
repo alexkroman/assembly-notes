@@ -98,6 +98,33 @@ export class TranscriptionService {
     };
   }
 
+  /**
+   * Creates transcription connection for combined audio stream (microphone + system with echo cancellation)
+   */
+  async createCombinedConnection(
+    apiKey: string,
+    callbacks: TranscriptionCallbacks
+  ): Promise<TranscriptionConnection> {
+    const aai = await this.assemblyAIFactory.createClient(apiKey);
+
+    // Create a single transcriber for the combined stream
+    // We'll treat it as the "microphone" stream for compatibility
+    const combinedTranscriber = await this.createTranscriber(
+      aai,
+      'microphone', // Use microphone as the stream type for the combined stream
+      callbacks
+    );
+
+    logger.info(
+      'Created combined audio stream transcriber with echo cancellation'
+    );
+
+    return {
+      microphone: combinedTranscriber,
+      system: null, // No separate system stream when using combined mode
+    };
+  }
+
   private async createTranscriber(
     aai: IAssemblyAIClient,
     streamType: 'microphone' | 'system',

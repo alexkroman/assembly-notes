@@ -52,10 +52,22 @@ window.electronAPI.onStartAudioCapture(() => {
   void (async () => {
     try {
       // Check if we're in dictation mode from Redux state
-      const isDictationMode = store.getState().recording.isDictating;
+      const state = store.getState();
+      const isDictationMode = state.recording.isDictating;
+      const useCombinedStream = state.settings.useCombinedAudioStream ?? false;
+      const micGain = state.settings.microphoneGain ?? 1.0;
+      const systemGain = state.settings.systemAudioGain ?? 0.7;
+
       const { microphoneStream, systemAudioStream } =
         await acquireStreams(isDictationMode);
-      await startAudioProcessing(microphoneStream, systemAudioStream);
+      // Pass audio settings to audio processing
+      await startAudioProcessing(
+        microphoneStream,
+        systemAudioStream,
+        useCombinedStream,
+        micGain,
+        systemGain
+      );
       setRecordingState(true);
 
       // Update status in the store

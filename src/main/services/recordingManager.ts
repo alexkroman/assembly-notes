@@ -71,18 +71,26 @@ export class RecordingManager {
     this.store.subscribe(() => {
       const state = this.store.getState();
       const { connectionStatus, status, isDictating } = state.recording;
+      const useCombinedStream = state.settings.useCombinedAudioStream ?? false;
 
       // In dictation mode, only check microphone connection
+      // In combined stream mode, only check microphone connection (which contains the combined stream)
       // In normal mode, check both connections
-      const connectionsReady = isDictating
-        ? connectionStatus.microphone && !lastConnectionStatus.microphone
-        : connectionStatus.microphone &&
-          connectionStatus.system &&
-          (!lastConnectionStatus.microphone || !lastConnectionStatus.system);
+      const connectionsReady =
+        isDictating || useCombinedStream
+          ? connectionStatus.microphone && !lastConnectionStatus.microphone
+          : connectionStatus.microphone &&
+            connectionStatus.system &&
+            (!lastConnectionStatus.microphone || !lastConnectionStatus.system);
 
       if (connectionsReady) {
+        const modeDescription = isDictating
+          ? 'Microphone'
+          : useCombinedStream
+            ? 'Combined audio stream'
+            : 'Both';
         this.logger.info(
-          `RecordingManager: ${isDictating ? 'Microphone' : 'Both'} connections established, starting audio capture`
+          `RecordingManager: ${modeDescription} connections established, starting audio capture`
         );
         this.mainWindow.webContents.send('start-audio-capture');
       }
@@ -90,7 +98,9 @@ export class RecordingManager {
       // Check if we're stopping - use the PREVIOUS dictation state to determine what was connected
       const wasPreviouslyConnected = lastIsDictating
         ? lastConnectionStatus.microphone
-        : lastConnectionStatus.microphone && lastConnectionStatus.system;
+        : useCombinedStream
+          ? lastConnectionStatus.microphone
+          : lastConnectionStatus.microphone && lastConnectionStatus.system;
 
       if (status === 'idle' && wasPreviouslyConnected) {
         this.logger.info(
@@ -259,120 +269,239 @@ export class RecordingManager {
         return false;
       }
 
+      // Check if we should use combined audio stream mode
+      const useCombinedStream = state.settings.useCombinedAudioStream ?? false;
+
       // Create connections with callbacks that dispatch Redux actions
-      this.connections = await this.transcriptionService.createConnections(
-        apiKey,
-        {
-          onTranscript: (data) => {
-            // Check if we're in dictation mode via the DictationService
-            const isDictating = this.store.getState().recording.isDictating;
+      this.connections = useCombinedStream
+        ? await this.transcriptionService.createCombinedConnection(apiKey, {
+            onTranscript: (data) => {
+              // Check if we're in dictation mode via the DictationService
+              const isDictating = this.store.getState().recording.isDictating;
 
-            if (isDictating) {
-              // Emit speech activity for ANY transcript (partial or final) in dictation mode
-              this.transcriptionService.emitSpeechActivity();
+              if (isDictating) {
+                // Emit speech activity for ANY transcript (partial or final) in dictation mode
+                this.transcriptionService.emitSpeechActivity();
 
-              // In dictation mode, only emit final transcripts for insertion
-              // Only emit from microphone stream to avoid duplicates
-              if (!data.partial && data.streamType === 'microphone') {
-                this.transcriptionService.emitDictationText(data.text);
-              }
-              // Don't process partials or store transcripts in dictation mode
-              return;
-            } else {
-              // Normal transcription mode
-              if (data.partial) {
-                // Handle partial transcripts - update buffer for immediate UI display
-                this.store.dispatch(
-                  updateTranscriptBuffer({
-                    source: data.streamType,
-                    text: data.text,
-                  })
-                );
+                // In dictation mode, only emit final transcripts for insertion
+                // Only emit from microphone stream to avoid duplicates
+                if (!data.partial && data.streamType === 'microphone') {
+                  this.transcriptionService.emitDictationText(data.text);
+                }
+                // Don't process partials or store transcripts in dictation mode
+                return;
               } else {
-                // Handle final transcripts - add to segments and clear buffers
-                this.store.dispatch(
-                  addTranscriptSegment({
-                    text: data.text,
-                    timestamp: Date.now(),
-                    isFinal: true,
-                    source: data.streamType,
-                  })
-                );
-                // Clear the buffer for this source since we now have the final transcript
-                this.store.dispatch(
-                  updateTranscriptBuffer({
-                    source: data.streamType,
-                    text: '',
-                  })
-                );
-                // Auto-save transcript after receiving final transcript
-                this.recordingDataService.saveCurrentTranscription();
+                // Normal transcription mode
+                if (data.partial) {
+                  // Handle partial transcripts - update buffer for immediate UI display
+                  this.store.dispatch(
+                    updateTranscriptBuffer({
+                      source: data.streamType,
+                      text: data.text,
+                    })
+                  );
+                } else {
+                  // Handle final transcripts - add to segments and clear buffers
+                  this.store.dispatch(
+                    addTranscriptSegment({
+                      text: data.text,
+                      timestamp: Date.now(),
+                      isFinal: true,
+                      source: data.streamType,
+                    })
+                  );
+                  // Clear the buffer for this source since we now have the final transcript
+                  this.store.dispatch(
+                    updateTranscriptBuffer({
+                      source: data.streamType,
+                      text: '',
+                    })
+                  );
+                  // Auto-save transcript after receiving final transcript
+                  this.recordingDataService.saveCurrentTranscription();
+                }
               }
-            }
-          },
-          onError: (stream: string, error: unknown) => {
-            const errorMessage =
-              error instanceof Error ? error.message : String(error);
+            },
+            onError: (stream: string, error: unknown) => {
+              const errorMessage =
+                error instanceof Error ? error.message : String(error);
 
-            // Check if it's a connection reset - these can be temporary
-            const isConnectionReset =
-              errorMessage.includes('Connection lost') ||
-              errorMessage.includes('ERR_CONNECTION_RESET') ||
-              errorMessage.includes('ECONNRESET');
+              // Check if it's a connection reset - these can be temporary
+              const isConnectionReset =
+                errorMessage.includes('Connection lost') ||
+                errorMessage.includes('ERR_CONNECTION_RESET') ||
+                errorMessage.includes('ECONNRESET');
 
-            if (isConnectionReset) {
-              // Log as warning, not error, for connection resets
-              this.logger.warn(
-                `${stream} stream connection reset - may reconnect automatically`
+              if (isConnectionReset) {
+                // Log as warning, not error, for connection resets
+                this.logger.warn(
+                  `${stream} stream connection reset - may reconnect automatically`
+                );
+
+                // Show a less alarming message to the user
+                this.store.dispatch(
+                  setRecordingError(
+                    `${stream === 'microphone' ? 'Microphone' : 'System audio'} connection interrupted. Attempting to reconnect...`
+                  )
+                );
+
+                // Don't stop recording for connection resets - let it try to recover
+                return;
+              }
+
+              const transcriptionError = new TranscriptionConnectionError(
+                stream as 'microphone' | 'system',
+                errorMessage
               );
 
-              // Show a less alarming message to the user
+              this.errorLogger.logError(transcriptionError, {
+                operation: 'transcription',
+                component: 'RecordingManager',
+                metadata: { stream },
+              });
+
               this.store.dispatch(
                 setRecordingError(
-                  `${stream === 'microphone' ? 'Microphone' : 'System audio'} connection interrupted. Attempting to reconnect...`
+                  this.errorLogger.getUserFriendlyMessage(transcriptionError)
                 )
               );
 
-              // Don't stop recording for connection resets - let it try to recover
-              return;
-            }
+              // Check if it's a critical error that requires stopping
+              if (
+                error instanceof Error &&
+                (error.message.includes('Not authorized') ||
+                  error.message.includes('Invalid API key') ||
+                  error.message.includes('Forbidden'))
+              ) {
+                void this.store.dispatch(stopRecording());
+              }
+            },
+            onConnectionStatus: (stream: string, connected: boolean) => {
+              this.store.dispatch(
+                updateConnectionStatus({
+                  stream: stream as 'microphone' | 'system',
+                  connected,
+                })
+              );
+            },
+          })
+        : await this.transcriptionService.createConnections(apiKey, {
+            onTranscript: (data) => {
+              // Check if we're in dictation mode via the DictationService
+              const isDictating = this.store.getState().recording.isDictating;
 
-            const transcriptionError = new TranscriptionConnectionError(
-              stream as 'microphone' | 'system',
-              errorMessage
-            );
+              if (isDictating) {
+                // Emit speech activity for ANY transcript (partial or final) in dictation mode
+                this.transcriptionService.emitSpeechActivity();
 
-            this.errorLogger.logError(transcriptionError, {
-              operation: 'transcription',
-              component: 'RecordingManager',
-              metadata: { stream },
-            });
+                // In dictation mode, only emit final transcripts for insertion
+                // Only emit from microphone stream to avoid duplicates
+                if (!data.partial && data.streamType === 'microphone') {
+                  this.transcriptionService.emitDictationText(data.text);
+                }
+                // Don't process partials or store transcripts in dictation mode
+                return;
+              } else {
+                // Normal transcription mode
+                if (data.partial) {
+                  // Handle partial transcripts - update buffer for immediate UI display
+                  this.store.dispatch(
+                    updateTranscriptBuffer({
+                      source: data.streamType,
+                      text: data.text,
+                    })
+                  );
+                } else {
+                  // Handle final transcripts - add to segments and clear buffers
+                  this.store.dispatch(
+                    addTranscriptSegment({
+                      text: data.text,
+                      timestamp: Date.now(),
+                      isFinal: true,
+                      source: data.streamType,
+                    })
+                  );
+                  // Clear the buffer for this source since we now have the final transcript
+                  this.store.dispatch(
+                    updateTranscriptBuffer({
+                      source: data.streamType,
+                      text: '',
+                    })
+                  );
+                  // Auto-save transcript after receiving final transcript
+                  this.recordingDataService.saveCurrentTranscription();
+                }
+              }
+            },
+            onError: (stream: string, error: unknown) => {
+              const errorMessage =
+                error instanceof Error ? error.message : String(error);
 
-            this.store.dispatch(
-              setRecordingError(
-                this.errorLogger.getUserFriendlyMessage(transcriptionError)
-              )
-            );
+              // Check if it's a connection reset - these can be temporary
+              const isConnectionReset =
+                errorMessage.includes('Connection lost') ||
+                errorMessage.includes('ERR_CONNECTION_RESET') ||
+                errorMessage.includes('ECONNRESET');
 
-            // Check if it's a critical error that requires stopping
-            if (
-              error instanceof Error &&
-              (error.message.includes('Not authorized') ||
-                error.message.includes('Invalid API key') ||
-                error.message.includes('Forbidden'))
-            ) {
-              void this.store.dispatch(stopRecording());
-            }
-          },
-          onConnectionStatus: (stream: string, connected: boolean) => {
-            this.store.dispatch(
-              updateConnectionStatus({
-                stream: stream as 'microphone' | 'system',
-                connected,
-              })
-            );
-          },
-        }
+              if (isConnectionReset) {
+                // Log as warning, not error, for connection resets
+                this.logger.warn(
+                  `${stream} stream connection reset - may reconnect automatically`
+                );
+
+                // Show a less alarming message to the user
+                this.store.dispatch(
+                  setRecordingError(
+                    `${stream === 'microphone' ? 'Microphone' : 'System audio'} connection interrupted. Attempting to reconnect...`
+                  )
+                );
+
+                // Don't stop recording for connection resets - let it try to recover
+                return;
+              }
+
+              const transcriptionError = new TranscriptionConnectionError(
+                stream as 'microphone' | 'system',
+                errorMessage
+              );
+
+              this.errorLogger.logError(transcriptionError, {
+                operation: 'transcription',
+                component: 'RecordingManager',
+                metadata: { stream },
+              });
+
+              this.store.dispatch(
+                setRecordingError(
+                  this.errorLogger.getUserFriendlyMessage(transcriptionError)
+                )
+              );
+
+              // Check if it's a critical error that requires stopping
+              if (
+                error instanceof Error &&
+                (error.message.includes('Not authorized') ||
+                  error.message.includes('Invalid API key') ||
+                  error.message.includes('Forbidden'))
+              ) {
+                void this.store.dispatch(stopRecording());
+              }
+            },
+            onConnectionStatus: (stream: string, connected: boolean) => {
+              this.store.dispatch(
+                updateConnectionStatus({
+                  stream: stream as 'microphone' | 'system',
+                  connected,
+                })
+              );
+            },
+          });
+
+      // Log the mode being used
+      this.logger.info(
+        useCombinedStream
+          ? 'Using combined audio stream with echo cancellation'
+          : 'Using separate microphone and system audio streams'
       );
 
       // Start keep-alive interval
@@ -476,6 +605,9 @@ export class RecordingManager {
   }
 
   sendMicrophoneAudio(audioData: ArrayBuffer): void {
+    const state = this.store.getState();
+    const useCombinedStream = state.settings.useCombinedAudioStream ?? false;
+
     // Only send audio if we have an active connection
     if (this.connections.microphone) {
       this.transcriptionService.sendAudio(
@@ -485,25 +617,36 @@ export class RecordingManager {
     }
 
     // Save audio data for recording
-    const recordingId = this.store.getState().recordings.currentRecording?.id;
-    if (recordingId && this.store.getState().recording.status === 'recording') {
+    const recordingId = state.recordings.currentRecording?.id;
+    if (recordingId && state.recording.status === 'recording') {
+      // When using combined stream, all audio comes through microphone channel
+      // Label it as 'combined' for clarity in recordings
       this.audioRecordingService.appendAudioData(
         recordingId,
         audioData,
-        'microphone'
+        useCombinedStream ? 'combined' : 'microphone'
       );
     }
   }
 
   sendSystemAudio(audioData: ArrayBuffer): void {
+    const state = this.store.getState();
+    const useCombinedStream = state.settings.useCombinedAudioStream ?? false;
+
+    // If using combined stream, system audio is already mixed in the microphone stream
+    if (useCombinedStream) {
+      // Don't process system audio separately when using combined stream
+      return;
+    }
+
     // Only send audio if we have an active connection
     if (this.connections.system) {
       this.transcriptionService.sendAudio(this.connections.system, audioData);
     }
 
     // Save audio data for recording
-    const recordingId = this.store.getState().recordings.currentRecording?.id;
-    if (recordingId && this.store.getState().recording.status === 'recording') {
+    const recordingId = state.recordings.currentRecording?.id;
+    if (recordingId && state.recording.status === 'recording') {
       this.audioRecordingService.appendAudioData(
         recordingId,
         audioData,
