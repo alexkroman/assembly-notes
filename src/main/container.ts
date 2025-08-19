@@ -79,8 +79,14 @@ export function setupContainer(mainWindow: BrowserWindow): void {
   container.registerSingleton(DI_TOKENS.RecordingManager, RecordingManager);
   container.registerSingleton(DI_TOKENS.AutoUpdaterService, AutoUpdaterService);
   container.registerSingleton(DI_TOKENS.DictationService, DictationService);
-  container.registerSingleton(DI_TOKENS.AudioRecordingService, AudioRecordingService);
-  container.registerSingleton(DI_TOKENS.DictationStatusWindow, DictationStatusWindow);
+  container.registerSingleton(
+    DI_TOKENS.AudioRecordingService,
+    AudioRecordingService
+  );
+  container.registerSingleton(
+    DI_TOKENS.DictationStatusWindow,
+    DictationStatusWindow
+  );
 }
 
 export { DI_TOKENS, container };
