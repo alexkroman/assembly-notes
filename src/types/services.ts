@@ -62,8 +62,8 @@ export type { AutoUpdaterService } from '../main/auto-updater.js';
  * Return type for transcription service connection creation
  */
 export interface TranscriptionConnectionResult {
-  microphone: import('assemblyai').RealtimeTranscriber | null;
-  system: import('assemblyai').RealtimeTranscriber | null;
+  microphone: import('assemblyai').StreamingTranscriber | null;
+  system: import('assemblyai').StreamingTranscriber | null;
 }
 
 /**

@@ -78,8 +78,43 @@ export async function acquireStreams(isDictationMode = false): Promise<{
       microphoneStream,
       systemAudioStream,
     };
-  } catch (error) {
-    window.logger.error('Failed to acquire streams:', error);
+  } catch (error: unknown) {
+    const errorDetails = {
+      message: error instanceof Error ? error.message : String(error),
+      name: error instanceof Error ? error.name : 'UnknownError',
+      constraint: (error as { constraint?: string }).constraint,
+      stack: error instanceof Error ? error.stack : undefined,
+    };
+
+    window.logger.error('Failed to acquire streams:', errorDetails);
+
+    // Provide specific error messages for common issues
+    let errorMessage = 'Failed to acquire audio streams';
+
+    if (error instanceof Error) {
+      if (
+        error.name === 'NotAllowedError' ||
+        error.name === 'PermissionDeniedError'
+      ) {
+        errorMessage =
+          'Microphone access denied. Please grant microphone permissions in your system settings.';
+      } else if (
+        error.name === 'NotFoundError' ||
+        error.name === 'DevicesNotFoundError'
+      ) {
+        errorMessage =
+          'No microphone found. Please connect a microphone and try again.';
+      } else if (
+        error.name === 'NotReadableError' ||
+        error.name === 'TrackStartError'
+      ) {
+        errorMessage =
+          'Microphone is in use by another application or not accessible.';
+      } else if (error.message) {
+        errorMessage = `Audio error: ${error.message}`;
+      }
+    }
+
     // Clean up any partially acquired streams
     if (microphoneStream) {
       microphoneStream.getTracks().forEach((track) => {
@@ -93,7 +128,9 @@ export async function acquireStreams(isDictationMode = false): Promise<{
       });
       systemAudioStream = null;
     }
-    throw error;
+
+    // Throw a more descriptive error
+    throw new Error(errorMessage);
   }
 }
 

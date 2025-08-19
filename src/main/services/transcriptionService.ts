@@ -1,5 +1,5 @@
 import * as Sentry from '@sentry/electron/main';
-import type { RealtimeTranscriber } from 'assemblyai';
+import type { StreamingTranscriber } from 'assemblyai';
 import { app } from 'electron';
 import { inject, injectable } from 'tsyringe';
 
@@ -8,8 +8,8 @@ import { DI_TOKENS } from '../di-tokens.js';
 import logger from '../logger.js';
 
 export interface TranscriptionConnection {
-  microphone: RealtimeTranscriber | null;
-  system: RealtimeTranscriber | null;
+  microphone: StreamingTranscriber | null;
+  system: StreamingTranscriber | null;
 }
 
 export interface TranscriptionCallbacks {
@@ -20,8 +20,15 @@ export interface TranscriptionCallbacks {
 
 // Abstract interfaces for better testability
 export interface IAssemblyAIClient {
-  realtime: {
-    transcriber: (options: { sampleRate: number }) => RealtimeTranscriber;
+  streaming: {
+    transcriber: (params: {
+      sampleRate: number;
+      encoding?: string;
+      formatTurns?: boolean;
+      endOfTurnConfidenceThreshold?: number;
+      minEndOfTurnSilenceWhenConfident?: number;
+      maxTurnSilence?: number;
+    }) => StreamingTranscriber;
   };
 }
 
@@ -34,7 +41,7 @@ export class AssemblyAIFactory implements IAssemblyAIFactory {
   async createClient(apiKey: string): Promise<IAssemblyAIClient> {
     // This will be mocked in tests
     const { AssemblyAI } = await import('assemblyai');
-    return new AssemblyAI({ apiKey }) as IAssemblyAIClient;
+    return new AssemblyAI({ apiKey }) as unknown as IAssemblyAIClient;
   }
 }
 
@@ -104,9 +111,16 @@ export class TranscriptionService {
     aai: IAssemblyAIClient,
     streamType: 'microphone' | 'system',
     callbacks: TranscriptionCallbacks
-  ): Promise<RealtimeTranscriber> {
-    const transcriber = aai.realtime.transcriber({
+  ): Promise<StreamingTranscriber> {
+    const transcriber = aai.streaming.transcriber({
       sampleRate: 16000,
+      encoding: 'pcm_s16le',
+      // Enable turn formatting for better transcript structure
+      formatTurns: true,
+      // Adjust silence detection for meeting/dictation scenarios
+      endOfTurnConfidenceThreshold: 0.8,
+      minEndOfTurnSilenceWhenConfident: 1000, // 1 second of silence
+      maxTurnSilence: 2000, // 2 seconds max silence before turn end
     });
 
     // Set up event handlers
@@ -116,7 +130,13 @@ export class TranscriptionService {
     });
 
     transcriber.on('error', (error: Error) => {
-      logger.error(`AssemblyAI ${streamType} error:`, error);
+      // Log full error details for debugging
+      logger.error(`AssemblyAI ${streamType} error:`, {
+        message: error.message,
+        stack: error.stack,
+        name: error.name,
+        streamType,
+      });
 
       // Check for connection reset errors
       if (
@@ -143,6 +163,9 @@ export class TranscriptionService {
               stream: streamType,
               errorType: 'connection_reset',
             },
+            extra: {
+              errorMessage: error.message,
+            },
           });
         }
       } else {
@@ -164,18 +187,28 @@ export class TranscriptionService {
       callbacks.onConnectionStatus?.(streamType, false);
     });
 
-    transcriber.on(
-      'transcript',
-      (transcript: { text: string; message_type: string }) => {
-        if (!transcript.text) return;
+    transcriber.on('turn', (event) => {
+      if (!event.transcript) return;
 
+      // For partial turns, show any transcript (formatted or not) for real-time feedback
+      // For final turns, only show formatted ones
+      if (!event.end_of_turn) {
+        // This is a partial - show it immediately for real-time feedback
         callbacks.onTranscript?.({
           streamType,
-          text: transcript.text,
-          partial: transcript.message_type !== 'FinalTranscript',
+          text: event.transcript,
+          partial: true,
+        });
+      } else if (event.turn_is_formatted) {
+        // This is a final formatted turn - replace the partial with this
+        callbacks.onTranscript?.({
+          streamType,
+          text: event.transcript,
+          partial: false,
         });
       }
-    );
+      // Ignore unformatted finals - we'll get the formatted version
+    });
 
     // Connect with retry logic
     const maxRetries = 3;
@@ -215,7 +248,7 @@ export class TranscriptionService {
    * Sends audio data to a transcriber
    */
   sendAudio(
-    transcriber: RealtimeTranscriber | null,
+    transcriber: StreamingTranscriber | null,
     audioData: ArrayBuffer
   ): void {
     if (!transcriber) return;
@@ -243,7 +276,7 @@ export class TranscriptionService {
   /**
    * Sends keep-alive silence to maintain connection
    */
-  sendKeepAlive(transcriber: RealtimeTranscriber | null): void {
+  sendKeepAlive(transcriber: StreamingTranscriber | null): void {
     if (!transcriber) return;
 
     const silenceBuffer = Buffer.alloc(1600 * 2);
@@ -254,7 +287,7 @@ export class TranscriptionService {
    * Closes a transcriber connection
    */
   async closeTranscriber(
-    transcriber: RealtimeTranscriber | null
+    transcriber: StreamingTranscriber | null
   ): Promise<void> {
     if (!transcriber) return;
 

@@ -202,13 +202,17 @@ void app.whenReady().then(() => {
   ];
 
   const menu = Menu.buildFromTemplate(template);
-  Menu.setApplicationMenu(menu);
 
-  log.info('🎯 About to start update check');
-  const autoUpdaterService = container.resolve<AutoUpdaterService>(
-    DI_TOKENS.AutoUpdaterService
-  );
-  autoUpdaterService.startUpdateCheck();
+  // Only set menu if window is still valid
+  if (mainWindow && !mainWindow.isDestroyed()) {
+    Menu.setApplicationMenu(menu);
+
+    log.info('🎯 About to start update check');
+    const autoUpdaterService = container.resolve<AutoUpdaterService>(
+      DI_TOKENS.AutoUpdaterService
+    );
+    autoUpdaterService.startUpdateCheck();
+  }
 
   app.on('activate', function () {
     if (BrowserWindow.getAllWindows().length === 0) {
@@ -247,17 +251,22 @@ app.on('window-all-closed', function () {
 app.on('before-quit', () => {
   log.info('App is quitting, cleaning up resources');
 
-  // Stop periodic update checks
-  const autoUpdaterService = container.resolve<AutoUpdaterService>(
-    DI_TOKENS.AutoUpdaterService
-  );
-  autoUpdaterService.stopPeriodicUpdateCheck();
+  // Only cleanup if container has been set up
+  if (container.isRegistered(DI_TOKENS.AutoUpdaterService)) {
+    // Stop periodic update checks
+    const autoUpdaterService = container.resolve<AutoUpdaterService>(
+      DI_TOKENS.AutoUpdaterService
+    );
+    autoUpdaterService.stopPeriodicUpdateCheck();
+  }
 
-  // Close database
-  const databaseService = container.resolve<DatabaseService>(
-    DI_TOKENS.DatabaseService
-  );
-  databaseService.close();
+  if (container.isRegistered(DI_TOKENS.DatabaseService)) {
+    // Close database
+    const databaseService = container.resolve<DatabaseService>(
+      DI_TOKENS.DatabaseService
+    );
+    databaseService.close();
+  }
 });
 
 // Prevent multiple instances

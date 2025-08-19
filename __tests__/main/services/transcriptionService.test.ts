@@ -27,7 +27,7 @@ const mockRealtimeTranscriber = {
 
 // Mock AssemblyAI client
 const mockAssemblyAIClient: IAssemblyAIClient = {
-  realtime: {
+  streaming: {
     transcriber: jest.fn().mockReturnValue(mockRealtimeTranscriber),
   },
 };
@@ -53,8 +53,8 @@ describe('TranscriptionService', () => {
     mockRealtimeTranscriber.off.mockReturnValue(undefined);
     mockRealtimeTranscriber.sendAudio.mockReturnValue(undefined);
 
-    // Ensure the realtime.transcriber method returns the mock
-    mockAssemblyAIClient.realtime.transcriber = jest
+    // Ensure the streaming.transcriber method returns the mock
+    mockAssemblyAIClient.streaming.transcriber = jest
       .fn()
       .mockReturnValue(mockRealtimeTranscriber);
 
@@ -100,9 +100,9 @@ describe('TranscriptionService', () => {
         callbacks
       );
 
-      // Should have called on for transcript events
+      // Should have called on for turn events (new streaming API)
       expect(mockRealtimeTranscriber.on).toHaveBeenCalledWith(
-        'transcript',
+        'turn',
         expect.any(Function)
       );
       expect(mockRealtimeTranscriber.on).toHaveBeenCalledWith(

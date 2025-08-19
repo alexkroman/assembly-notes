@@ -3,12 +3,18 @@
   "productName": "Assembly-Notes",
   "artifactName": "Assembly-Notes-${os}-${arch}.${ext}",
   "forceCodeSigning": false,
+  "generateUpdatesFilesForAllChannels": true,
   "publish": {
-    "provider": "github"
+    "provider": "github",
+    "releaseType": "release"
   },
   "nsis": {
     "oneClick": false,
-    "allowToChangeInstallationDirectory": true
+    "allowToChangeInstallationDirectory": true,
+    "perMachine": false,
+    "allowElevation": true,
+    "createDesktopShortcut": true,
+    "createStartMenuShortcut": true
   },
   "directories": {
     "output": "release",
@@ -61,7 +67,10 @@
     ],
     "icon": "build/icons/win/icon.ico",
     "forceCodeSigning": false,
-    "publish": null
+    "publish": {
+      "provider": "github",
+      "releaseType": "release"
+    }
   },
   "linux": {
     "target": [
