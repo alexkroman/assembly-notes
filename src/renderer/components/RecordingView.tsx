@@ -470,6 +470,20 @@ export const RecordingView: React.FC<RecordingViewProps> = ({
         >
           {formatTime(duration)}
         </span>
+        {audioUrl && !isRecording && (
+          <button
+            type="button"
+            className="text-[10px] text-white/[0.5] hover:text-white/[0.8] transition-colors duration-200 cursor-pointer ml-1 px-1"
+            title="Show audio file in Finder"
+            onClick={() => {
+              if (recordingId) {
+                void window.electronAPI.showAudioInFolder(recordingId);
+              }
+            }}
+          >
+            📁
+          </button>
+        )}
         {audioUrl && (
           <audio
             ref={audioRef}

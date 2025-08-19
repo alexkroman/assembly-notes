@@ -51,11 +51,14 @@ const mockMainWindow = {
 } as unknown as BrowserWindow;
 
 const mockTranscriptionService = {
-  createConnections: jest.fn(),
+  createCombinedConnection: jest.fn(),
+  createMicrophoneOnlyConnection: jest.fn(),
   sendAudio: jest.fn(),
   sendKeepAlive: jest.fn(),
   closeConnections: jest.fn(),
   closeTranscriber: jest.fn(),
+  emitSpeechActivity: jest.fn(),
+  emitDictationText: jest.fn(),
 } as any;
 
 const mockSummarizationService = {
@@ -124,16 +127,18 @@ describe('RecordingManager', () => {
   describe('startTranscription', () => {
     it('should successfully start transcription', async () => {
       // Mock successful connection creation
-      mockTranscriptionService.createConnections.mockResolvedValue({
+      mockTranscriptionService.createCombinedConnection.mockResolvedValue({
         microphone: { id: 'mic-1' },
-        system: { id: 'sys-1' },
+        system: null,
       });
 
       const result = await recordingManager.startTranscription();
 
       expect(result).toBe(true);
       expect(mockStore.dispatch).toHaveBeenCalled();
-      expect(mockTranscriptionService.createConnections).toHaveBeenCalledWith(
+      expect(
+        mockTranscriptionService.createCombinedConnection
+      ).toHaveBeenCalledWith(
         'test-api-key',
         expect.objectContaining({
           onTranscript: expect.any(Function),
@@ -236,7 +241,7 @@ describe('RecordingManager', () => {
         settings: { assemblyaiKey: 'test-api-key' },
       });
 
-      mockTranscriptionService.createConnections.mockRejectedValue(
+      mockTranscriptionService.createCombinedConnection.mockRejectedValue(
         new Error('Connection failed')
       );
 
@@ -313,17 +318,15 @@ describe('RecordingManager', () => {
       );
     });
 
-    it('should send system audio to transcription service', () => {
+    it('should not send system audio separately (handled via combined stream)', () => {
       const audioData = new ArrayBuffer(1024);
       const mockTranscriber = { id: 'sys-1' };
       (recordingManager as any).connections = { system: mockTranscriber };
 
       recordingManager.sendSystemAudio(audioData);
 
-      expect(mockTranscriptionService.sendAudio).toHaveBeenCalledWith(
-        mockTranscriber,
-        audioData
-      );
+      // System audio is now handled via combined stream, so sendAudio should not be called
+      expect(mockTranscriptionService.sendAudio).not.toHaveBeenCalled();
     });
 
     it('should not send audio when no connection exists', () => {

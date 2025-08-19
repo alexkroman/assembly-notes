@@ -7,11 +7,6 @@ import { TranscriptionData } from '../../types/common.js';
 import { DI_TOKENS } from '../di-tokens.js';
 import logger from '../logger.js';
 
-export interface TranscriberConnection {
-  transcriber: RealtimeTranscriber;
-  stream: 'microphone' | 'system';
-}
-
 export interface TranscriptionConnection {
   microphone: RealtimeTranscriber | null;
   system: RealtimeTranscriber | null;
@@ -56,26 +51,6 @@ export class TranscriptionService {
     @inject(DI_TOKENS.AssemblyAIFactory)
     private assemblyAIFactory: IAssemblyAIFactory
   ) {}
-
-  /**
-   * Creates transcription connections for both microphone and system audio
-   */
-  async createConnections(
-    apiKey: string,
-    callbacks: TranscriptionCallbacks
-  ): Promise<TranscriptionConnection> {
-    const aai = await this.assemblyAIFactory.createClient(apiKey);
-
-    const [microphoneTranscriber, systemTranscriber] = await Promise.all([
-      this.createTranscriber(aai, 'microphone', callbacks),
-      this.createTranscriber(aai, 'system', callbacks),
-    ]);
-
-    return {
-      microphone: microphoneTranscriber,
-      system: systemTranscriber,
-    };
-  }
 
   /**
    * Creates transcription connection for microphone only (used in dictation mode)

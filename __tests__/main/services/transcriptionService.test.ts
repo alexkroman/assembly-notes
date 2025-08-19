@@ -80,9 +80,9 @@ describe('TranscriptionService', () => {
     resetTestContainer();
   });
 
-  describe('createConnections', () => {
-    it('should create connections for both microphone and system audio', async () => {
-      const connections = await transcriptionService.createConnections(
+  describe('createCombinedConnection', () => {
+    it('should create combined audio connection', async () => {
+      const connections = await transcriptionService.createCombinedConnection(
         'test-api-key',
         callbacks
       );
@@ -91,11 +91,14 @@ describe('TranscriptionService', () => {
         'test-api-key'
       );
       expect(connections.microphone).toBe(mockRealtimeTranscriber);
-      expect(connections.system).toBe(mockRealtimeTranscriber);
+      expect(connections.system).toBeNull();
     });
 
     it('should setup event listeners for transcription', async () => {
-      await transcriptionService.createConnections('test-api-key', callbacks);
+      await transcriptionService.createCombinedConnection(
+        'test-api-key',
+        callbacks
+      );
 
       // Should have called on for transcript events
       expect(mockRealtimeTranscriber.on).toHaveBeenCalledWith(
@@ -122,7 +125,7 @@ describe('TranscriptionService', () => {
       );
 
       await expect(
-        transcriptionService.createConnections('invalid-key', callbacks)
+        transcriptionService.createCombinedConnection('invalid-key', callbacks)
       ).rejects.toThrow('API key invalid');
     });
   });

@@ -97,6 +97,7 @@ declare global {
       updateRecordingTitle: (id: string, title: string) => Promise<void>;
       updateRecordingSummary: (id: string, summary: string) => Promise<void>;
       getAudioFilePath: (recordingId: string) => Promise<string | null>;
+      showAudioInFolder: (recordingId: string) => Promise<boolean>;
     };
 
     logger: {

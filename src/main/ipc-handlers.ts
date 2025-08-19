@@ -4,6 +4,7 @@ import {
   IpcMainEvent,
   IpcMainInvokeEvent,
   ipcMain,
+  shell,
 } from 'electron';
 
 import type { AutoUpdaterService } from './auto-updater.js';
@@ -359,6 +360,30 @@ function setupIpcHandlers(
         return filepath;
       }
       return null;
+    }
+  );
+
+  ipcMain.handle(
+    'show-audio-in-folder',
+    (_event: IpcMainInvokeEvent, recordingId: string): boolean => {
+      const database = container.resolve<DatabaseService>(
+        DI_TOKENS.DatabaseService
+      );
+      const audioRecordingService = container.resolve<
+        import('./services/audioRecordingService.js').AudioRecordingService
+      >(DI_TOKENS.AudioRecordingService);
+
+      const recording = database.getRecording(recordingId);
+      if (recording?.audio_filename) {
+        const filepath = audioRecordingService.getAudioFilePath(
+          recording.audio_filename
+        );
+        if (filepath) {
+          shell.showItemInFolder(filepath);
+          return true;
+        }
+      }
+      return false;
     }
   );
 }

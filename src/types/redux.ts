@@ -89,7 +89,6 @@ export interface FullSettingsState {
   dictationStylingPrompt: string;
   dictationSilenceTimeout: number;
   // Audio processing settings
-  useCombinedAudioStream?: boolean; // Use combined stream with echo cancellation
   microphoneGain?: number; // Microphone volume level (0.0 to 2.0, default 1.0)
   systemAudioGain?: number; // System audio volume level (0.0 to 2.0, default 0.7)
 }

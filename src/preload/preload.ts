@@ -119,6 +119,8 @@ const electronAPI = {
     ipcRenderer.invoke('get-audio-file-path', recordingId) as Promise<
       string | null
     >,
+  showAudioInFolder: (recordingId: string) =>
+    ipcRenderer.invoke('show-audio-in-folder', recordingId) as Promise<boolean>,
 
   onUpdateAvailable: (callback: (info: UpdateInfo) => void) =>
     ipcRenderer.on('update-available', (_event, info) => {
