@@ -2,18 +2,22 @@ name: Build & Release Assembly Notes
 
 on:
   push:
-    tags:
-      - 'v*.*.*'
+    branches:
+      - main
+    paths:
+      - 'package.json'
   workflow_dispatch:
 
 permissions:
   contents: write
 
 jobs:
-  # Generate release notes job
-  release-notes:
+  # Check if this is a release PR merge
+  check-release:
     runs-on: ubuntu-latest
     outputs:
+      should-release: ${{ steps.check.outputs.should-release }}
+      version: ${{ steps.check.outputs.version }}
       release-notes: ${{ steps.notes.outputs.release-notes }}
     steps:
       - name: Check out Git repository
@@ -21,12 +25,32 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Check if this is a release
+        id: check
+        run: |
+          # Get the current version from package.json
+          VERSION=$(node -p "require('./package.json').version")
+          echo "Current version: $VERSION"
+
+          # Check if a tag for this version already exists
+          if git rev-parse "v$VERSION" >/dev/null 2>&1; then
+            echo "Tag v$VERSION already exists, skipping release"
+            echo "should-release=false" >> $GITHUB_OUTPUT
+          else
+            echo "New version detected: $VERSION"
+            echo "should-release=true" >> $GITHUB_OUTPUT
+            echo "version=$VERSION" >> $GITHUB_OUTPUT
+          fi
+
       - name: Generate release notes
         id: notes
+        if: steps.check.outputs.should-release == 'true'
         run: |
+          VERSION=${{ steps.check.outputs.version }}
+
           # Get the previous tag
-          PREV_TAG=$(git describe --tags --abbrev=0 HEAD~1 2>/dev/null || echo "")
-          CURRENT_TAG=${GITHUB_REF#refs/tags/}
+          PREV_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "")
+          CURRENT_TAG="v$VERSION"
 
           # Generate release notes from commits
           if [ -n "$PREV_TAG" ]; then
@@ -48,7 +72,8 @@ jobs:
           echo "EOF" >> $GITHUB_OUTPUT
 
   release:
-    needs: release-notes
+    needs: check-release
+    if: needs.check-release.outputs.should-release == 'true'
     strategy:
       matrix:
         include:
@@ -167,7 +192,8 @@ jobs:
 
   # Create GitHub release with all build artifacts
   create-release:
-    needs: [release-notes, release]
+    needs: [check-release, release]
+    if: needs.check-release.outputs.should-release == 'true'
     runs-on: ubuntu-latest
     steps:
       - name: Download all artifacts
@@ -214,7 +240,9 @@ jobs:
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v1
         with:
-          body: ${{ needs.release-notes.outputs.release-notes }}
+          tag_name: v${{ needs.check-release.outputs.version }}
+          name: v${{ needs.check-release.outputs.version }}
+          body: ${{ needs.check-release.outputs.release-notes }}
           files: release-files/*
           draft: false
           prerelease: false
