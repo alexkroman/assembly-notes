@@ -36,7 +36,7 @@
     "build:linux": "npm run build:all && npm run build-icons && electron-builder --linux --x64 --publish never",
     "build:linux:x64": "npm run build:all && npm run build-icons && electron-builder --linux --x64 --publish never",
     "build:linux:arm64": "npm run build:all && npm run build-icons && electron-builder --linux --arm64 --publish never",
-    "build:release:mac": "npm run build:all && npm run build-icons && electron-builder --mac --publish always",
+    "build:release:mac": "npm run build:all && npm run build-icons && electron-builder --mac --publish always --config electron-builder-notarize.json",
     "build:release:win": "npm run build:all && npm run build-icons && electron-builder --win --publish always",
     "build:release:linux": "npm run build:all && npm run build-icons && electron-builder --linux --publish always",
     "build-icons": "node scripts/generate-icons.js",
