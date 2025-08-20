@@ -124,7 +124,9 @@ test.describe('App Startup', () => {
       (error) =>
         !error.includes('DevTools') &&
         !error.includes('favicon') &&
-        !error.includes('chrome-extension')
+        !error.includes('chrome-extension') &&
+        !error.includes('PostHog') && // PostHog warnings are expected in test environment
+        !error.includes('posthog') // Different casing variations
     );
 
     // Should not have any critical startup errors

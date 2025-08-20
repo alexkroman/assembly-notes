@@ -1,6 +1,4 @@
-import * as Sentry from '@sentry/electron/main';
 import type { StreamingTranscriber } from 'assemblyai';
-import { app } from 'electron';
 import { inject, injectable } from 'tsyringe';
 
 import { TranscriptionData } from '../../types/common.js';
@@ -154,31 +152,8 @@ export class TranscriptionService {
             `Connection lost for ${streamType} stream. It may reconnect automatically.`
           )
         );
-
-        if (app.isPackaged) {
-          Sentry.captureException(error, {
-            level: 'warning',
-            tags: {
-              service: 'transcription',
-              stream: streamType,
-              errorType: 'connection_reset',
-            },
-            extra: {
-              errorMessage: error.message,
-            },
-          });
-        }
       } else {
         callbacks.onError?.(streamType, error);
-
-        if (app.isPackaged) {
-          Sentry.captureException(error, {
-            tags: {
-              service: 'transcription',
-              stream: streamType,
-            },
-          });
-        }
       }
     });
 
@@ -265,11 +240,6 @@ export class TranscriptionService {
         return;
       }
       logger.error('Error sending audio:', error);
-      if (app.isPackaged) {
-        Sentry.captureException(error, {
-          tags: { service: 'transcription', operation: 'sendAudio' },
-        });
-      }
     }
   }
 
@@ -295,11 +265,6 @@ export class TranscriptionService {
       await transcriber.close();
     } catch (error) {
       logger.error('Error closing transcriber:', error);
-      if (app.isPackaged) {
-        Sentry.captureException(error, {
-          tags: { service: 'transcription', operation: 'closeTranscriber' },
-        });
-      }
     }
   }
 

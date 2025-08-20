@@ -1,10 +1,13 @@
 import react from '@vitejs/plugin-react';
 import path from 'path';
-import { defineConfig } from 'vite';
+import { defineConfig, loadEnv } from 'vite';
 
 export default defineConfig(({ command, mode }) => {
   const isRenderer = process.env.BUILD_TARGET === 'renderer';
   const isPreload = process.env.BUILD_TARGET === 'preload';
+
+  // Load env file from project root
+  const env = loadEnv(mode, path.resolve(__dirname), '');
 
   if (isPreload) {
     // Preload build configuration
@@ -32,6 +35,11 @@ export default defineConfig(({ command, mode }) => {
     plugins: [react()],
     root: 'src/renderer',
     base: './',
+    envDir: '../../', // Look for .env files in project root
+    server: {
+      port: 5173,
+      strictPort: true,
+    },
     build: {
       outDir: '../../dist/renderer',
       emptyOutDir: false,
@@ -45,13 +53,13 @@ export default defineConfig(({ command, mode }) => {
         output: {
           manualChunks: {
             vendor: ['react', 'react-dom', 'react-redux', '@reduxjs/toolkit'],
-            sentry: ['@sentry/electron/renderer'],
+            analytics: ['posthog-js'],
           },
         },
       },
     },
     publicDir: 'public',
-    logLevel: 'warn',
+    logLevel: command === 'serve' ? 'info' : 'warn',
     css: {
       postcss: true,
     },

@@ -23,35 +23,35 @@ branches:
     protection:
       # Required status checks
       required_status_checks:
-        strict: true  # Require branches to be up to date before merging
+        strict: true # Require branches to be up to date before merging
         contexts:
-          - "Build & Test / build (macos-latest, mac)"
-          - "Build & Test / build (ubuntu-latest, linux, x64)"
-          - "Build & Test / build (windows-latest, win)"
-      
+          - 'Build & Test / build (macos-latest, mac)'
+          - 'Build & Test / build (ubuntu-latest, linux, x64)'
+          - 'Build & Test / build (windows-latest, win)'
+
       # PR reviews - disabled for solo development
       required_pull_request_reviews: null
-      
+
       # Enforces all configured restrictions for administrators
       enforce_admins: false
-      
+
       # Prevents deletion of the protected branch
       allow_deletions: false
-      
+
       # Allows force pushes to the protected branch
       allow_force_pushes: false
-      
+
       # Requires all conversations to be resolved before merging
       required_conversation_resolution: false
-      
+
       # Requires linear history
       required_linear_history: false
-      
+
       # Restrictions on who can push
       restrictions: null
-      
+
       # Allow bypass for specific apps/users (optional)
       bypass_pull_request_allowances:
-        users: ["alexkroman"]
+        users: ['alexkroman', 'alexkroman-assembly']
         teams: []
         apps: []

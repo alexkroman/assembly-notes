@@ -14,10 +14,12 @@ import { RecordingErrorBoundary } from './RecordingErrorBoundary';
 import { RecordingsList } from './RecordingsList';
 import { RecordingView } from './RecordingView';
 import { SettingsModal } from './SettingsModal';
+import { usePostHog } from '../hooks/usePostHog';
 import { useGetSettingsQuery, apiSlice } from '../slices/apiSlice.js';
 
 export const App: React.FC = () => {
   const dispatch = useAppDispatch();
+  const posthog = usePostHog();
   const { currentPage, currentRecordingId, activeModal } = useAppSelector(
     (state) => state.ui
   );
@@ -28,6 +30,13 @@ export const App: React.FC = () => {
   const { data: settings } = useGetSettingsQuery(undefined);
   const isRecording = status === 'recording';
   const [isStoppingForNavigation, setIsStoppingForNavigation] = useState(false);
+
+  // Identify user in PostHog when settings are loaded
+  useEffect(() => {
+    if (settings?.userId) {
+      posthog.identify(settings.userId);
+    }
+  }, [settings?.userId, posthog]);
 
   useEffect(() => {
     // Check if settings are loaded and AssemblyAI key is missing
