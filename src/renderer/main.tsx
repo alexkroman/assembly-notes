@@ -1,4 +1,3 @@
-import * as Sentry from '@sentry/electron/renderer';
 import React from 'react';
 import { createRoot } from 'react-dom/client';
 import { Provider } from 'react-redux';
@@ -11,40 +10,15 @@ import {
 import { initAutoUpdaterUI } from './auto-updater-ui';
 import { App } from './components/App';
 import { acquireStreams, releaseStreams } from './media';
+import { PostHogProvider } from './services/posthog';
 import { createRendererStore, setStatus } from './store';
 import './assets/tailwind.css';
-
-// Initialize Sentry only in production
-const isProduction = process.env['NODE_ENV'] === 'production';
-const sentryDsn =
-  'https://fdae435c29626d7c3480f4bd5d2e9c33@o4509792651902976.ingest.us.sentry.io/4509792663764992';
-
-if (isProduction) {
-  Sentry.init({
-    dsn: sentryDsn,
-    integrations: [Sentry.browserTracingIntegration()],
-    tracesSampleRate: 1.0,
-  });
-} else {
-  // In development, disable Sentry by providing an empty DSN
-  Sentry.init({
-    dsn: '',
-    enabled: false,
-  });
-}
 
 // Initialize auto-updater UI
 initAutoUpdaterUI();
 
 // Create Redux store for renderer
 const store = createRendererStore();
-
-// Set user ID in Sentry from settings
-const settings = store.getState().settings;
-if (settings.userId) {
-  window.logger.info(`Setting Sentry user ID in renderer: ${settings.userId}`);
-  Sentry.setUser({ id: settings.userId });
-}
 
 // Set up global audio capture handlers
 window.electronAPI.onStartAudioCapture(() => {
@@ -115,9 +89,13 @@ try {
 
   const root = createRoot(container);
   root.render(
-    <Provider store={store}>
-      <App />
-    </Provider>
+    <React.StrictMode>
+      <PostHogProvider>
+        <Provider store={store}>
+          <App />
+        </Provider>
+      </PostHogProvider>
+    </React.StrictMode>
   );
 } catch (error) {
   window.logger.error('Error initializing React app:', error);

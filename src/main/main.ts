@@ -1,7 +1,6 @@
 import * as path from 'path';
 import { fileURLToPath } from 'url';
 
-import * as Sentry from '@sentry/electron/main';
 import dotenv from 'dotenv';
 import { app, BrowserWindow, Menu } from 'electron';
 import { initMain as initAudioLoopback } from 'electron-audio-loopback';
@@ -12,31 +11,6 @@ dotenv.config();
 // Set different app name for development builds - MUST be done early!
 if (!app.isPackaged) {
   app.setName('Assembly-Notes-Dev');
-}
-
-// Initialize Sentry only in production
-const sentryDsn =
-  process.env['SENTRY_DSN'] ??
-  'https://fdae435c29626d7c3480f4bd5d2e9c33@o4509792651902976.ingest.us.sentry.io/4509792663764992';
-
-// Only initialize Sentry in production (packaged app)
-if (sentryDsn && app.isPackaged) {
-  Sentry.init({
-    dsn: sentryDsn,
-    environment: 'production',
-    integrations: [
-      Sentry.mainProcessSessionIntegration(),
-      Sentry.electronBreadcrumbsIntegration(),
-      Sentry.onUncaughtExceptionIntegration(),
-      Sentry.onUnhandledRejectionIntegration(),
-    ],
-  });
-} else {
-  // In development, disable Sentry by providing an empty DSN
-  Sentry.init({
-    dsn: '',
-    enabled: false,
-  });
 }
 
 const __filename = fileURLToPath(import.meta.url);
@@ -81,15 +55,31 @@ function createWindow(): void {
 
   // Set Content Security Policy based on environment
   const isDevelopment = process.env['NODE_ENV'] !== 'production';
-  if (!isDevelopment) {
-    // Production CSP - more restrictive
+  const isDevMode = !app.isPackaged || process.env['DEV_MODE'] === 'true';
+
+  if (!isDevelopment && !isDevMode) {
+    // Production CSP - more restrictive but allow PostHog
     mainWindow.webContents.session.webRequest.onHeadersReceived(
       (details, callback) => {
         callback({
           responseHeaders: {
             ...details.responseHeaders,
             'Content-Security-Policy': [
-              "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src 'self' https://api.assemblyai.com wss://api.assemblyai.com",
+              "default-src 'self'; script-src 'self' https://*.posthog.com https://us-assets.i.posthog.com; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src 'self' https://api.assemblyai.com wss://api.assemblyai.com https://*.posthog.com https://us.i.posthog.com",
+            ],
+          },
+        });
+      }
+    );
+  } else {
+    // Development CSP - allow Vite dev server and PostHog
+    mainWindow.webContents.session.webRequest.onHeadersReceived(
+      (details, callback) => {
+        callback({
+          responseHeaders: {
+            ...details.responseHeaders,
+            'Content-Security-Policy': [
+              "default-src 'self' http://localhost:5173 ws://localhost:5173; script-src 'self' 'unsafe-inline' 'unsafe-eval' http://localhost:5173 https://*.posthog.com https://us-assets.i.posthog.com; style-src 'self' 'unsafe-inline' http://localhost:5173; img-src 'self' data: http://localhost:5173; font-src 'self' http://localhost:5173; connect-src 'self' http://localhost:5173 ws://localhost:5173 https://api.assemblyai.com wss://api.assemblyai.com https://*.posthog.com https://us.i.posthog.com",
             ],
           },
         });
@@ -98,7 +88,24 @@ function createWindow(): void {
   }
 
   // Now load the renderer - IPC handlers are ready
-  void mainWindow.loadFile(path.join(__dirname, '../renderer/index.html'));
+  // Check if Vite dev server is explicitly requested (for npm run dev)
+  const useViteDevServer = process.env['VITE_DEV_SERVER'] === 'true';
+
+  if (useViteDevServer) {
+    // Load from Vite dev server (npm run dev)
+    void mainWindow.loadURL('http://localhost:5173');
+    // Open DevTools in development (but not in tests)
+    if (process.env['NODE_ENV'] !== 'test') {
+      mainWindow.webContents.openDevTools();
+    }
+  } else {
+    // Load the built file (npm start or production)
+    void mainWindow.loadFile(path.join(__dirname, '../renderer/index.html'));
+    // Open DevTools in development mode (but not in tests)
+    if (isDevMode && process.env['NODE_ENV'] !== 'test') {
+      mainWindow.webContents.openDevTools();
+    }
+  }
 
   log.info('🎯 About to resolve AutoUpdaterService from container');
   log.info('🎯 Environment vars:', {
@@ -115,13 +122,6 @@ function createWindow(): void {
     DI_TOKENS.SettingsService
   );
   settingsService.initializeSettings();
-
-  // Set user ID in Sentry
-  const settings = settingsService.getSettings();
-  if (settings.userId) {
-    log.info(`Setting Sentry user ID: ${settings.userId}`);
-    Sentry.setUser({ id: settings.userId });
-  }
 
   // Initialize dictation service
   const dictationService = container.resolve<DictationService>(
@@ -144,8 +144,27 @@ function createWindow(): void {
 
 // Note: OAuth now uses temporary HTTP server instead of custom protocol
 
-void app.whenReady().then(() => {
+void app.whenReady().then(async () => {
   log.info('App is ready, initializing...');
+
+  // Install React DevTools in development (but not in tests)
+  if (
+    (!app.isPackaged || process.env['DEV_MODE'] === 'true') &&
+    process.env['NODE_ENV'] !== 'test'
+  ) {
+    // Disable security warnings in development
+    process.env['ELECTRON_DISABLE_SECURITY_WARNINGS'] = 'true';
+
+    try {
+      const { default: installExtension, REACT_DEVELOPER_TOOLS } = await import(
+        'electron-devtools-installer'
+      );
+      await installExtension(REACT_DEVELOPER_TOOLS);
+      log.info('React DevTools installed successfully');
+    } catch (e) {
+      log.error('Failed to install React DevTools:', e);
+    }
+  }
 
   // Activate the app on macOS to ensure dock icon shows properly
   if (process.platform === 'darwin' && app.dock) {

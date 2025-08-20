@@ -1,5 +1,6 @@
 import { useEffect, useState, useCallback, useRef } from 'react';
 
+import { usePostHog } from './usePostHog';
 import { setStatus } from '../store';
 import { useAppSelector, useAppDispatch } from './redux';
 import type { Recording } from '../../types/common.js';
@@ -13,6 +14,7 @@ import {
 } from '../slices/recordingsSlice.js';
 
 export const useRecording = (recordingId: string | null) => {
+  const posthog = usePostHog();
   const recordingState = useAppSelector(
     (state: { recording: { status: string; error: string | null } }) =>
       state.recording
@@ -133,6 +135,9 @@ export const useRecording = (recordingId: string | null) => {
     const handleSummarizationCompleted = () => {
       dispatch(setStatus('Summary complete'));
       setIsSummarizing(false);
+      posthog.capture('summary_completed', {
+        recordingId: recordingId,
+      });
     };
 
     window.electronAPI.onSummary(handleSummary);
@@ -157,29 +162,47 @@ export const useRecording = (recordingId: string | null) => {
         const result = await window.electronAPI.startRecording();
         if (result) {
           // Recording started successfully
+          posthog.capture('recording_started', {
+            recordingId: recordingId,
+          });
         }
         // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
       } else if (isRecording) {
         setIsStopping(true);
         dispatch(setStatus('Stopping...'));
         await window.electronAPI.stopRecording();
+        posthog.capture('recording_stopped', {
+          recordingId: recordingId,
+          transcriptLength: currentTranscript.length,
+        });
       }
     } catch (error) {
       window.logger.error('Error toggling recording:', error);
       dispatch(setStatus('Error toggling recording'));
       setIsStopping(false);
       setIsStarting(false);
+      posthog.capture('recording_error', {
+        error: error instanceof Error ? error.message : 'Unknown error',
+        action: isRecording ? 'stop' : 'start',
+      });
     }
   };
 
   const handleSummarize = async () => {
     try {
       // Don't set isSummarizing here - let the event handlers manage it
+      posthog.capture('summary_requested', {
+        recordingId: recordingId,
+        transcriptLength: currentTranscript.length,
+      });
       await window.electronAPI.summarizeTranscript();
     } catch (error) {
       window.logger.error('Error generating summary:', error);
       dispatch(setStatus('Error generating summary'));
       setIsSummarizing(false);
+      posthog.capture('summary_error', {
+        error: error instanceof Error ? error.message : 'Unknown error',
+      });
     }
   };
 
@@ -213,12 +236,23 @@ export const useRecording = (recordingId: string | null) => {
 
       if (result.success) {
         dispatch(setStatus('Posted to Slack'));
+        posthog.capture('slack_post_success', {
+          recordingId: recordingId,
+          channelId: channelId,
+          messageLength: message.length,
+        });
       } else {
         dispatch(setStatus(`Slack error: ${result.error ?? 'Unknown error'}`));
+        posthog.capture('slack_post_error', {
+          error: result.error ?? 'Unknown error',
+        });
       }
     } catch (error) {
       window.logger.error('Error posting to Slack:', error);
       dispatch(setStatus('Error posting to Slack'));
+      posthog.capture('slack_post_error', {
+        error: error instanceof Error ? error.message : 'Unknown error',
+      });
     } finally {
       setIsPostingToSlack(false);
     }
