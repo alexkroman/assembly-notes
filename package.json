@@ -76,6 +76,7 @@
     "electron-redux": "^2.0.0",
     "electron-updater": "^6.6.2",
     "posthog-js": "^1.260.2",
+    "posthog-node": "^5.8.0",
     "react": "^19.1.1",
     "react-dom": "^19.1.1",
     "react-redux": "^9.2.0",

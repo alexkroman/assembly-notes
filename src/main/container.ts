@@ -10,6 +10,7 @@ import { DictationStatusWindow } from './dictationStatusWindow.js';
 import logger from './logger.js';
 import { AudioRecordingService } from './services/audioRecordingService.js';
 import { DictationService } from './services/dictationService.js';
+import { PostHogService } from './services/posthogService.js';
 import { RecordingDataService } from './services/recordingDataService.js';
 import { RecordingManager } from './services/recordingManager.js';
 import { SettingsService } from './services/settingsService.js';
@@ -58,6 +59,7 @@ export function setupContainer(mainWindow: BrowserWindow): void {
   });
 
   // Register services as singletons
+  container.registerSingleton(DI_TOKENS.PostHogService, PostHogService);
   container.registerSingleton(DI_TOKENS.DatabaseService, DatabaseService);
   container.registerSingleton(DI_TOKENS.SettingsService, SettingsService);
   container.registerSingleton(

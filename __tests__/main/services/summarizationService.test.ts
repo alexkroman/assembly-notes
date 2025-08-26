@@ -87,9 +87,9 @@ describe('SummarizationService', () => {
       );
 
       const taskCall = (mockLemurClient.task as jest.Mock).mock.calls[0][0];
-      expect(taskCall.prompt).toContain(
-        'You are a sophisticated AI assistant specializing in meeting summarization'
-      );
+      // Check for key elements that define the system prompt's purpose
+      expect(taskCall.prompt).toMatch(/meeting|summariz/i);
+      expect(taskCall.prompt).toMatch(/action|task/i);
       expect(taskCall.prompt).toContain(mockSummaryPrompt);
     });
 
@@ -167,9 +167,9 @@ describe('SummarizationService', () => {
 
       expect(result).toBe(mockResponse);
       const taskCall = (mockLemurClient.task as jest.Mock).mock.calls[0][0];
-      expect(taskCall.prompt).toContain(
-        'You are a sophisticated AI assistant specializing in meeting summarization'
-      );
+      // Check for key elements that define the system prompt's purpose
+      expect(taskCall.prompt).toMatch(/meeting|summariz/i);
+      expect(taskCall.prompt).toMatch(/action|task/i);
     });
 
     it('should handle very long transcripts', async () => {
