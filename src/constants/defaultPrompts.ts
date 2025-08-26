@@ -9,92 +9,102 @@ export const DEFAULT_PROMPTS: PromptTemplate[] = [
     name: '1 on 1',
     content: `Meeting Type: 1:1 Meeting
 
-Meeting Goal: To capture meeting notes in a concise and actionable format. Focus on immediate priorities, progress, challenges, and personal feedback, ensuring the notes are structured for clarity, efficiency, and easy follow-up.
+Generate concise, actionable notes focused on priorities and next steps.
 
 Output Sections:
 
 Top of Mind:
-What's the most pressing issue or priority? Capture the top concerns or focus areas that need immediate attention.
+The most urgent issue or priority discussed.
 
 Updates and Wins:
-Highlight recent achievements and progress. What's going well? Document key updates that show momentum.
+Recent achievements and positive progress.
 
 Challenges and Blockers:
-What obstacles are in the way? Note any blockers that are slowing progress.
+Current obstacles preventing progress.
 
-Mutual Feedback:
-Did they give me any feedback on what I could do differently? Is there anything I should change about our team to make us more successful? Did I share any feedback for them? List it all here, attributing who gave the feedback.
+Feedback Exchange:
+Any feedback given or received by either party. Clearly attribute who said what.
 
-Next Milestone:
-Define clear action items and next steps. Who's doing what by when? Ensure accountability and follow-up.
+Action Items:
+Specific tasks with owners and deadlines.
 
-Final Check: Before generating the summary, ensure it directly addresses each section, is free of conversational filler, and serves as a clear record for tracking progress and accountability between this meeting and the next.`,
+Keep notes brief, direct, and ready for follow-up.`,
   },
   {
     name: 'Stand Up',
-    content: `Meeting Type: Daily Stand-up Meeting
+    content: `Meeting Type: Daily Stand-up
 
-Meeting Goal: The goal is to document each participant's updates regarding their recent accomplishments, current focus, and any blockers they are facing. Keep these notes short and to-the-point.
+Capture brief updates from each participant.
 
 Output Sections:
 
 Announcements:
-Include any note-worthy points from the small-talk or announcements at the beginning of the call.
+Any team-wide updates or important news shared.
 
-Updates:
-Break these down into what was achieved yesterday, or accomplishments, what each person is working on today and highlight any blockers that could impact progress.
+Individual Updates:
+For each person:
+- Yesterday: What they completed
+- Today: What they're working on
+- Blockers: Any impediments
 
-Sidebar:
-Summarize any further discussions or issues that were explored after the main updates. Note any collaborative efforts, decisions made, or additional points raised.
+Follow-up Discussions:
+Any deeper dives or decisions made after the main updates.
 
 Action Items:
-Document and assign next steps from the meeting, summarize immediate tasks, provide reminders, and ensure accountability and clarity on responsibilities.
+Tasks assigned with owners.
 
-Final Check: Before finalizing, ensure the summary is scannable and that all key updates, blockers, and action items are clearly captured and attributed according to the structure above.`,
+Keep entries short and scannable.`,
   },
   {
     name: 'Team Meeting',
-    content: `Meeting Type: Weekly Team Meeting
+    content: `Meeting Type: Team Meeting
 
-Meeting Goal: I met with my team to assess our project's health and align our efforts. My aim was to gain a clear understanding of our progress, address any emerging challenges, and ensure each team member is clear on their role in advancing our goals.
+Document team alignment, progress, and planning.
 
 Output Sections:
 
-Announcements: Note here any significant announcements made, whether they relate to professional and company-wide updates, or important events in the personal lives of my colleagues.
+Announcements:
+Company updates, team news, or important events.
 
-Review of Progress: Capture the discussion on the team's progress towards the overall strategic goals.
+Progress Review:
+Status of team goals and projects.
 
-Key Achievements: Summarize the notable achievements and results shared by team members, highlighting significant successes or completed tasks from the past week.
+Key Achievements:
+Notable wins and completed work since last meeting.
 
-Challenges and Adjustments Needed: Document any challenges the team is facing, including obstacles that have arisen. Note any adjustments or changes in strategy that were discussed to overcome these challenges.
+Challenges:
+Current obstacles and proposed solutions.
 
-Action Items and Accountability for the Week Ahead: Record the action items assigned for the upcoming week, including who is responsible for each task and any deadlines or accountability measures that were agreed upon.
+Action Items:
+Tasks for the week ahead with owners and deadlines.
 
-Final Check: Before generating the final output, review your summary to ensure it is a clear, accurate, and complete reflection of the meeting according to the structure provided. The summary should empower the team to move forward with clarity and purpose.`,
+Focus on clarity and accountability.`,
   },
   {
     name: 'Interview',
     content: `Meeting Type: Job Interview
 
-Meeting Goal: I met with a job candidate to assess their suitability for a position within our company.
+Assess candidate fit for the role.
 
 Output Sections:
 
-Their Background:
-Detail the candidate's professional journey, education, and overall career progression. Include information about their current role and responsibilities, as well as any significant achievements or projects they've worked on.
+Background:
+Professional experience, education, current role, and key achievements.
 
-Skills and Experience:
-Highlight the specific skills and experiences that are most relevant to the position. Focus on technical abilities, soft skills, and any particular areas of expertise that align with the job requirements.
+Relevant Skills:
+Technical abilities and soft skills that match the position requirements.
 
-Motivation and Fit:
-Include the candidate's career aspirations and why they're interested in this particular role and company.
+Motivation:
+Why they want this role and company. Career goals.
 
-Availability and Salary Expectations:
-Note down the candidate's current notice period or earliest start date. Include their salary expectations and any other compensation-related questions.
+Logistics:
+- Notice period/start date
+- Salary expectations
+- Location/remote preferences
 
 Next Steps:
-Write here any subsequent stages in the hiring process that I mention. Include any considerations regarding the candidate's availability or timelines that they mention.
+Follow-up actions and timeline discussed.
 
-Final Check: Before completing the summary, ensure that all information is accurately placed in the correct section and that the output provides a clear, comprehensive overview of the candidate based only on the information discussed in the interview.`,
+Capture only what was actually discussed.`,
   },
 ];

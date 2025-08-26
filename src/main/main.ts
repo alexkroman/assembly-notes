@@ -283,15 +283,24 @@ app.on('before-quit', (event) => {
     autoUpdaterService.stopPeriodicUpdateCheck();
   }
 
-  if (container.isRegistered(DI_TOKENS.PostHogService)) {
-    // Shutdown PostHog to ensure events are flushed
+  if (
+    container.isRegistered(DI_TOKENS.PostHogService) &&
+    process.env['NODE_ENV'] !== 'test'
+  ) {
+    // Shutdown PostHog to ensure events are flushed (skip in tests)
     event.preventDefault();
     const posthogService = container.resolve<PostHogService>(
       DI_TOKENS.PostHogService
     );
-    void posthogService.shutdown().then(() => {
-      app.quit();
-    });
+    void posthogService
+      .shutdown()
+      .then(() => {
+        app.quit();
+      })
+      .catch((error: unknown) => {
+        log.error('Error shutting down PostHog:', error);
+        app.quit();
+      });
     return;
   }
 

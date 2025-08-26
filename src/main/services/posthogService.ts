@@ -11,7 +11,10 @@ export class PostHogService {
   private isInitialized = false;
 
   constructor() {
-    this.initialize();
+    // Don't initialize PostHog in test environment
+    if (process.env['NODE_ENV'] !== 'test') {
+      this.initialize();
+    }
   }
 
   private initialize(): void {
@@ -144,8 +147,17 @@ export class PostHogService {
 
   public async shutdown(): Promise<void> {
     if (this.client && this.isInitialized) {
-      await this.client.shutdown();
-      this.isInitialized = false;
+      try {
+        // Add a timeout to prevent hanging during shutdown
+        await Promise.race([
+          this.client.shutdown(),
+          new Promise<void>((resolve) => setTimeout(resolve, 5000)), // 5 second timeout
+        ]);
+      } catch (error) {
+        log.error('Error during PostHog shutdown:', error);
+      } finally {
+        this.isInitialized = false;
+      }
     }
   }
 }
