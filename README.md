@@ -1,322 +1,134 @@
 # Assembly Notes
 
-<div align="center">
-
-**Real-time meeting transcription and AI-powered summaries**
-
-Capture both microphone and system audio, transcribe with AssemblyAI, and automatically post intelligent summaries to Slack.
+Real-time meeting transcription and AI summaries for macOS, Windows, and Linux.
 
 [![Latest Release](https://img.shields.io/github/v/release/alexkroman/assembly-notes?style=for-the-badge&logo=github)](https://github.com/alexkroman/assembly-notes/releases/latest)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg?style=for-the-badge)](https://opensource.org/licenses/MIT)
-[![Platform](https://img.shields.io/badge/platform-macOS%20%7C%20Windows%20%7C%20Linux-blue?style=for-the-badge)](https://github.com/alexkroman/assembly-notes/releases/latest)
-[![Node.js](https://img.shields.io/badge/Node.js-24.0.0+-green?style=for-the-badge&logo=node.js)](https://nodejs.org/)
-[![TypeScript](https://img.shields.io/badge/TypeScript-5.8.3-blue?style=for-the-badge&logo=typescript)](https://www.typescriptlang.org/)
-
-[Download Latest Release](https://github.com/alexkroman/assembly-notes/releases/latest) • [Report Bug](https://github.com/alexkroman/assembly-notes/issues) • [Request Feature](https://github.com/alexkroman/assembly-notes/issues)
-
-</div>
-
-## 📸 Demos
-
-<div align="center">
-
-### Meeting Transcription & AI Summaries
 
 ![Assembly Notes Meeting Demo](docs/screenshots/demo.gif)
-
-_Record meetings, get real-time transcription, and automatically generate AI-powered summaries posted to Slack_
-
-### Real-Time Dictation
+_Record meetings with real-time transcription and AI summaries_
 
 ![Assembly Notes Dictating Demo](docs/screenshots/dictate.gif)
+_Voice-to-text dictation with custom prompts_
 
-_Use voice-to-text for instant dictation with customizable AI prompts and smart formatting_
+## Features
 
-</div>
+**Meetings**
 
-## ✨ Key Features
+- Record microphone and system audio together
+- Live transcription with AssemblyAI
+- AI summaries via AssemblyAI
+- Post to Slack
 
-### 🎤 Meeting Transcription & Summaries
+**Dictation**
 
-- **Dual Audio Capture** - Records microphone and system audio simultaneously
-- **Real-time Transcription** - Live speech-to-text with AssemblyAI's advanced models
-- **AI Summaries** - Claude-powered meeting summaries via AssemblyAI Lemur
-- **Slack Integration** - Automatic posting to channels or direct messages
-- **Smart Prompts** - Customizable AI prompts for tailored summaries
+- Voice-to-text with custom prompts
+- Smart formatting
 
-### 🎙️ Real-Time Dictation
+## Download
 
-- **Instant Voice-to-Text** - Speak and see your words appear in real-time
-- **Customizable Prompts** - Set context-specific prompts for different types of content
-- **Smart Formatting** - AI-powered text formatting and structure
-- **Floating Window** - Dedicated dictation interface that stays on top
-- **Hotkey Support** - Quick start/stop with customizable keyboard shortcuts
+| Platform              | Download                                                                                                      |
+| --------------------- | ------------------------------------------------------------------------------------------------------------- |
+| macOS (Apple Silicon) | [DMG](https://github.com/alexkroman/assembly-notes/releases/latest/download/Assembly-Notes-mac-arm64.dmg)     |
+| macOS (Intel)         | [DMG](https://github.com/alexkroman/assembly-notes/releases/latest/download/Assembly-Notes-mac-x64.dmg)       |
+| Windows               | [Installer](https://github.com/alexkroman/assembly-notes/releases/latest/download/Assembly-Notes-win-x64.exe) |
+| Ubuntu/Debian (x64)   | [DEB](https://github.com/alexkroman/assembly-notes/releases/latest/download/Assembly-Notes-linux-x64.deb)     |
+| Ubuntu/Debian (ARM64) | [DEB](https://github.com/alexkroman/assembly-notes/releases/latest/download/Assembly-Notes-linux-arm64.deb)   |
 
-### 🔧 Platform & Privacy
+Other Linux: Use [AppImage](https://github.com/alexkroman/assembly-notes/releases/latest)
 
-- **Cross-platform** - Native apps for macOS, Windows, and Linux
-- **Local Storage** - All recordings and transcriptions stored locally
-- **Privacy First** - No data sent to third parties except AssemblyAI for transcription
-- **Modern UI** - Clean, intuitive interface built with React and Tailwind CSS
+## Quick Start
 
-## 📥 Download
+1. Download and install
+2. Add your [AssemblyAI API key](https://www.assemblyai.com/) in Settings
+3. (Optional) Connect Slack for auto-posting
+4. Start recording or dictating
 
-Download the latest version for your platform:
-
-| Platform                  | Download                                                                                                               | Size   |
-| ------------------------- | ---------------------------------------------------------------------------------------------------------------------- | ------ |
-| **macOS** (Apple Silicon) | [Download DMG](https://github.com/alexkroman/assembly-notes/releases/latest/download/Assembly-Notes-mac-arm64.dmg)     | ~150MB |
-| **macOS** (Intel)         | [Download DMG](https://github.com/alexkroman/assembly-notes/releases/latest/download/Assembly-Notes-mac-x64.dmg)       | ~150MB |
-| **Windows**               | [Download Installer](https://github.com/alexkroman/assembly-notes/releases/latest/download/Assembly-Notes-win-x64.exe) | ~150MB |
-| **Ubuntu/Debian** (x64)   | [DEB Package](https://github.com/alexkroman/assembly-notes/releases/latest/download/Assembly-Notes-linux-x64.deb)      | ~150MB |
-| **Ubuntu/Debian** (ARM64) | [DEB Package](https://github.com/alexkroman/assembly-notes/releases/latest/download/Assembly-Notes-linux-arm64.deb)    | ~150MB |
-
-> 💡 **Note**: For other Linux distributions, you can use the AppImage files available in the [releases page](https://github.com/alexkroman/assembly-notes/releases/latest).
-
-## 🚀 Quick Start
-
-### For End Users
-
-1. **Download** the app for your platform from the table above
-2. **Install**:
-   - **Ubuntu/Debian**:
-     ```bash
-     sudo dpkg -i Assembly-Notes-linux-*.deb
-     sudo apt-get install -f  # Fix any missing dependencies
-     ```
-   - **macOS**: Open the DMG and drag to Applications
-   - **Windows**: Run the installer
-   - **Other Linux**: Make AppImage executable with `chmod +x` and run
-3. **Configure** your AssemblyAI API key in Settings
-4. **Optional**: Set up Slack integration for automatic posting
-5. **Choose Your Workflow**:
-   - **🎤 Meeting Recording**: Start recording to transcribe meetings and generate summaries
-   - **🎙️ Dictation**: Use the dictation feature for real-time voice-to-text with custom prompts
-
-### For Developers
+### Development
 
 ```bash
-# Clone the repository
 git clone https://github.com/alexkroman/assembly-notes.git
 cd assembly-notes
-
-# Install dependencies
 npm install
-
-# Start in development mode
 npm start
 ```
 
-## 🔧 Configuration
+## Configuration
 
-### Required: AssemblyAI API Key
+### AssemblyAI (Required)
 
-Assembly Notes uses AssemblyAI for high-quality transcription and AI summarization:
+1. Get a free API key at [assemblyai.com](https://www.assemblyai.com/)
+2. Add it in Settings
 
-1. Sign up for a free account at [assemblyai.com](https://www.assemblyai.com/)
-2. Get your API key from the dashboard
-3. Add the key in Assembly Notes Settings
+### Slack (Optional)
 
-> 💡 **Free Tier**: AssemblyAI offers free transcription credits for new users.
+1. Create a Slack app using [`slack-app-manifest.json`](./slack-app-manifest.json)
+2. Add Client ID and Secret in Settings
+3. Connect and choose channels
 
-### Optional: Slack Integration
+[See detailed setup →](#slack-setup)
 
-Automatically post meeting summaries to your Slack workspace:
+## Development
 
-1. Create a Slack app using our [manifest](./slack-app-manifest.json)
-2. Get your Client ID and Secret from Slack
-3. Enter credentials in Assembly Notes Settings
-4. Click "Connect to Slack"
-5. Choose channels for posting summaries
+**Requirements:** Node.js 24+, npm 10+
 
-📖 **[Detailed Slack setup guide →](#slack-integration-setup)**
-
-### 🎙️ Dictation Setup
-
-Configure your dictation experience:
-
-1. **Set Custom Prompts**: Create context-specific prompts for different types of content
-2. **Configure Hotkeys**: Set up keyboard shortcuts for quick dictation start/stop
-3. **Adjust Settings**: Fine-tune audio input and transcription preferences
-4. **Floating Window**: Use the dedicated dictation interface for distraction-free writing
-
-## 🛠️ Development
-
-### Prerequisites
-
-- **Node.js** 24.0.0 or higher
-- **npm** 10.0.0 or higher
-- **Git**
-
-### Available Commands
+### Commands
 
 ```bash
 # Development
-npm start              # Start the app
+npm start              # Start app
 npm run dev            # Start with hot reload
-npm run test           # Run all tests
-npm run test:watch     # Run tests in watch mode
-npm run test:e2e       # Run end-to-end tests
+npm test               # Run tests
 
-# Building
-npm run build:mac        # Build for macOS
-npm run build:win        # Build for Windows
-npm run build:linux       # Build for Linux x64 (AppImage + DEB)
-npm run build:linux:x64   # Build for Linux x64 (AppImage + DEB)
-npm run build:linux:arm64 # Build for Linux ARM64 (AppImage + DEB)
-npm run build:all        # Build for all platforms
+# Build
+npm run build:mac      # macOS
+npm run build:win      # Windows
+npm run build:linux    # Linux
 
-# Code Quality
-npm run lint            # Run ESLint
-npm run lint:fix        # Fix ESLint issues
-npm run format          # Format code with Prettier
-npm run typecheck       # Run TypeScript type checking
-
-# Releases
-npm run release:patch  # Bug fixes (1.0.0 → 1.0.1)
-npm run release:minor  # New features (1.0.0 → 1.1.0)
-npm run release:major  # Breaking changes (1.0.0 → 2.0.0)
+# Code quality
+npm run lint           # Check code
+npm run format         # Format code
+npm run typecheck      # Type check
 ```
 
 ### Tech Stack
 
-- **Electron** - Cross-platform desktop framework
-- **TypeScript** - Type-safe JavaScript development
-- **React** - Modern UI components
-- **AssemblyAI SDK** - Professional transcription service
-- **SQLite** - Local data storage
-- **Redux Toolkit** - State management
-- **Tailwind CSS** - Utility-first styling
-- **Jest & Playwright** - Testing framework
-- **Vite** - Build tool and dev server
+- Electron + TypeScript + React
+- AssemblyAI SDK for transcription
+- SQLite for local storage
+- Redux for state management
 
-### Project Structure
-
-```
-assembly-notes/
-├── src/
-│   ├── main/           # Electron main process
-│   ├── renderer/       # React UI components
-│   ├── preload/        # Electron preload scripts
-│   └── types/          # TypeScript type definitions
-├── __tests__/          # Test files
-├── scripts/            # Build and utility scripts
-└── docs/              # Documentation and screenshots
-```
-
-## 📋 Slack Integration Setup
+## Slack Setup
 
 <details>
-<summary>📖 Click for detailed setup instructions</summary>
+<summary>Detailed instructions</summary>
 
-### Step 1: Create Slack App
+1. **Create Slack app**
+   - Go to [api.slack.com/apps](https://api.slack.com/apps)
+   - Create from manifest using [`slack-app-manifest.json`](./slack-app-manifest.json)
 
-1. Navigate to [api.slack.com/apps](https://api.slack.com/apps)
-2. Click "Create New App" → "From an app manifest"
-3. Select your workspace
-4. Copy the contents of [`slack-app-manifest.json`](./slack-app-manifest.json)
-5. Paste the manifest and create the app
+2. **Get credentials**
+   - Copy Client ID and Secret from Basic Information
 
-### Step 2: Get Credentials
+3. **Connect**
+   - Add credentials in Assembly Notes Settings
+   - Click Connect to Slack
+   - Authorize and select channels
 
-1. Go to "Basic Information" in your Slack app
-2. Locate your **Client ID** and **Client Secret**
-3. Copy both values for use in Assembly Notes
-
-### Step 3: Connect Assembly Notes
-
-1. Open Assembly Notes and go to Settings
-2. Enter your Slack credentials (Client ID and Secret)
-3. Click "Connect to Slack"
-4. Authorize the app in your browser
-5. Select channels for automatic summary posting
-
-### Using Private Channels & DMs
-
-**Private Channels:**
-
-- Invite the bot: `/invite @assembly-notes`
-- Refresh the channels list in settings
-
-**Direct Messages:**
-
-- Select any user as the destination
-- No invitation required
+**Private channels:** Invite bot with `/invite @assembly-notes`  
+**DMs:** Select any user, no invite needed
 
 </details>
 
-## 🤝 Contributing
+## Contributing
 
-We welcome contributions from the community! Here's how you can help:
+1. Fork the repo
+2. Create a branch (`git checkout -b feature/name`)
+3. Make changes
+4. Run tests (`npm test`)
+5. Commit (`git commit -m 'Add feature'`)
+6. Push and open a PR
 
-### Getting Started
+## License
 
-1. **Fork** the repository
-2. **Create** a feature branch (`git checkout -b feature/amazing-feature`)
-3. **Make** your changes
-4. **Test** your changes with `npm test`
-5. **Commit** your changes (`git commit -m 'Add amazing feature'`)
-6. **Push** to the branch (`git push origin feature/amazing-feature`)
-7. **Open** a Pull Request
-
-### Development Guidelines
-
-- Follow the existing code style and TypeScript conventions
-- Add tests for new features
-- Update documentation as needed
-- Ensure all tests pass before submitting
-- Use conventional commit messages
-- Keep PRs focused and well-described
-
-### Areas for Contribution
-
-- 🐛 **Bug fixes** - Help squash bugs and improve stability
-- ✨ **New features** - Add functionality that users need
-- 📚 **Documentation** - Improve docs, add examples, fix typos
-- 🧪 **Testing** - Add tests, improve test coverage
-- 🎨 **UI/UX** - Enhance the user interface and experience
-- 🔧 **Performance** - Optimize performance and reduce resource usage
-
-## 🐛 Troubleshooting
-
-### Common Issues
-
-**Audio not recording:**
-
-- Check microphone permissions in your OS settings
-- Ensure the correct audio input device is selected
-- Try restarting the application
-
-**Transcription not working:**
-
-- Verify your AssemblyAI API key is correct
-- Check your internet connection
-- Ensure you have sufficient AssemblyAI credits
-
-**Dictation issues:**
-
-- Check microphone permissions in your OS settings
-- Ensure the correct audio input device is selected
-- Try restarting the dictation window
-- Verify your custom prompts are properly configured
-
-**Slack integration issues:**
-
-- Verify your Slack app credentials
-- Check that the bot has been invited to private channels
-- Ensure the app has the necessary permissions
-
-### Getting Help
-
-- 📖 Check the [documentation](#) (coming soon)
-- 🐛 [Report a bug](https://github.com/alexkroman/assembly-notes/issues)
-- 💡 [Request a feature](https://github.com/alexkroman/assembly-notes/issues)
-- 💬 [Start a discussion](https://github.com/alexkroman/assembly-notes/discussions)
-
-## 📄 License
-
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
-## 🙏 Acknowledgments
-
-- All our [contributors](https://github.com/alexkroman/assembly-notes/graphs/contributors) who help make this project better
+MIT - see [LICENSE](LICENSE)
