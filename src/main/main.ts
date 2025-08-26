@@ -271,7 +271,13 @@ app.on('window-all-closed', function () {
   }
 });
 
+let isQuitting = false;
+
 app.on('before-quit', (event) => {
+  if (isQuitting) {
+    return; // Already in the process of quitting
+  }
+  isQuitting = true;
   log.info('App is quitting, cleaning up resources');
 
   // Only cleanup if container has been set up
