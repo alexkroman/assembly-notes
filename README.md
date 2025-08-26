@@ -6,9 +6,11 @@ Real-time meeting transcription and AI summaries for macOS, Windows, and Linux.
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg?style=for-the-badge)](https://opensource.org/licenses/MIT)
 
 ![Assembly Notes Meeting Demo](docs/screenshots/demo.gif)
+
 _Record meetings with real-time transcription and AI summaries_
 
 ![Assembly Notes Dictating Demo](docs/screenshots/dictate.gif)
+
 _Voice-to-text dictation with custom prompts_
 
 ## Features
