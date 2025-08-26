@@ -23,6 +23,7 @@ import type { DictationStatusWindow } from './dictationStatusWindow.js';
 import { setupIpcHandlers } from './ipc-handlers.js';
 import log from './logger.js';
 import type { DictationService } from './services/dictationService.js';
+import type { PostHogService } from './services/posthogService.js';
 import type { SettingsService } from './services/settingsService.js';
 import { store } from './store/store.js';
 
@@ -52,6 +53,9 @@ function createWindow(): void {
   // Set up the container and IPC handlers before loading the renderer
   setupContainer(mainWindow);
   setupIpcHandlers(mainWindow, store);
+
+  // Initialize PostHog for error tracking (constructor handles initialization)
+  container.resolve<PostHogService>(DI_TOKENS.PostHogService);
 
   // Set Content Security Policy based on environment
   const isDevelopment = process.env['NODE_ENV'] !== 'production';
@@ -267,7 +271,7 @@ app.on('window-all-closed', function () {
   }
 });
 
-app.on('before-quit', () => {
+app.on('before-quit', (event) => {
   log.info('App is quitting, cleaning up resources');
 
   // Only cleanup if container has been set up
@@ -277,6 +281,18 @@ app.on('before-quit', () => {
       DI_TOKENS.AutoUpdaterService
     );
     autoUpdaterService.stopPeriodicUpdateCheck();
+  }
+
+  if (container.isRegistered(DI_TOKENS.PostHogService)) {
+    // Shutdown PostHog to ensure events are flushed
+    event.preventDefault();
+    const posthogService = container.resolve<PostHogService>(
+      DI_TOKENS.PostHogService
+    );
+    void posthogService.shutdown().then(() => {
+      app.quit();
+    });
+    return;
   }
 
   if (container.isRegistered(DI_TOKENS.DatabaseService)) {
