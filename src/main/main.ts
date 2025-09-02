@@ -271,13 +271,7 @@ app.on('window-all-closed', function () {
   }
 });
 
-let isQuitting = false;
-
-app.on('before-quit', (event) => {
-  if (isQuitting) {
-    return; // Already in the process of quitting
-  }
-  isQuitting = true;
+app.on('before-quit', () => {
   log.info('App is quitting, cleaning up resources');
 
   // Only cleanup if container has been set up
@@ -293,21 +287,11 @@ app.on('before-quit', (event) => {
     container.isRegistered(DI_TOKENS.PostHogService) &&
     process.env['NODE_ENV'] !== 'test'
   ) {
-    // Shutdown PostHog to ensure events are flushed (skip in tests)
-    event.preventDefault();
+    // Shutdown PostHog synchronously - it will flush events in background
     const posthogService = container.resolve<PostHogService>(
       DI_TOKENS.PostHogService
     );
-    void posthogService
-      .shutdown()
-      .then(() => {
-        app.quit();
-      })
-      .catch((error: unknown) => {
-        log.error('Error shutting down PostHog:', error);
-        app.quit();
-      });
-    return;
+    posthogService.shutdown();
   }
 
   if (container.isRegistered(DI_TOKENS.DatabaseService)) {
