@@ -58,18 +58,14 @@ export class PostHogService {
   }
 
   private setupErrorHandlers(): void {
-    // Capture unhandled errors
+    // Capture unhandled errors without interfering with Electron's default behavior
     process.on('uncaughtException', (error: Error) => {
       log.error('Uncaught Exception:', error);
       this.captureException(error, {
         source: 'uncaughtException',
         fatal: true,
       });
-
-      // Give PostHog time to send the event before crashing
-      setTimeout(() => {
-        process.exit(1);
-      }, 1000);
+      // Let Electron handle the crash naturally - don't call process.exit
     });
 
     // Capture unhandled promise rejections
@@ -145,18 +141,15 @@ export class PostHogService {
     return `electron-${process.platform}-${app.getVersion()}`;
   }
 
-  public async shutdown(): Promise<void> {
+  public shutdown(): void {
     if (this.client && this.isInitialized) {
       try {
-        // Add a timeout to prevent hanging during shutdown
-        await Promise.race([
-          this.client.shutdown(),
-          new Promise<void>((resolve) => setTimeout(resolve, 5000)), // 5 second timeout
-        ]);
+        // PostHog's shutdown method is synchronous but non-blocking
+        // It triggers the flush in background with a timeout
+        void this.client.shutdown(3000); // 3 second timeout
+        this.isInitialized = false;
       } catch (error) {
         log.error('Error during PostHog shutdown:', error);
-      } finally {
-        this.isInitialized = false;
       }
     }
   }
