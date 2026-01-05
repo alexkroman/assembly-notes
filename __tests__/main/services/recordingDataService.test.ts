@@ -83,6 +83,14 @@ describe('RecordingDataService', () => {
       mockStateBroadcaster
     );
 
+    // Mock PostHog service
+    const mockPostHogService = {
+      trackError: jest.fn(),
+      captureEvent: jest.fn(),
+      captureException: jest.fn(),
+    };
+    container.registerInstance(DI_TOKENS.PostHogService, mockPostHogService);
+
     // Create the service
     recordingDataService = container.resolve(RecordingDataService);
   });

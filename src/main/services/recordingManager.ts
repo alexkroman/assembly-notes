@@ -12,6 +12,7 @@ import { DI_TOKENS } from '../di-tokens.js';
 import type Logger from '../logger.js';
 import type { StateBroadcaster } from '../state-broadcaster.js';
 import { AudioRecordingService } from './audioRecordingService.js';
+import type { PostHogService } from './posthogService.js';
 import { RecordingDataService } from './recordingDataService.js';
 import { SummarizationService } from './summarizationService.js';
 import {
@@ -55,7 +56,9 @@ export class RecordingManager {
     @inject(DI_TOKENS.AudioRecordingService)
     private audioRecordingService: AudioRecordingService,
     @inject(DI_TOKENS.StateBroadcaster)
-    private stateBroadcaster: StateBroadcaster
+    private stateBroadcaster: StateBroadcaster,
+    @inject(DI_TOKENS.PostHogService)
+    private posthog: PostHogService
   ) {
     this.errorLogger = new ErrorLogger(this.logger);
     this.setupStoreSubscriptions();
@@ -106,6 +109,15 @@ export class RecordingManager {
       ...(mode === 'meeting' && { metadata: { stream } }),
     });
 
+    // Track error to PostHog
+    this.posthog.trackError(transcriptionError, {
+      service: 'RecordingManager',
+      operation: 'transcription',
+      stream,
+      mode,
+      fatal: false,
+    });
+
     const userFriendlyMsg =
       this.errorLogger.getUserFriendlyMessage(transcriptionError);
     this.store.dispatch(setRecordingError(userFriendlyMsg));
@@ -119,6 +131,15 @@ export class RecordingManager {
         error.message.includes('Invalid API key') ||
         error.message.includes('Forbidden'))
     ) {
+      // Track fatal error
+      this.posthog.trackError(error, {
+        service: 'RecordingManager',
+        operation: 'transcription',
+        stream,
+        mode,
+        fatal: true,
+        reason: 'authorization_failure',
+      });
       void this.store.dispatch(stopRecording());
     }
   }
@@ -430,6 +451,11 @@ export class RecordingManager {
       return true;
     } catch (error) {
       this.logger.error('Failed to stop recording:', error);
+      this.posthog.trackError(error, {
+        service: 'RecordingManager',
+        operation: 'stopRecording',
+        fatal: false,
+      });
       // Broadcast error status
       this.stateBroadcaster.recordingStatus('error', {
         error: 'Failed to stop recording',
@@ -467,6 +493,11 @@ export class RecordingManager {
       return true;
     } catch (error) {
       this.logger.error('Failed to stop dictation:', error);
+      this.posthog.trackError(error, {
+        service: 'RecordingManager',
+        operation: 'stopDictation',
+        fatal: false,
+      });
       return false;
     }
   }
@@ -563,6 +594,11 @@ export class RecordingManager {
     } catch (err: unknown) {
       const errorMessage = err instanceof Error ? err.message : 'Unknown error';
       this.logger.error(`Error during summarization: ${errorMessage}`);
+      this.posthog.trackError(err, {
+        service: 'RecordingManager',
+        operation: 'summarizeTranscript',
+        fatal: false,
+      });
       this.mainWindow.webContents.send('summarization-completed');
       return false;
     }

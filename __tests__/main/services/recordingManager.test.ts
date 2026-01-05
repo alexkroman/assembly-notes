@@ -139,6 +139,13 @@ describe('RecordingManager', () => {
     container.register(DI_TOKENS.StateBroadcaster, {
       useValue: createMockStateBroadcaster(),
     });
+    container.register(DI_TOKENS.PostHogService, {
+      useValue: {
+        trackError: jest.fn(),
+        captureEvent: jest.fn(),
+        captureException: jest.fn(),
+      },
+    });
 
     recordingManager = container.resolve(RecordingManager);
   });

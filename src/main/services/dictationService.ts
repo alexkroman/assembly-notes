@@ -7,6 +7,7 @@ import { injectable, inject } from 'tsyringe';
 import { DI_TOKENS } from '../di-tokens.js';
 import type { DictationStatusWindow } from '../dictationStatusWindow.js';
 import type { StateBroadcaster } from '../state-broadcaster.js';
+import type { PostHogService } from './posthogService.js';
 import { RecordingManager } from './recordingManager.js';
 import type { IAssemblyAIFactoryWithLemur } from './summarizationService.js';
 import { TranscriptionService } from './transcriptionService.js';
@@ -37,7 +38,9 @@ export class DictationService {
     @inject(DI_TOKENS.AssemblyAIFactoryWithLemur)
     private assemblyAIFactory: IAssemblyAIFactoryWithLemur,
     @inject(DI_TOKENS.StateBroadcaster)
-    private stateBroadcaster: StateBroadcaster
+    private stateBroadcaster: StateBroadcaster,
+    @inject(DI_TOKENS.PostHogService)
+    private posthog: PostHogService
   ) {}
 
   public initialize(): void {
@@ -56,6 +59,11 @@ export class DictationService {
       }
     } catch (error) {
       log.error('Failed to initialize dictation service:', error);
+      this.posthog.trackError(error, {
+        service: 'DictationService',
+        operation: 'initialize',
+        fatal: true,
+      });
     }
   }
 
@@ -107,6 +115,14 @@ export class DictationService {
         await this.recordingManager.startTranscriptionForDictation();
       if (!started) {
         log.error('Failed to start transcription for dictation');
+        this.posthog.trackError(
+          new Error('Failed to start transcription for dictation'),
+          {
+            service: 'DictationService',
+            operation: 'startDictation',
+            fatal: false,
+          }
+        );
         this.transcriptionService.offDictationText(this.transcriptionHandler);
         this.transcriptionHandler = null;
         this.store.dispatch(setTransitioning(false));
@@ -255,6 +271,11 @@ export class DictationService {
         log.debug('Styling operation was cancelled');
       } else {
         log.error('Failed to style text:', error);
+        this.posthog.trackError(error, {
+          service: 'DictationService',
+          operation: 'styleAndInsertText',
+          fatal: false,
+        });
       }
     } finally {
       // Only clear the controller if it's still the same one we created
@@ -374,6 +395,11 @@ Return ONLY the reformatted text, nothing else. No explanations, no commentary, 
         throw error;
       }
       log.error('Failed to style text with Lemur API:', error);
+      this.posthog.trackError(error, {
+        service: 'DictationService',
+        operation: 'styleTextWithLemur',
+        fatal: false,
+      });
 
       log.debug('Using fallback styling for:', originalText);
       const styledText = originalText

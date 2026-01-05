@@ -165,6 +165,13 @@ describe('DictationService', () => {
         broadcast: jest.fn(),
       },
     });
+    container.register(DI_TOKENS.PostHogService, {
+      useValue: {
+        trackError: jest.fn(),
+        captureEvent: jest.fn(),
+        captureException: jest.fn(),
+      },
+    });
 
     dictationService = container.resolve(DictationService);
   });

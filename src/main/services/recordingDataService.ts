@@ -7,6 +7,7 @@ import { injectable, inject } from 'tsyringe';
 
 import { DI_TOKENS } from '../di-tokens.js';
 import type { StateBroadcaster } from '../state-broadcaster.js';
+import type { PostHogService } from './posthogService.js';
 import { TranscriptFileService } from './transcriptFileService.js';
 import { stopRecording } from '../store/slices/recordingSlice.js';
 import {
@@ -29,7 +30,9 @@ export class RecordingDataService {
     private transcriptFileService: TranscriptFileService,
     @inject(DI_TOKENS.Logger) private logger: typeof Logger,
     @inject(DI_TOKENS.StateBroadcaster)
-    private stateBroadcaster: StateBroadcaster
+    private stateBroadcaster: StateBroadcaster,
+    @inject(DI_TOKENS.PostHogService)
+    private posthog: PostHogService
   ) {}
 
   async newRecording(): Promise<string | null> {
@@ -81,6 +84,10 @@ export class RecordingDataService {
       return recordingId;
     } catch (error) {
       this.logger.error(`Failed to create recording: ${String(error)}`);
+      this.posthog.trackError(error, {
+        service: 'RecordingDataService',
+        operation: 'newRecording',
+      });
       return null;
     }
   }
@@ -111,6 +118,11 @@ export class RecordingDataService {
       this.logger.error(
         `Failed to load recording ${recordingId}: ${String(error)}`
       );
+      this.posthog.trackError(error, {
+        service: 'RecordingDataService',
+        operation: 'loadRecording',
+        recordingId,
+      });
       return false;
     }
   }
@@ -137,6 +149,10 @@ export class RecordingDataService {
       this.stateBroadcaster.recordingsTranscript(fullTranscript);
     } catch (error) {
       this.logger.error(`Failed to save transcript: ${String(error)}`);
+      this.posthog.trackError(error, {
+        service: 'RecordingDataService',
+        operation: 'saveCurrentTranscription',
+      });
     }
   }
 
@@ -157,6 +173,11 @@ export class RecordingDataService {
       this.logger.info(`Saved summary for recording: ${recordingId}`);
     } catch (error) {
       this.logger.error(`Failed to save summary: ${String(error)}`);
+      this.posthog.trackError(error, {
+        service: 'RecordingDataService',
+        operation: 'saveSummary',
+        recordingId,
+      });
     }
   }
 
@@ -167,6 +188,11 @@ export class RecordingDataService {
       return recording?.transcript ?? null;
     } catch (error) {
       this.logger.error(`Failed to get recording transcript: ${String(error)}`);
+      this.posthog.trackError(error, {
+        service: 'RecordingDataService',
+        operation: 'getRecordingTranscript',
+        recordingId,
+      });
       return null;
     }
   }
@@ -182,6 +208,11 @@ export class RecordingDataService {
       this.logger.info(`Updated audio filename for recording: ${recordingId}`);
     } catch (error) {
       this.logger.error(`Failed to update audio filename: ${String(error)}`);
+      this.posthog.trackError(error, {
+        service: 'RecordingDataService',
+        operation: 'updateAudioFilename',
+        recordingId,
+      });
     }
   }
 
