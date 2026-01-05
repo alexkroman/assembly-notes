@@ -42,7 +42,6 @@ export class SettingsService {
       dictationStylingPrompt:
         settingsStore.get('dictationStylingPrompt') ||
         DEFAULT_DICTATION_STYLING_PROMPT,
-      dictationSilenceTimeout: settingsStore.get('dictationSilenceTimeout'),
       userId: settingsStore.get('userId'),
       microphoneGain: settingsStore.get('microphoneGain'),
       systemAudioGain: settingsStore.get('systemAudioGain'),

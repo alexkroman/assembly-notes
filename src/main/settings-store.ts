@@ -13,7 +13,6 @@ export interface SettingsStoreSchema {
   autoStart: boolean;
   userId: string;
   dictationStylingPrompt: string;
-  dictationSilenceTimeout: number;
   microphoneGain: number;
   systemAudioGain: number;
   migrationCompleted: boolean;
@@ -29,7 +28,6 @@ const store = new Store<SettingsStoreSchema>({
     autoStart: false,
     userId: crypto.randomUUID(),
     dictationStylingPrompt: DEFAULT_DICTATION_STYLING_PROMPT,
-    dictationSilenceTimeout: 2000,
     microphoneGain: 1.0,
     systemAudioGain: 0.7,
     migrationCompleted: false,

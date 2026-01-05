@@ -13,7 +13,6 @@ const initialState: SettingsState = {
   error: null,
   hasAssemblyAIKey: false,
   dictationStylingPrompt: DEFAULT_DICTATION_STYLING_PROMPT,
-  dictationSilenceTimeout: 2000,
 };
 
 const settingsSlice = createSlice({

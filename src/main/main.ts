@@ -99,17 +99,9 @@ function createWindow(): void {
   if (useViteDevServer) {
     // Load from Vite dev server (npm run dev)
     void mainWindow.loadURL('http://localhost:5173');
-    // Open DevTools in development (but not in tests)
-    if (process.env['NODE_ENV'] !== 'test') {
-      mainWindow.webContents.openDevTools();
-    }
   } else {
     // Load the built file (npm start or production)
     void mainWindow.loadFile(path.join(__dirname, '../renderer/index.html'));
-    // Open DevTools in development mode (but not in tests)
-    if (isDevMode && process.env['NODE_ENV'] !== 'test') {
-      mainWindow.webContents.openDevTools();
-    }
   }
 
   log.info('🎯 About to resolve AutoUpdaterService from container');
@@ -126,7 +118,12 @@ function createWindow(): void {
   const settingsService = container.resolve<SettingsService>(
     DI_TOKENS.SettingsService
   );
-  settingsService.initializeSettings();
+
+  // Wait for the renderer to finish loading before broadcasting settings
+  // This ensures the IPC listeners are set up in the renderer
+  mainWindow.webContents.once('did-finish-load', () => {
+    settingsService.initializeSettings();
+  });
 
   // Initialize dictation service
   const dictationService = container.resolve<DictationService>(
@@ -161,7 +158,7 @@ void app.whenReady().then(async () => {
     process.env['ELECTRON_DISABLE_SECURITY_WARNINGS'] = 'true';
 
     try {
-      const { default: installExtension, REACT_DEVELOPER_TOOLS } =
+      const { installExtension, REACT_DEVELOPER_TOOLS } =
         await import('electron-devtools-installer');
       await installExtension(REACT_DEVELOPER_TOOLS);
       log.info('React DevTools installed successfully');

@@ -19,7 +19,6 @@ export interface SettingsSchema {
   userId?: string; // Unique user identifier
   // Dictation styling settings
   dictationStylingPrompt: string;
-  dictationSilenceTimeout: number; // milliseconds
   // Audio processing settings
   microphoneGain?: number; // Microphone volume level (0.0 to 2.0, default 1.0)
   systemAudioGain?: number; // System audio volume level (0.0 to 2.0, default 0.7)

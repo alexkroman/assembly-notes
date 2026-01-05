@@ -82,7 +82,6 @@ const createDefaultState = (overrides = {}) => ({
   settings: {
     assemblyaiKey: 'test-api-key',
     dictationStylingPrompt: 'Test prompt',
-    dictationSilenceTimeout: 2000,
   },
 });
 

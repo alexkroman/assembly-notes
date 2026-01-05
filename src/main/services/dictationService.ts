@@ -201,7 +201,7 @@ export class DictationService {
       clearTimeout(this.silenceTimer);
     }
 
-    const silenceTimeout = settings.dictationSilenceTimeout || 2000;
+    const silenceTimeout = 2000; // Fixed 2 second silence timeout
     log.debug(`Resetting silence timer for ${String(silenceTimeout)}ms`);
 
     this.silenceTimer = setTimeout(() => {

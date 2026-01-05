@@ -162,11 +162,6 @@ export class MigrationService {
                 settingsStore.set('dictationStylingPrompt', value);
               }
               break;
-            case 'dictationSilenceTimeout':
-              if (typeof value === 'number') {
-                settingsStore.set('dictationSilenceTimeout', value);
-              }
-              break;
             default:
               this.logger.debug(`Skipping unknown setting: ${row.key}`);
           }

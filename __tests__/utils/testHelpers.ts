@@ -10,6 +10,5 @@ export const createMockSettings = (
   prompts: [],
   autoStart: false,
   dictationStylingPrompt: DEFAULT_DICTATION_STYLING_PROMPT,
-  dictationSilenceTimeout: 2000,
   ...overrides,
 });

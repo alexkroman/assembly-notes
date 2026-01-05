@@ -263,6 +263,10 @@ export class RecordingManager {
 
       // Now dispatch the Redux action to set state to "starting"
       await this.store.dispatch(startRecording());
+      // Broadcast 'starting' status to renderer
+      this.stateBroadcaster.recordingStatus('starting', {
+        recordingId: currentState.recordings.currentRecording.id,
+      });
 
       // Get API key from state
       const state = this.store.getState();
@@ -353,6 +357,12 @@ export class RecordingManager {
       const recordingId = currentState.recordings.currentRecording.id;
       this.audioRecordingService.startRecording(recordingId);
 
+      // Broadcast 'recording' status to renderer - transcription is now active
+      this.stateBroadcaster.recordingStatus('recording', {
+        recordingId,
+        startTime: Date.now(),
+      });
+
       return true;
     } catch (error) {
       const recordingId = this.store.getState().recordings.currentRecording?.id;
@@ -371,6 +381,9 @@ export class RecordingManager {
 
   async stopTranscription(): Promise<boolean> {
     try {
+      // Broadcast 'stopping' status to renderer
+      this.stateBroadcaster.recordingStatus('stopping');
+
       // Save current transcription before stopping
       void this.recordingDataService.saveCurrentTranscription();
 
@@ -392,23 +405,35 @@ export class RecordingManager {
       this.connections = { microphone: null, system: null };
 
       // Stop audio recording and save the file
-      const recordingId = this.store.getState().recordings.currentRecording?.id;
-      if (recordingId) {
-        const audioFilename =
-          await this.audioRecordingService.stopRecording(recordingId);
+      const currentRecording =
+        this.store.getState().recordings.currentRecording;
+      if (currentRecording?.id) {
+        // Pass the transcript filename so audio file uses the same naming pattern
+        const transcriptFilename = (currentRecording as { filename?: string })
+          .filename;
+        const audioFilename = await this.audioRecordingService.stopRecording(
+          currentRecording.id,
+          transcriptFilename
+        );
         if (audioFilename) {
           // Update the recording with the audio filename
           void this.recordingDataService.updateAudioFilename(
-            recordingId,
+            currentRecording.id,
             audioFilename
           );
         }
       }
 
       await this.store.dispatch(stopRecording());
+      // Broadcast 'idle' status to renderer - recording has stopped
+      this.stateBroadcaster.recordingStatus('idle');
       return true;
     } catch (error) {
       this.logger.error('Failed to stop recording:', error);
+      // Broadcast error status
+      this.stateBroadcaster.recordingStatus('error', {
+        error: 'Failed to stop recording',
+      });
       return false;
     }
   }

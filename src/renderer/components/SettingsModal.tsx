@@ -26,7 +26,6 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ onClose }) => {
     prompts: [],
     autoStart: false,
     dictationStylingPrompt: DEFAULT_DICTATION_STYLING_PROMPT,
-    dictationSilenceTimeout: 2000,
   });
   const dispatch = useAppDispatch();
 
@@ -181,9 +180,6 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ onClose }) => {
         >
           Dictation Auto-Styling Instructions:
         </label>
-        <p className="text-xs text-white/60 mb-1">
-          Automatically improve grammar and style of dictated text after silence
-        </p>
         <div className="flex flex-col">
           <textarea
             id="dictationStylingPrompt"
@@ -192,7 +188,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ onClose }) => {
               handleInputChange('dictationStylingPrompt', e.target.value);
             }}
             placeholder="Enter instructions for how to style your dictated text..."
-            className="form-input h-20"
+            className="form-input h-32"
             data-testid="dictation-styling-prompt"
           />
           {settings.dictationStylingPrompt !==
@@ -216,35 +212,6 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ onClose }) => {
             </div>
           )}
         </div>
-      </div>
-
-      <div className="form-group">
-        <label
-          htmlFor="dictationSilenceTimeout"
-          className="block mb-0.5 text-xs font-medium text-white/[0.85]"
-        >
-          Silence Timeout (milliseconds):
-        </label>
-        <input
-          type="number"
-          id="dictationSilenceTimeout"
-          value={settings.dictationSilenceTimeout}
-          onChange={(e) => {
-            handleInputChange(
-              'dictationSilenceTimeout',
-              parseInt(e.target.value) || 2000
-            );
-          }}
-          min="1000"
-          max="10000"
-          step="500"
-          className="form-input"
-          data-testid="dictation-silence-timeout"
-        />
-        <p className="text-xs text-white/60 mt-1">
-          How long to wait after silence before styling text (recommended:
-          2000-3000ms)
-        </p>
       </div>
     </Modal>
   );
