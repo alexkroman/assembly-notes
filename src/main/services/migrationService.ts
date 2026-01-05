@@ -108,15 +108,9 @@ export class MigrationService {
       for (const row of rows) {
         try {
           // Skip migrating if we already have a non-empty value
-          // Special handling for API key which uses encrypted storage
-          let existingValue: unknown;
-          if (row.key === 'assemblyaiKey') {
-            existingValue = settingsStore.getAssemblyAIKey();
-          } else {
-            existingValue = settingsStore.get(
-              row.key as keyof SettingsStoreSchema
-            );
-          }
+          const existingValue = settingsStore.get(
+            row.key as keyof SettingsStoreSchema
+          );
           if (
             existingValue !== '' &&
             existingValue !== false &&
@@ -138,7 +132,7 @@ export class MigrationService {
           switch (row.key) {
             case 'assemblyaiKey':
               if (typeof value === 'string' && value) {
-                settingsStore.setAssemblyAIKey(value); // Encrypt with safeStorage
+                settingsStore.set('assemblyaiKey', value);
               }
               break;
             case 'summaryPrompt':

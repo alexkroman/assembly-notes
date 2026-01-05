@@ -13,16 +13,12 @@ jest.mock('../../../src/main/store/slices/settingsSlice', () => ({
 const mockGet = jest.fn();
 const mockSet = jest.fn();
 const mockGetAll = jest.fn();
-const mockGetAssemblyAIKey = jest.fn();
-const mockSetAssemblyAIKey = jest.fn();
 
 jest.mock('../../../src/main/settings-store', () => ({
   settingsStore: {
     get: (...args: unknown[]) => mockGet(...args),
     set: (...args: unknown[]) => mockSet(...args),
     getAll: () => mockGetAll(),
-    getAssemblyAIKey: () => mockGetAssemblyAIKey(),
-    setAssemblyAIKey: (key: string) => mockSetAssemblyAIKey(key),
   },
 }));
 
@@ -74,7 +70,6 @@ describe('SettingsService', () => {
 
   describe('initializeSettings', () => {
     it('should initialize settings on construction', () => {
-      mockGetAssemblyAIKey.mockReturnValue('test-key');
       mockGet.mockImplementation((key) => {
         const settings = createMockSettings({
           assemblyaiKey: 'test-key',
@@ -88,7 +83,7 @@ describe('SettingsService', () => {
     });
 
     it('should handle errors during initialization', () => {
-      mockGetAssemblyAIKey.mockImplementation(() => {
+      mockGet.mockImplementation(() => {
         throw new Error('Store error');
       });
 
@@ -106,7 +101,6 @@ describe('SettingsService', () => {
         assemblyaiKey: 'test-key',
       });
 
-      mockGetAssemblyAIKey.mockReturnValue('test-key');
       mockGet.mockImplementation((key) => {
         return mockSettings[key as keyof typeof mockSettings];
       });
@@ -117,7 +111,6 @@ describe('SettingsService', () => {
     });
 
     it('should provide default values for missing fields', () => {
-      mockGetAssemblyAIKey.mockReturnValue('test-key');
       mockGet.mockImplementation((key) => {
         if (key === 'summaryPrompt') return '';
         const settings = createMockSettings({ assemblyaiKey: 'test-key' });
@@ -134,7 +127,6 @@ describe('SettingsService', () => {
 
   describe('updateSettings', () => {
     beforeEach(() => {
-      mockGetAssemblyAIKey.mockReturnValue('');
       mockGet.mockImplementation((key) => {
         const settings = createMockSettings();
         return settings[key as keyof typeof settings];
@@ -148,7 +140,7 @@ describe('SettingsService', () => {
 
       settingsService.updateSettings(updates);
 
-      expect(mockSetAssemblyAIKey).toHaveBeenCalledWith('new-key');
+      expect(mockSet).toHaveBeenCalledWith('assemblyaiKey', 'new-key');
     });
 
     it('should skip undefined values', () => {
@@ -172,8 +164,8 @@ describe('SettingsService', () => {
 
   describe('individual getters', () => {
     it('should get AssemblyAI key', () => {
-      mockGetAssemblyAIKey.mockReturnValue('test-api-key');
       mockGet.mockImplementation((key) => {
+        if (key === 'assemblyaiKey') return 'test-api-key';
         const settings = createMockSettings();
         return settings[key as keyof typeof settings];
       });
@@ -243,8 +235,8 @@ describe('SettingsService', () => {
 
   describe('hasNonEmptySetting', () => {
     it('should return true for non-empty string settings', () => {
-      mockGetAssemblyAIKey.mockReturnValue('  test-key  ');
       mockGet.mockImplementation((key) => {
+        if (key === 'assemblyaiKey') return '  test-key  ';
         if (key === 'summaryPrompt') return 'Custom prompt';
         const settings = createMockSettings();
         return settings[key as keyof typeof settings];
@@ -255,8 +247,8 @@ describe('SettingsService', () => {
     });
 
     it('should return false for empty or whitespace-only settings', () => {
-      mockGetAssemblyAIKey.mockReturnValue('');
       mockGet.mockImplementation((key) => {
+        if (key === 'assemblyaiKey') return '';
         if (key === 'summaryPrompt') return '';
         const settings = createMockSettings();
         return settings[key as keyof typeof settings];
@@ -267,7 +259,6 @@ describe('SettingsService', () => {
     });
 
     it('should return false for non-string settings', () => {
-      mockGetAssemblyAIKey.mockReturnValue('');
       mockGet.mockImplementation((key) => {
         if (key === 'autoStart') return true;
         const settings = createMockSettings();
@@ -278,8 +269,8 @@ describe('SettingsService', () => {
     });
 
     it('should handle null/undefined values', () => {
-      mockGetAssemblyAIKey.mockReturnValue(null as unknown as string);
       mockGet.mockImplementation((key) => {
+        if (key === 'assemblyaiKey') return null;
         const settings = createMockSettings();
         return settings[key as keyof typeof settings];
       });
@@ -288,8 +279,8 @@ describe('SettingsService', () => {
     });
 
     it('should return true for valid string values', () => {
-      mockGetAssemblyAIKey.mockReturnValue('valid-key');
       mockGet.mockImplementation((key) => {
+        if (key === 'assemblyaiKey') return 'valid-key';
         const settings = createMockSettings();
         return settings[key as keyof typeof settings];
       });
