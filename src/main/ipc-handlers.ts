@@ -2,15 +2,13 @@
  * IPC Handlers
  *
  * Registers all IPC handlers for communication between main and renderer processes.
- * Uses typed registry helpers for compile-time type safety.
  */
 
 import type { Store } from '@reduxjs/toolkit';
-import { BrowserWindow, shell } from 'electron';
+import { BrowserWindow, ipcMain, shell } from 'electron';
 
 import type { AutoUpdaterService } from './auto-updater.js';
 import { DI_TOKENS, container } from './container.js';
-import { registerHandler, registerEvent } from './ipc-registry.js';
 import type { RecordingDataService } from './services/recordingDataService.js';
 import type { RecordingManager } from './services/recordingManager.js';
 import type { SettingsService } from './services/settingsService.js';
@@ -65,7 +63,7 @@ function setupIpcHandlers(
 
   // ==================== Events (Fire-and-Forget) ====================
 
-  registerEvent('log', (level, ...args) => {
+  ipcMain.on('log', (_event, level: keyof LogLevel, ...args: unknown[]) => {
     const message = args
       .map((arg) => {
         if (typeof arg === 'object' && arg !== null) {
@@ -77,84 +75,90 @@ function setupIpcHandlers(
     (logger as LogLevel)[level](`[Renderer] ${message}`);
   });
 
-  registerEvent('microphone-audio-data', (audioData) => {
+  ipcMain.on('microphone-audio-data', (_event, audioData: ArrayBuffer) => {
     recordingManager.sendMicrophoneAudio(audioData);
   });
 
-  registerEvent('system-audio-data', (audioData) => {
+  ipcMain.on('system-audio-data', (_event, audioData: ArrayBuffer) => {
     recordingManager.sendSystemAudio(audioData);
   });
 
   // ==================== Recording Control ====================
 
-  registerHandler('start-recording', () =>
+  ipcMain.handle('start-recording', () =>
     recordingManager.startTranscription()
   );
 
-  registerHandler('stop-recording', () => recordingManager.stopTranscription());
+  ipcMain.handle('stop-recording', () => recordingManager.stopTranscription());
 
-  registerHandler('new-recording', () => recordingDataService.newRecording());
+  ipcMain.handle('new-recording', () => recordingDataService.newRecording());
 
-  registerHandler('load-recording', (recordingId) =>
+  ipcMain.handle('load-recording', (_event, recordingId: string) =>
     recordingDataService.loadRecording(recordingId)
   );
 
-  registerHandler('summarize-transcript', (transcript) =>
+  ipcMain.handle('summarize-transcript', (_event, transcript?: string) =>
     recordingManager.summarizeTranscript(transcript)
   );
 
   // ==================== Recording Data ====================
 
-  registerHandler('get-all-recordings', () =>
+  ipcMain.handle('get-all-recordings', () =>
     transcriptFileService.getAllTranscripts()
   );
 
-  registerHandler('search-recordings', (query) =>
+  ipcMain.handle('search-recordings', (_event, query: string) =>
     transcriptFileService.searchTranscripts(query)
   );
 
-  registerHandler('get-recording', (id) =>
+  ipcMain.handle('get-recording', (_event, id: string) =>
     transcriptFileService.getTranscriptById(id)
   );
 
-  registerHandler('delete-recording', async (id) => {
+  ipcMain.handle('delete-recording', async (_event, id: string) => {
     await transcriptFileService.deleteTranscript(id);
     return true;
   });
 
-  registerHandler('update-recording-title', async (recordingId, title) => {
-    const state = store.getState();
-    const currentRecording = state.recordings.currentRecording;
+  ipcMain.handle(
+    'update-recording-title',
+    async (_event, recordingId: string, title: string) => {
+      const state = store.getState();
+      const currentRecording = state.recordings.currentRecording;
 
-    if (currentRecording?.id !== recordingId) {
-      logger.warn(
-        `Ignoring title update: not the current recording (requested: ${recordingId}, current: ${currentRecording?.id ?? 'none'})`
-      );
-      return;
+      if (currentRecording?.id !== recordingId) {
+        logger.warn(
+          `Ignoring title update: not the current recording (requested: ${recordingId}, current: ${currentRecording?.id ?? 'none'})`
+        );
+        return;
+      }
+
+      await transcriptFileService.updateTranscript(recordingId, { title });
+      store.dispatch(updateCurrentRecordingTitle(title));
+      stateBroadcaster.recordingsTitle(title);
     }
+  );
 
-    await transcriptFileService.updateTranscript(recordingId, { title });
-    store.dispatch(updateCurrentRecordingTitle(title));
-    stateBroadcaster.recordingsTitle(title);
-  });
+  ipcMain.handle(
+    'update-recording-summary',
+    async (_event, recordingId: string, summary: string) => {
+      const state = store.getState();
+      const currentRecording = state.recordings.currentRecording;
 
-  registerHandler('update-recording-summary', async (recordingId, summary) => {
-    const state = store.getState();
-    const currentRecording = state.recordings.currentRecording;
+      if (currentRecording?.id !== recordingId) {
+        logger.warn(
+          `Ignoring summary update: not the current recording (requested: ${recordingId}, current: ${currentRecording?.id ?? 'none'})`
+        );
+        return;
+      }
 
-    if (currentRecording?.id !== recordingId) {
-      logger.warn(
-        `Ignoring summary update: not the current recording (requested: ${recordingId}, current: ${currentRecording?.id ?? 'none'})`
-      );
-      return;
+      await transcriptFileService.updateTranscript(recordingId, { summary });
+      store.dispatch(updateCurrentRecordingSummary(summary));
+      stateBroadcaster.recordingsSummary(summary);
     }
+  );
 
-    await transcriptFileService.updateTranscript(recordingId, { summary });
-    store.dispatch(updateCurrentRecordingSummary(summary));
-    stateBroadcaster.recordingsSummary(summary);
-  });
-
-  registerHandler('get-audio-file-path', async (recordingId) => {
+  ipcMain.handle('get-audio-file-path', async (_event, recordingId: string) => {
     const recording =
       await transcriptFileService.getTranscriptById(recordingId);
     if (recording?.audio_filename) {
@@ -163,50 +167,61 @@ function setupIpcHandlers(
     return null;
   });
 
-  registerHandler('show-audio-in-folder', async (recordingId) => {
-    const recording =
-      await transcriptFileService.getTranscriptById(recordingId);
-    if (recording?.audio_filename) {
-      const filepath = audioRecordingService.getAudioFilePath(
-        recording.audio_filename
-      );
-      if (filepath) {
-        shell.showItemInFolder(filepath);
-        return true;
+  ipcMain.handle(
+    'show-audio-in-folder',
+    async (_event, recordingId: string) => {
+      const recording =
+        await transcriptFileService.getTranscriptById(recordingId);
+      if (recording?.audio_filename) {
+        const filepath = audioRecordingService.getAudioFilePath(
+          recording.audio_filename
+        );
+        if (filepath) {
+          shell.showItemInFolder(filepath);
+          return true;
+        }
       }
+      return false;
     }
-    return false;
-  });
+  );
 
   // ==================== Settings ====================
 
-  registerHandler('get-settings', () => settingsService.getSettings());
+  ipcMain.handle('get-settings', () => settingsService.getSettings());
 
-  registerHandler('save-settings', (newSettings) => {
-    const mappedSettings = { ...newSettings };
-    if (newSettings.prompts) {
-      mappedSettings.prompts = newSettings.prompts.map((p: PromptTemplate) => ({
-        name: p.name,
-        content: p.content,
-      }));
+  ipcMain.handle(
+    'save-settings',
+    (_event, newSettings: Record<string, unknown>) => {
+      const mappedSettings = { ...newSettings };
+      if (newSettings['prompts']) {
+        mappedSettings['prompts'] = (
+          newSettings['prompts'] as PromptTemplate[]
+        ).map((p: PromptTemplate) => ({
+          name: p.name,
+          content: p.content,
+        }));
+      }
+      settingsService.updateSettings(mappedSettings);
+      return true;
     }
-    settingsService.updateSettings(mappedSettings);
-    return true;
-  });
+  );
 
-  registerHandler('save-prompt', (promptSettings) => {
-    settingsService.updateSettings(promptSettings);
-    return true;
-  });
+  ipcMain.handle(
+    'save-prompt',
+    (_event, promptSettings: Record<string, unknown>) => {
+      settingsService.updateSettings(promptSettings);
+      return true;
+    }
+  );
 
-  registerHandler('save-prompts', (prompts) => {
+  ipcMain.handle('save-prompts', (_event, prompts: PromptTemplate[]) => {
     settingsService.updateSettings({ prompts });
     return true;
   });
 
   // ==================== Auto-Update ====================
 
-  registerHandler('install-update', async () => {
+  ipcMain.handle('install-update', async () => {
     logger.info('IPC: install-update requested');
     const state = store.getState();
 
@@ -223,7 +238,7 @@ function setupIpcHandlers(
     await autoUpdaterService.downloadUpdate();
   });
 
-  registerHandler('quit-and-install', () => {
+  ipcMain.handle('quit-and-install', () => {
     logger.info('IPC: quit-and-install requested');
     autoUpdaterService.quitAndInstall();
   });

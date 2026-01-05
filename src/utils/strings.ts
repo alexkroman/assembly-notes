@@ -15,10 +15,3 @@ export function isNonEmptyString(value: unknown): value is string {
 export function isEmptyString(value: string | null | undefined): boolean {
   return !value?.trim();
 }
-
-/**
- * Safely trim a string, returning empty string for null/undefined
- */
-export function safeTrim(value: string | null | undefined): string {
-  return (value ?? '').trim();
-}
