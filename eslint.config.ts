@@ -19,6 +19,8 @@ export default tseslint.config(
       'scripts/**',
       'docs/**',
       'oauth-proxy/**',
+      'packages/**',
+      'release/**',
     ],
   },
 

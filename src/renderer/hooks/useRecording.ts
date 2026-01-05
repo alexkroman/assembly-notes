@@ -1,8 +1,7 @@
 import { useEffect, useState, useCallback, useRef } from 'react';
 
-import { usePostHog } from './usePostHog';
-import { setStatus } from '../store';
 import { useAppSelector, useAppDispatch } from './redux';
+import { usePostHog } from './usePostHog';
 import type { Recording } from '../../types/common.js';
 import {
   useUpdateRecordingTitleMutation,
@@ -12,6 +11,7 @@ import {
   updateCurrentRecordingTitle,
   updateCurrentRecordingSummary,
 } from '../slices/recordingsSlice.js';
+import { setStatus } from '../store';
 
 export const useRecording = (recordingId: string | null) => {
   const posthog = usePostHog();

@@ -1,10 +1,10 @@
 import React, { useEffect, useState } from 'react';
 
+import { Modal } from './Modal.js';
 import type { ChannelModalProps } from '../../types/components.js';
 import { useAppDispatch, useAppSelector } from '../hooks/redux';
-import { setStatus } from '../store';
-import { Modal } from './Modal.js';
 import { useUpdateSettingsMutation } from '../slices/apiSlice.js';
+import { setStatus } from '../store';
 
 export const ChannelModal: React.FC<ChannelModalProps> = ({ onClose }) => {
   const settings = useAppSelector((state) => state.settings);

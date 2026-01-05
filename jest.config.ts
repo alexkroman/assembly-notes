@@ -36,7 +36,7 @@ export default {
       },
     ],
   },
-  transformIgnorePatterns: ['node_modules/(?!(electron-redux|@reduxjs)/)'],
+  transformIgnorePatterns: ['node_modules/(?!(electron-redux|@reduxjs|uuid)/)'],
   automock: false,
   clearMocks: true,
   resetMocks: true,

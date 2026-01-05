@@ -64,7 +64,7 @@ test.describe('App Startup', () => {
             : ['--no-sandbox', '--disable-gpu', '--no-first-run']),
         ],
         env: {
-          ...process.env,
+          ...(process.env as Record<string, string>),
           NODE_ENV: 'test',
           // Ubuntu CI environment variables
           DISPLAY: process.env['DISPLAY'] || ':99',

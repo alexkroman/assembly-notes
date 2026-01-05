@@ -160,9 +160,8 @@ void app.whenReady().then(async () => {
     process.env['ELECTRON_DISABLE_SECURITY_WARNINGS'] = 'true';
 
     try {
-      const { default: installExtension, REACT_DEVELOPER_TOOLS } = await import(
-        'electron-devtools-installer'
-      );
+      const { default: installExtension, REACT_DEVELOPER_TOOLS } =
+        await import('electron-devtools-installer');
       await installExtension(REACT_DEVELOPER_TOOLS);
       log.info('React DevTools installed successfully');
     } catch (e) {

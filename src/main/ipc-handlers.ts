@@ -112,7 +112,7 @@ function setupIpcHandlers(
       const state = store.getState();
       const currentRecording = state.recordings.currentRecording;
 
-      if (!currentRecording || currentRecording.id !== recordingId) {
+      if (currentRecording?.id !== recordingId) {
         logger.warn(
           `Ignoring title update: not the current recording (requested: ${recordingId}, current: ${currentRecording?.id ?? 'none'})`
         );
@@ -141,7 +141,7 @@ function setupIpcHandlers(
       const state = store.getState();
       const currentRecording = state.recordings.currentRecording;
 
-      if (!currentRecording || currentRecording.id !== recordingId) {
+      if (currentRecording?.id !== recordingId) {
         logger.warn(
           `Ignoring summary update: not the current recording (requested: ${recordingId}, current: ${currentRecording?.id ?? 'none'})`
         );

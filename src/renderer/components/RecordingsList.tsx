@@ -1,14 +1,14 @@
 import React, { useState } from 'react';
 
+import { ConfirmModal } from './ConfirmModal';
 import type { RecordingsListProps } from '../../types/components.js';
 import { useAppDispatch, useAppSelector } from '../hooks/redux';
-import { navigateToNewRecording, setActiveModal } from '../store';
-import { ConfirmModal } from './ConfirmModal';
 import {
   useGetAllRecordingsQuery,
   useSearchRecordingsQuery,
   useDeleteRecordingMutation,
 } from '../slices/apiSlice.js';
+import { navigateToNewRecording, setActiveModal } from '../store';
 import '../../types/global.d.ts';
 
 export const RecordingsList: React.FC<RecordingsListProps> = ({
