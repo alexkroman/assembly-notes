@@ -1,10 +1,10 @@
+import crypto from 'crypto';
 import fs from 'fs';
 import path from 'path';
 
 import Database from 'better-sqlite3';
 import { app } from 'electron';
 import { inject, injectable } from 'tsyringe';
-import { v4 as uuidv4 } from 'uuid';
 
 import { DI_TOKENS } from './di-tokens.js';
 import { DEFAULT_PROMPTS } from '../constants/defaultPrompts.js';
@@ -155,7 +155,7 @@ class DatabaseService {
       // Slack OAuth fields
       slackInstallation: JSON.stringify(null),
       autoStart: false,
-      userId: uuidv4(), // Generate default user ID
+      userId: crypto.randomUUID(), // Generate default user ID
     };
 
     const insertStmt = this.db.prepare(

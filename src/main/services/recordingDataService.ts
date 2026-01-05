@@ -1,8 +1,9 @@
+import crypto from 'crypto';
+
 import 'reflect-metadata';
 import { Store } from '@reduxjs/toolkit';
 import Logger from 'electron-log';
 import { injectable, inject } from 'tsyringe';
-import { v4 as uuidv4 } from 'uuid';
 
 import { DatabaseService } from '../database.js';
 import { DI_TOKENS } from '../di-tokens.js';
@@ -50,7 +51,7 @@ export class RecordingDataService {
       await this.waitForRecordingToStop();
     }
 
-    const recordingId = uuidv4();
+    const recordingId = crypto.randomUUID();
     const timestamp = Date.now();
 
     try {
