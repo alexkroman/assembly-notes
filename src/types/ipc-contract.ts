@@ -28,14 +28,16 @@ export interface IPCHandlers {
   'search-recordings': { args: [query: string]; return: Recording[] };
   'get-recording': { args: [id: string]; return: Recording | null };
   'delete-recording': { args: [id: string]; return: boolean };
-  // eslint-disable-next-line @typescript-eslint/no-invalid-void-type
+
   'update-recording-title': {
     args: [recordingId: string, title: string];
+    // eslint-disable-next-line @typescript-eslint/no-invalid-void-type
     return: void;
   };
-  // eslint-disable-next-line @typescript-eslint/no-invalid-void-type
+
   'update-recording-summary': {
     args: [recordingId: string, summary: string];
+    // eslint-disable-next-line @typescript-eslint/no-invalid-void-type
     return: void;
   };
   'get-audio-file-path': { args: [recordingId: string]; return: string | null };

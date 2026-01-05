@@ -3,7 +3,6 @@ export const DI_TOKENS = {
   Store: Symbol('Store'),
   Logger: Symbol('Logger'),
   StateBroadcaster: Symbol('StateBroadcaster'),
-  DatabaseService: Symbol('DatabaseService'),
   SettingsService: Symbol('SettingsService'),
   TranscriptionService: Symbol('TranscriptionService'),
   RecordingManager: Symbol('RecordingManager'),
@@ -16,4 +15,6 @@ export const DI_TOKENS = {
   AudioRecordingService: Symbol('AudioRecordingService'),
   DictationStatusWindow: Symbol('DictationStatusWindow'),
   PostHogService: Symbol('PostHogService'),
+  TranscriptFileService: Symbol('TranscriptFileService'),
+  MigrationService: Symbol('MigrationService'),
 } as const;

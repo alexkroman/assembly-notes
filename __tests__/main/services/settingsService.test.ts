@@ -9,6 +9,19 @@ jest.mock('../../../src/main/store/slices/settingsSlice', () => ({
   updateSettings: jest.fn(),
 }));
 
+// Mock the settings store
+const mockGet = jest.fn();
+const mockSet = jest.fn();
+const mockGetAll = jest.fn();
+
+jest.mock('../../../src/main/settings-store', () => ({
+  settingsStore: {
+    get: (...args: unknown[]) => mockGet(...args),
+    set: (...args: unknown[]) => mockSet(...args),
+    getAll: () => mockGetAll(),
+  },
+}));
+
 const mockStore = {
   getState: jest.fn(() => ({
     settings: createMockSettings({
@@ -24,12 +37,6 @@ const mockLogger = {
   warn: jest.fn(),
   error: jest.fn(),
   debug: jest.fn(),
-};
-
-const mockDatabase = {
-  getSettings: jest.fn(),
-  setSetting: jest.fn(),
-  updateSettings: jest.fn(),
 };
 
 const mockStateBroadcaster = {
@@ -49,7 +56,6 @@ describe('SettingsService', () => {
     // Register mock dependencies
     container.registerInstance(DI_TOKENS.Store, mockStore as any);
     container.registerInstance(DI_TOKENS.Logger, mockLogger);
-    container.registerInstance(DI_TOKENS.DatabaseService, mockDatabase as any);
     container.registerInstance(
       DI_TOKENS.StateBroadcaster,
       mockStateBroadcaster as any
@@ -58,28 +64,27 @@ describe('SettingsService', () => {
     settingsService = new SettingsService(
       mockStore as any,
       mockLogger as any,
-      mockDatabase as any,
       mockStateBroadcaster as any
     );
   });
 
   describe('initializeSettings', () => {
     it('should initialize settings on construction', () => {
-      mockDatabase.getSettings.mockReturnValue(
-        createMockSettings({
+      mockGet.mockImplementation((key) => {
+        const settings = createMockSettings({
           assemblyaiKey: 'test-key',
-        })
-      );
+        });
+        return settings[key as keyof typeof settings];
+      });
 
       settingsService.initializeSettings();
 
-      expect(mockDatabase.getSettings).toHaveBeenCalled();
       expect(mockStore.dispatch).toHaveBeenCalled();
     });
 
     it('should handle errors during initialization', () => {
-      mockDatabase.getSettings.mockImplementation(() => {
-        throw new Error('Database error');
+      mockGet.mockImplementation(() => {
+        throw new Error('Store error');
       });
 
       expect(() => settingsService.initializeSettings()).not.toThrow();
@@ -91,41 +96,41 @@ describe('SettingsService', () => {
   });
 
   describe('getSettings', () => {
-    it('should return settings from database', () => {
+    it('should return settings from store', () => {
       const mockSettings = createMockSettings({
         assemblyaiKey: 'test-key',
       });
 
-      mockDatabase.getSettings.mockReturnValue(mockSettings);
+      mockGet.mockImplementation((key) => {
+        return mockSettings[key as keyof typeof mockSettings];
+      });
 
       const result = settingsService.getSettings();
 
-      expect(mockDatabase.getSettings).toHaveBeenCalled();
-      expect(result).toEqual(mockSettings);
+      expect(result.assemblyaiKey).toBe('test-key');
     });
 
     it('should provide default values for missing fields', () => {
-      mockDatabase.getSettings.mockReturnValue(
-        createMockSettings({
-          assemblyaiKey: 'test-key',
-          summaryPrompt: '', // Empty summary prompt should get default from database layer
-        })
-      );
+      mockGet.mockImplementation((key) => {
+        if (key === 'summaryPrompt') return '';
+        const settings = createMockSettings({ assemblyaiKey: 'test-key' });
+        return settings[key as keyof typeof settings];
+      });
 
       const result = settingsService.getSettings();
 
-      expect(result).toEqual(
-        createMockSettings({
-          assemblyaiKey: 'test-key',
-          summaryPrompt: '', // Database already handles the defaults
-        })
+      expect(result.summaryPrompt).toBe(
+        'Summarize the key points from this meeting transcript:'
       );
     });
   });
 
   describe('updateSettings', () => {
     beforeEach(() => {
-      mockDatabase.getSettings.mockReturnValue(createMockSettings());
+      mockGet.mockImplementation((key) => {
+        const settings = createMockSettings();
+        return settings[key as keyof typeof settings];
+      });
     });
 
     it('should update individual settings', () => {
@@ -135,10 +140,7 @@ describe('SettingsService', () => {
 
       settingsService.updateSettings(updates);
 
-      expect(mockDatabase.setSetting).toHaveBeenCalledWith(
-        'assemblyaiKey',
-        'new-key'
-      );
+      expect(mockSet).toHaveBeenCalledWith('assemblyaiKey', 'new-key');
     });
 
     it('should skip undefined values', () => {
@@ -149,56 +151,48 @@ describe('SettingsService', () => {
 
       settingsService.updateSettings(updates as any);
 
-      expect(mockDatabase.setSetting).not.toHaveBeenCalledWith(
-        'assemblyaiKey',
-        undefined
-      );
-      expect(mockDatabase.setSetting).toHaveBeenCalledWith(
-        'summaryPrompt',
-        'new prompt'
-      );
+      expect(mockSet).not.toHaveBeenCalledWith('assemblyaiKey', undefined);
+      expect(mockSet).toHaveBeenCalledWith('summaryPrompt', 'new prompt');
     });
 
     it('should handle empty updates', () => {
       settingsService.updateSettings({});
 
-      expect(mockDatabase.setSetting).not.toHaveBeenCalled();
+      expect(mockSet).not.toHaveBeenCalled();
     });
   });
 
   describe('individual getters', () => {
     it('should get AssemblyAI key', () => {
-      mockDatabase.getSettings.mockReturnValue(
-        createMockSettings({
-          assemblyaiKey: 'test-api-key',
-        })
-      );
+      mockGet.mockImplementation((key) => {
+        if (key === 'assemblyaiKey') return 'test-api-key';
+        const settings = createMockSettings();
+        return settings[key as keyof typeof settings];
+      });
 
       const result = settingsService.getAssemblyAIKey();
 
-      expect(mockDatabase.getSettings).toHaveBeenCalled();
       expect(result).toBe('test-api-key');
     });
 
     it('should get summary prompt', () => {
-      mockDatabase.getSettings.mockReturnValue(
-        createMockSettings({
-          summaryPrompt: 'Custom summary prompt',
-        })
-      );
+      mockGet.mockImplementation((key) => {
+        if (key === 'summaryPrompt') return 'Custom summary prompt';
+        const settings = createMockSettings();
+        return settings[key as keyof typeof settings];
+      });
 
       const result = settingsService.getSummaryPrompt();
 
-      expect(mockDatabase.getSettings).toHaveBeenCalled();
       expect(result).toBe('Custom summary prompt');
     });
 
     it('should get default summary prompt when empty', () => {
-      mockDatabase.getSettings.mockReturnValue(
-        createMockSettings({
-          summaryPrompt: '',
-        })
-      );
+      mockGet.mockImplementation((key) => {
+        if (key === 'summaryPrompt') return '';
+        const settings = createMockSettings();
+        return settings[key as keyof typeof settings];
+      });
 
       const result = settingsService.getSummaryPrompt();
 
@@ -208,15 +202,14 @@ describe('SettingsService', () => {
     });
 
     it('should check if auto start is enabled', () => {
-      mockDatabase.getSettings.mockReturnValue(
-        createMockSettings({
-          autoStart: true,
-        })
-      );
+      mockGet.mockImplementation((key) => {
+        if (key === 'autoStart') return true;
+        const settings = createMockSettings();
+        return settings[key as keyof typeof settings];
+      });
 
       const result = settingsService.isAutoStartEnabled();
 
-      expect(mockDatabase.getSettings).toHaveBeenCalled();
       expect(result).toBe(true);
     });
 
@@ -225,15 +218,14 @@ describe('SettingsService', () => {
         { name: 'Summary', content: 'Summarize this' },
         { name: 'Action Items', content: 'List action items' },
       ];
-      mockDatabase.getSettings.mockReturnValue(
-        createMockSettings({
-          prompts,
-        })
-      );
+      mockGet.mockImplementation((key) => {
+        if (key === 'prompts') return prompts;
+        const settings = createMockSettings();
+        return settings[key as keyof typeof settings];
+      });
 
       const result = settingsService.getPrompts();
 
-      expect(mockDatabase.getSettings).toHaveBeenCalled();
       expect(result).toEqual([
         { label: 'Summary', content: 'Summarize this' },
         { label: 'Action Items', content: 'List action items' },
@@ -243,54 +235,55 @@ describe('SettingsService', () => {
 
   describe('hasNonEmptySetting', () => {
     it('should return true for non-empty string settings', () => {
-      mockDatabase.getSettings.mockReturnValue(
-        createMockSettings({
-          assemblyaiKey: '  test-key  ', // With whitespace
-          summaryPrompt: 'Custom prompt',
-        })
-      );
+      mockGet.mockImplementation((key) => {
+        if (key === 'assemblyaiKey') return '  test-key  ';
+        if (key === 'summaryPrompt') return 'Custom prompt';
+        const settings = createMockSettings();
+        return settings[key as keyof typeof settings];
+      });
 
       expect(settingsService.hasNonEmptySetting('assemblyaiKey')).toBe(true);
       expect(settingsService.hasNonEmptySetting('summaryPrompt')).toBe(true);
     });
 
     it('should return false for empty or whitespace-only settings', () => {
-      mockDatabase.getSettings.mockReturnValue(
-        createMockSettings({
-          assemblyaiKey: '',
-          summaryPrompt: '',
-        })
-      );
+      mockGet.mockImplementation((key) => {
+        if (key === 'assemblyaiKey') return '';
+        if (key === 'summaryPrompt') return '';
+        const settings = createMockSettings();
+        return settings[key as keyof typeof settings];
+      });
 
       expect(settingsService.hasNonEmptySetting('assemblyaiKey')).toBe(false);
       expect(settingsService.hasNonEmptySetting('summaryPrompt')).toBe(false);
     });
 
     it('should return false for non-string settings', () => {
-      mockDatabase.getSettings.mockReturnValue(
-        createMockSettings({
-          autoStart: true,
-        })
-      );
+      mockGet.mockImplementation((key) => {
+        if (key === 'autoStart') return true;
+        const settings = createMockSettings();
+        return settings[key as keyof typeof settings];
+      });
 
       expect(settingsService.hasNonEmptySetting('autoStart')).toBe(false);
     });
 
     it('should handle null/undefined values', () => {
-      mockDatabase.getSettings.mockReturnValue({
-        ...createMockSettings(),
-        assemblyaiKey: null as any,
+      mockGet.mockImplementation((key) => {
+        if (key === 'assemblyaiKey') return null;
+        const settings = createMockSettings();
+        return settings[key as keyof typeof settings];
       });
 
       expect(settingsService.hasNonEmptySetting('assemblyaiKey')).toBe(false);
     });
 
     it('should return true for valid string values', () => {
-      mockDatabase.getSettings.mockReturnValue(
-        createMockSettings({
-          assemblyaiKey: 'valid-key',
-        })
-      );
+      mockGet.mockImplementation((key) => {
+        if (key === 'assemblyaiKey') return 'valid-key';
+        const settings = createMockSettings();
+        return settings[key as keyof typeof settings];
+      });
 
       expect(settingsService.hasNonEmptySetting('assemblyaiKey')).toBe(true);
     });

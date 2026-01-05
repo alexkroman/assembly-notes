@@ -36,10 +36,10 @@ export type { RecordingManager } from '../main/services/recordingManager.js';
 export type { RecordingDataService } from '../main/services/recordingDataService.js';
 
 // ============================================================================
-// Database Service Types
+// Transcript File Service Types
 // ============================================================================
 
-export type { DatabaseService } from '../main/database.js';
+export type { TranscriptFileService } from '../main/services/transcriptFileService.js';
 
 // ============================================================================
 // Auto-Update Service Types

@@ -3,8 +3,6 @@ let microphoneSource: MediaStreamAudioSourceNode | null = null;
 let systemAudioSource: MediaStreamAudioSourceNode | null = null;
 let echoCancelledDestination: MediaStreamAudioDestinationNode | null = null;
 let echoCancelledStream: MediaStream | null = null;
-// eslint-disable-next-line @typescript-eslint/no-deprecated
-let scriptProcessor: ScriptProcessorNode | null = null;
 
 function createEchoCancellationProcessor(): AudioContext {
   // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition, @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-member-access
@@ -76,10 +74,6 @@ export function processEchoCancellation(
 }
 
 export function cleanupEchoCancellation(): void {
-  if (scriptProcessor) {
-    scriptProcessor.disconnect();
-    scriptProcessor = null;
-  }
   if (microphoneSource) {
     microphoneSource.disconnect();
     microphoneSource = null;

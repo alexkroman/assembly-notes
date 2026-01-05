@@ -4,12 +4,12 @@ import 'reflect-metadata';
 import { container } from 'tsyringe';
 
 import { AutoUpdaterService } from './auto-updater.js';
-import { DatabaseService } from './database.js';
 import { DI_TOKENS } from './di-tokens.js';
 import { DictationStatusWindow } from './dictationStatusWindow.js';
 import logger from './logger.js';
 import { AudioRecordingService } from './services/audioRecordingService.js';
 import { DictationService } from './services/dictationService.js';
+import { MigrationService } from './services/migrationService.js';
 import { PostHogService } from './services/posthogService.js';
 import { RecordingDataService } from './services/recordingDataService.js';
 import { RecordingManager } from './services/recordingManager.js';
@@ -18,6 +18,7 @@ import {
   AssemblyAIFactoryWithLemur,
   SummarizationService,
 } from './services/summarizationService.js';
+import { TranscriptFileService } from './services/transcriptFileService.js';
 import {
   AssemblyAIFactory,
   TranscriptionService,
@@ -57,7 +58,11 @@ export function setupContainer(mainWindow: BrowserWindow): void {
 
   // Register services as singletons
   container.registerSingleton(DI_TOKENS.PostHogService, PostHogService);
-  container.registerSingleton(DI_TOKENS.DatabaseService, DatabaseService);
+  container.registerSingleton(
+    DI_TOKENS.TranscriptFileService,
+    TranscriptFileService
+  );
+  container.registerSingleton(DI_TOKENS.MigrationService, MigrationService);
   container.registerSingleton(DI_TOKENS.SettingsService, SettingsService);
   container.registerSingleton(
     DI_TOKENS.TranscriptionService,

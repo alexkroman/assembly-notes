@@ -2,7 +2,6 @@ import { configureStore } from '@reduxjs/toolkit';
 import Logger from 'electron-log';
 import { container } from 'tsyringe';
 
-import { DatabaseService } from '../../../src/main/database.js';
 import { DI_TOKENS } from '../../../src/main/di-tokens.js';
 import { RecordingDataService } from '../../../src/main/services/recordingDataService.js';
 import recordingReducer from '../../../src/main/store/slices/recordingSlice.js';
@@ -13,12 +12,18 @@ import updateReducer from '../../../src/main/store/slices/updateSlice.js';
 import type { RootState } from '../../../src/main/store/store.js';
 
 // Mock dependencies
-jest.mock('../../../src/main/database.js');
 jest.mock('electron-log');
 
 describe('RecordingDataService', () => {
   let recordingDataService: RecordingDataService;
-  let mockDatabase: jest.Mocked<DatabaseService>;
+  let mockTranscriptFileService: {
+    saveTranscript: jest.Mock;
+    getTranscriptById: jest.Mock;
+    updateTranscript: jest.Mock;
+    getAllTranscripts: jest.Mock;
+    searchTranscripts: jest.Mock;
+    deleteTranscript: jest.Mock;
+  };
   let mockLogger: jest.Mocked<typeof Logger>;
   let store: ReturnType<typeof configureStore<RootState>>;
 
@@ -34,18 +39,17 @@ describe('RecordingDataService', () => {
       },
     });
 
-    // Mock the database service
-    mockDatabase = {
-      createRecording: jest.fn(),
-      getRecordingById: jest.fn(),
-      updateRecordingTranscript: jest.fn(),
-      updateRecordingSummary: jest.fn(),
-      getAllRecordings: jest.fn(),
-      searchRecordings: jest.fn(),
-      getRecording: jest.fn(),
-      updateRecording: jest.fn(),
-      deleteRecording: jest.fn(),
-    } as any;
+    // Mock the transcript file service
+    mockTranscriptFileService = {
+      saveTranscript: jest
+        .fn()
+        .mockResolvedValue('2024-01-01_new-recording.md'),
+      getTranscriptById: jest.fn(),
+      updateTranscript: jest.fn().mockResolvedValue(true),
+      getAllTranscripts: jest.fn().mockResolvedValue([]),
+      searchTranscripts: jest.fn().mockResolvedValue([]),
+      deleteTranscript: jest.fn().mockResolvedValue(true),
+    };
 
     // Mock the logger
     mockLogger = {
@@ -69,7 +73,10 @@ describe('RecordingDataService', () => {
     // Register mocks in the container
     container.clearInstances();
     container.registerInstance(DI_TOKENS.Store, store);
-    container.registerInstance(DI_TOKENS.DatabaseService, mockDatabase);
+    container.registerInstance(
+      DI_TOKENS.TranscriptFileService,
+      mockTranscriptFileService
+    );
     container.registerInstance(DI_TOKENS.Logger, mockLogger);
     container.registerInstance(
       DI_TOKENS.StateBroadcaster,
@@ -118,16 +125,16 @@ describe('RecordingDataService', () => {
       expect(result).toBeDefined();
     });
 
-    it('should create a new recording in database', async () => {
+    it('should create a new recording via TranscriptFileService', async () => {
       await recordingDataService.newRecording();
 
-      expect(mockDatabase.createRecording).toHaveBeenCalledWith({
-        id: expect.any(String),
-        title: 'New Recording',
-        timestamp: expect.any(Number),
-        summary: null,
-        transcript: '',
-      });
+      expect(mockTranscriptFileService.saveTranscript).toHaveBeenCalledWith(
+        expect.objectContaining({
+          id: expect.any(String),
+          title: 'New Recording',
+          transcript: '',
+        })
+      );
     });
 
     it('should set current recording in store', async () => {
@@ -147,11 +154,11 @@ describe('RecordingDataService', () => {
       expect(result).toHaveLength(36); // UUID length
     });
 
-    it('should handle database errors gracefully', async () => {
-      // Mock the database to throw an error
-      mockDatabase.createRecording.mockImplementation(() => {
-        throw new Error('Database error');
-      });
+    it('should handle file service errors gracefully', async () => {
+      // Mock the file service to throw an error
+      mockTranscriptFileService.saveTranscript.mockRejectedValue(
+        new Error('File write error')
+      );
 
       const _result = await recordingDataService.newRecording();
 

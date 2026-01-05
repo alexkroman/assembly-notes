@@ -7,10 +7,9 @@
 
 import type { Store } from '@reduxjs/toolkit';
 
-import type { DatabaseService } from '../../src/main/database';
+import type { TranscriptFileService } from '../../src/main/services/transcriptFileService';
 import type { StateBroadcaster } from '../../src/main/state-broadcaster';
 import type { AppDispatch, RootState } from '../../src/main/store/store';
-import type { SettingsSchema } from '../../src/types/common';
 
 // ============================================================================
 // AssemblyAI Mocks
@@ -204,34 +203,26 @@ export function createMockStore(
 }
 
 // ============================================================================
-// Database Service Mock
+// Transcript File Service Mock
 // ============================================================================
 
-export function createMockDatabaseService(
-  settings?: Partial<SettingsSchema>
-): jest.Mocked<DatabaseService> {
-  const defaultSettings: SettingsSchema = {
-    assemblyaiKey: 'test-key',
-    summaryPrompt: 'Summarize:',
-    prompts: [],
-    autoStart: false,
-    dictationStylingEnabled: false,
-    dictationStylingPrompt: '',
-    dictationSilenceTimeout: 2000,
-    ...settings,
-  };
-
+export function createMockTranscriptFileService(): jest.Mocked<TranscriptFileService> {
   return {
-    getSettings: jest.fn(() => defaultSettings),
-    setSetting: jest.fn(),
-    getRecordingById: jest.fn(),
-    getAllRecordings: jest.fn(() => []),
-    searchRecordings: jest.fn(() => []),
-    createRecording: jest.fn(),
-    updateRecording: jest.fn(),
-    deleteRecording: jest.fn(),
-    close: jest.fn(),
-  } as unknown as jest.Mocked<DatabaseService>;
+    ensureTranscriptsDirectory: jest.fn().mockResolvedValue(undefined),
+    getTranscriptsDir: jest.fn(() => '/mock/transcripts'),
+    generateFilename: jest.fn().mockReturnValue('2024-01-01_mock-title.md'),
+    findUniqueFilename: jest.fn((filename: string) =>
+      Promise.resolve(filename)
+    ),
+    saveTranscript: jest.fn().mockResolvedValue('mock-file.md'),
+    loadTranscript: jest.fn().mockResolvedValue(null),
+    getAllTranscripts: jest.fn().mockResolvedValue([]),
+    getTranscriptById: jest.fn().mockResolvedValue(null),
+    updateTranscript: jest.fn().mockResolvedValue(true),
+    deleteTranscript: jest.fn().mockResolvedValue(true),
+    searchTranscripts: jest.fn().mockResolvedValue([]),
+    transcriptExists: jest.fn().mockResolvedValue(false),
+  } as unknown as jest.Mocked<TranscriptFileService>;
 }
 
 // ============================================================================

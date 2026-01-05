@@ -2,10 +2,11 @@ import type { Store } from '@reduxjs/toolkit';
 import { inject, injectable } from 'tsyringe';
 
 import { DEFAULT_DICTATION_STYLING_PROMPT } from '../../constants/dictationPrompts.js';
-import type { SettingsSchema } from '../../types/common.js';
-import type { DatabaseService } from '../database.js';
+import type { PromptTemplate, SettingsSchema } from '../../types/common.js';
+import { isNonEmptyString } from '../../utils/strings.js';
 import { DI_TOKENS } from '../di-tokens.js';
 import type Logger from '../logger.js';
+import { settingsStore, type SettingsStoreSchema } from '../settings-store.js';
 import type { StateBroadcaster } from '../state-broadcaster.js';
 import { updateSettings } from '../store/slices/settingsSlice.js';
 import type { AppDispatch, RootState } from '../store/store.js';
@@ -16,7 +17,6 @@ export class SettingsService {
     @inject(DI_TOKENS.Store)
     private store: Store<RootState> & { dispatch: AppDispatch },
     @inject(DI_TOKENS.Logger) private logger: typeof Logger,
-    @inject(DI_TOKENS.DatabaseService) private databaseService: DatabaseService,
     @inject(DI_TOKENS.StateBroadcaster)
     private stateBroadcaster: StateBroadcaster
   ) {}
@@ -32,35 +32,40 @@ export class SettingsService {
   }
 
   getSettings(): SettingsSchema {
-    const dbSettings = this.databaseService.getSettings();
-
     return {
-      assemblyaiKey: dbSettings.assemblyaiKey,
-      summaryPrompt: dbSettings.summaryPrompt,
-      prompts: dbSettings.prompts,
-      autoStart: dbSettings.autoStart,
-      dictationStylingEnabled: dbSettings.dictationStylingEnabled || false,
+      assemblyaiKey: settingsStore.get('assemblyaiKey'),
+      summaryPrompt:
+        settingsStore.get('summaryPrompt') ||
+        'Summarize the key points from this meeting transcript:',
+      prompts: settingsStore.get('prompts'),
+      autoStart: settingsStore.get('autoStart'),
+      dictationStylingEnabled: settingsStore.get('dictationStylingEnabled'),
       dictationStylingPrompt:
-        dbSettings.dictationStylingPrompt || DEFAULT_DICTATION_STYLING_PROMPT,
-      dictationSilenceTimeout: dbSettings.dictationSilenceTimeout || 2000,
+        settingsStore.get('dictationStylingPrompt') ||
+        DEFAULT_DICTATION_STYLING_PROMPT,
+      dictationSilenceTimeout: settingsStore.get('dictationSilenceTimeout'),
+      userId: settingsStore.get('userId'),
+      microphoneGain: settingsStore.get('microphoneGain'),
+      systemAudioGain: settingsStore.get('systemAudioGain'),
     };
   }
 
   /**
    * Generic getter for any setting key.
-   * Returns the value from the database for the specified key.
+   * Returns the value from electron-store for the specified key.
    */
-  getSetting<K extends keyof SettingsSchema>(key: K): SettingsSchema[K] {
-    const settings = this.databaseService.getSettings();
-    return settings[key];
+  getSetting<K extends keyof SettingsStoreSchema>(
+    key: K
+  ): SettingsStoreSchema[K] {
+    return settingsStore.get(key);
   }
 
   updateSettings(updates: Partial<SettingsSchema>): void {
     this.logger.info('SettingsService.updateSettings called with:', updates);
 
-    // Persist each setting to the database
+    // Persist each setting to electron-store
     for (const [key, value] of Object.entries(updates)) {
-      this.databaseService.setSetting(key, value);
+      settingsStore.set(key as keyof SettingsStoreSchema, value);
     }
 
     // Update Redux store
@@ -70,24 +75,24 @@ export class SettingsService {
   }
 
   getAssemblyAIKey(): string {
-    return this.getSetting('assemblyaiKey');
+    return settingsStore.get('assemblyaiKey');
   }
 
   getSummaryPrompt(): string {
     return (
-      this.getSetting('summaryPrompt') ||
+      settingsStore.get('summaryPrompt') ||
       'Summarize the key points from this meeting transcript:'
     );
   }
 
   isAutoStartEnabled(): boolean {
-    return this.getSetting('autoStart');
+    return settingsStore.get('autoStart');
   }
 
   getPrompts(): { label: string; content: string }[] {
-    const settings = this.databaseService.getSettings();
+    const prompts: PromptTemplate[] = settingsStore.get('prompts');
 
-    return settings.prompts
+    return prompts
       .filter(
         (p): p is { name: string; content: string } =>
           typeof p === 'object' && 'name' in p
@@ -100,7 +105,7 @@ export class SettingsService {
 
   // Helper method to safely check if a setting has a non-empty trimmed value
   hasNonEmptySetting(key: keyof SettingsSchema): boolean {
-    const value = this.getSetting(key);
-    return Boolean(value && typeof value === 'string' && value.trim());
+    const value = settingsStore.get(key as keyof SettingsStoreSchema);
+    return isNonEmptyString(value);
   }
 }

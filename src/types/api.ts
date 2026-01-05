@@ -75,8 +75,6 @@ export interface SettingsAPI {
 export interface UpdateAPI {
   'install-update': () => Promise<void>;
   'quit-and-install': () => void;
-  'check-for-updates': () => Promise<void>;
-  'get-update-status': () => unknown; // TODO: Define proper UpdateStatus type
 }
 
 /**

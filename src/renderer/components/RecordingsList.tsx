@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 
 import { ConfirmModal } from './ConfirmModal';
 import type { RecordingsListProps } from '../../types/components.js';
+import { isEmptyString } from '../../utils/strings.js';
 import { useAppDispatch, useAppSelector } from '../hooks/redux';
 import {
   useGetAllRecordingsQuery,
@@ -154,7 +155,7 @@ export const RecordingsList: React.FC<RecordingsListProps> = ({
     });
   };
 
-  const isAssemblyAIKeyMissing = !(settings.assemblyaiKey || '').trim();
+  const isAssemblyAIKeyMissing = isEmptyString(settings.assemblyaiKey);
 
   return (
     <div

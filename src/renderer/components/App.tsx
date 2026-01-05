@@ -13,6 +13,7 @@ import { RecordingErrorBoundary } from './RecordingErrorBoundary';
 import { RecordingsList } from './RecordingsList';
 import { RecordingView } from './RecordingView';
 import { SettingsModal } from './SettingsModal';
+import { isEmptyString } from '../../utils/strings.js';
 import { usePostHog } from '../hooks/usePostHog';
 import { useGetSettingsQuery, apiSlice } from '../slices/apiSlice.js';
 
@@ -39,7 +40,7 @@ export const App: React.FC = () => {
 
   useEffect(() => {
     // Check if settings are loaded and AssemblyAI key is missing
-    if (settings && !(settings.assemblyaiKey || '').trim()) {
+    if (settings && isEmptyString(settings.assemblyaiKey)) {
       dispatch(setActiveModal('settings'));
     }
   }, [settings, dispatch]);

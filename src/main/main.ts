@@ -19,11 +19,11 @@ const __dirname = path.dirname(__filename);
 
 import type { AutoUpdaterService } from './auto-updater.js';
 import { setupContainer, container, DI_TOKENS } from './container.js';
-import type { DatabaseService } from './database.js';
 import type { DictationStatusWindow } from './dictationStatusWindow.js';
 import { setupIpcHandlers } from './ipc-handlers.js';
 import log from './logger.js';
 import type { DictationService } from './services/dictationService.js';
+import type { MigrationService } from './services/migrationService.js';
 import type { PostHogService } from './services/posthogService.js';
 import type { SettingsService } from './services/settingsService.js';
 import { store } from './store/store.js';
@@ -177,6 +177,16 @@ void app.whenReady().then(async () => {
 
   createWindow();
 
+  // Run migration after container is set up (inside createWindow)
+  log.info('Running migration if needed...');
+  const migrationService = container.resolve<MigrationService>(
+    DI_TOKENS.MigrationService
+  );
+  const migrationSuccess = await migrationService.runMigrationIfNeeded();
+  if (!migrationSuccess) {
+    log.error('Migration failed - some data may not have been exported');
+  }
+
   const template: Electron.MenuItemConstructorOptions[] = [
     {
       label: app.getName(),
@@ -248,10 +258,6 @@ void app.whenReady().then(async () => {
 app.on('window-all-closed', function () {
   if (process.platform !== 'darwin') {
     log.info('All windows closed, quitting app');
-    const databaseService = container.resolve<DatabaseService>(
-      DI_TOKENS.DatabaseService
-    );
-    databaseService.close();
 
     // Cleanup dictation service
     const dictationService = container.resolve<DictationService>(
@@ -292,14 +298,6 @@ app.on('before-quit', () => {
       DI_TOKENS.PostHogService
     );
     posthogService.shutdown();
-  }
-
-  if (container.isRegistered(DI_TOKENS.DatabaseService)) {
-    // Close database
-    const databaseService = container.resolve<DatabaseService>(
-      DI_TOKENS.DatabaseService
-    );
-    databaseService.close();
   }
 });
 

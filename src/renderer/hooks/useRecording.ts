@@ -1,6 +1,7 @@
-import { useEffect, useState, useCallback, useRef } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 
 import { useAppSelector, useAppDispatch } from './redux';
+import { useDebouncedCallbackWithCancel } from './useDebouncedCallback';
 import { usePostHog } from './usePostHog';
 import type { Recording } from '../../types/common.js';
 import {
@@ -66,9 +67,28 @@ export const useRecording = (recordingId: string | null) => {
   const [isStarting, setIsStarting] = useState(false);
   const [isSummarizing, setIsSummarizing] = useState(false);
 
-  // Refs for debouncing
-  const titleDebounceRef = useRef<NodeJS.Timeout | null>(null);
-  const summaryDebounceRef = useRef<NodeJS.Timeout | null>(null);
+  // Debounced database updates
+  const [debouncedTitleUpdate, cancelTitleUpdate] =
+    useDebouncedCallbackWithCancel(
+      useCallback(
+        (id: string, title: string) => {
+          void updateTitle({ id, title });
+        },
+        [updateTitle]
+      ),
+      300
+    );
+
+  const [debouncedSummaryUpdate, cancelSummaryUpdate] =
+    useDebouncedCallbackWithCancel(
+      useCallback(
+        (id: string, summaryText: string) => {
+          void updateSummary({ id, summary: summaryText });
+        },
+        [updateSummary]
+      ),
+      300
+    );
 
   const partialTranscript = [
     microphoneTranscriptBuffer,
@@ -78,46 +98,34 @@ export const useRecording = (recordingId: string | null) => {
     .join(' ');
 
   // Immediate Redux updates + debounced database writes
+  const handleTitleChange = useCallback(
+    (title: string) => {
+      if (!recordingId) return;
+      dispatch(updateCurrentRecordingTitle(title));
+      debouncedTitleUpdate(recordingId, title);
+    },
+    [recordingId, dispatch, debouncedTitleUpdate]
+  );
+
   const handleSummaryChange = useCallback(
     (summaryText: string) => {
       if (!recordingId) return;
-
-      // Update Redux immediately for UI responsiveness
       dispatch(updateCurrentRecordingSummary(summaryText));
-
-      // Clear existing timeout
-      if (summaryDebounceRef.current) {
-        clearTimeout(summaryDebounceRef.current);
-      }
-
-      // Capture current recording ID for closure
-      const currentRecordingId = recordingId;
-
-      // Debounce database update
-      summaryDebounceRef.current = setTimeout(() => {
-        void updateSummary({ id: currentRecordingId, summary: summaryText });
-      }, 300); // Wait 300ms after user stops typing
+      debouncedSummaryUpdate(recordingId, summaryText);
     },
-    [recordingId, updateSummary, dispatch]
+    [recordingId, dispatch, debouncedSummaryUpdate]
   );
 
+  // Clear pending debounced updates when recording changes
   useEffect(() => {
-    // Clear any pending debounced updates when recording changes
-    if (titleDebounceRef.current) {
-      clearTimeout(titleDebounceRef.current);
-      titleDebounceRef.current = null;
-    }
-    if (summaryDebounceRef.current) {
-      clearTimeout(summaryDebounceRef.current);
-      summaryDebounceRef.current = null;
-    }
-  }, [recordingId]);
+    cancelTitleUpdate();
+    cancelSummaryUpdate();
+  }, [recordingId, cancelTitleUpdate, cancelSummaryUpdate]);
 
   useEffect(() => {
     const handleSummary = (data: { text: string; recordingId: string }) => {
       // Only update summary if it's for the current recording
       if (recordingId && data.recordingId === recordingId) {
-        // Update summary via debounced database write
         handleSummaryChange(data.text);
       } else {
         window.logger.warn(
@@ -143,15 +151,12 @@ export const useRecording = (recordingId: string | null) => {
     window.electronAPI.onSummarizationStarted(handleSummarizationStarted);
     window.electronAPI.onSummarizationCompleted(handleSummarizationCompleted);
 
-    // Don't add audio capture handlers here - they're handled globally in main.tsx
-
     return () => {
       window.electronAPI.removeAllListeners('summary');
       window.electronAPI.removeAllListeners('summarization-started');
       window.electronAPI.removeAllListeners('summarization-completed');
-      // Don't remove audio capture listeners - they're global
     };
-  }, [dispatch, recordingId, handleSummaryChange]);
+  }, [dispatch, recordingId, handleSummaryChange, posthog]);
 
   const handleToggleRecording = async () => {
     try {
@@ -160,7 +165,6 @@ export const useRecording = (recordingId: string | null) => {
         dispatch(setStatus('Starting recording...'));
         const result = await window.electronAPI.startRecording();
         if (result) {
-          // Recording started successfully
           posthog.capture('recording_started', {
             recordingId: recordingId,
           });
@@ -189,7 +193,6 @@ export const useRecording = (recordingId: string | null) => {
 
   const handleSummarize = async () => {
     try {
-      // Don't set isSummarizing here - let the event handlers manage it
       posthog.capture('summary_requested', {
         recordingId: recordingId,
         transcriptLength: currentTranscript.length,
@@ -204,42 +207,6 @@ export const useRecording = (recordingId: string | null) => {
       });
     }
   };
-
-  // Immediate Redux updates + debounced database writes
-  const handleTitleChange = useCallback(
-    (title: string) => {
-      if (!recordingId) return;
-
-      // Update Redux immediately for UI responsiveness
-      dispatch(updateCurrentRecordingTitle(title));
-
-      // Clear existing timeout
-      if (titleDebounceRef.current) {
-        clearTimeout(titleDebounceRef.current);
-      }
-
-      // Capture current recording ID for closure
-      const currentRecordingId = recordingId;
-
-      // Debounce database update
-      titleDebounceRef.current = setTimeout(() => {
-        void updateTitle({ id: currentRecordingId, title });
-      }, 300); // Wait 300ms after user stops typing
-    },
-    [recordingId, updateTitle, dispatch]
-  );
-
-  // Cleanup timeouts on unmount
-  useEffect(() => {
-    return () => {
-      if (titleDebounceRef.current) {
-        clearTimeout(titleDebounceRef.current);
-      }
-      if (summaryDebounceRef.current) {
-        clearTimeout(summaryDebounceRef.current);
-      }
-    };
-  }, []);
 
   // Reset loading states when recording state changes
   useEffect(() => {
@@ -265,7 +232,14 @@ export const useRecording = (recordingId: string | null) => {
     } else {
       dispatch(setStatus('Ready to record'));
     }
-  }, [transcriptionError, isTranscribing, isRecording, isStarting, isStopping]);
+  }, [
+    transcriptionError,
+    isTranscribing,
+    isRecording,
+    isStarting,
+    isStopping,
+    dispatch,
+  ]);
 
   return {
     isRecording,

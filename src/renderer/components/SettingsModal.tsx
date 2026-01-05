@@ -4,6 +4,7 @@ import { Modal } from './Modal.js';
 import { DEFAULT_DICTATION_STYLING_PROMPT } from '../../constants/dictationPrompts.js';
 import type { SettingsModalProps } from '../../types/components.js';
 import type { FullSettingsState } from '../../types/redux.js';
+import { isEmptyString } from '../../utils/strings.js';
 import { useAppDispatch } from '../hooks/redux.js';
 import {
   useGetSettingsQuery,
@@ -51,7 +52,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ onClose }) => {
   }, [settings.assemblyaiKey]);
 
   const handleSave = async () => {
-    if (!(settings.assemblyaiKey || '').trim()) {
+    if (isEmptyString(settings.assemblyaiKey)) {
       return;
     }
 
@@ -73,20 +74,20 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ onClose }) => {
   };
 
   const handleCancel = () => {
-    if (!(settings.assemblyaiKey || '').trim()) {
+    if (isEmptyString(settings.assemblyaiKey)) {
       return;
     }
     onClose();
   };
 
   const handleClose = () => {
-    if (!(settings.assemblyaiKey || '').trim()) {
+    if (isEmptyString(settings.assemblyaiKey)) {
       return;
     }
     onClose();
   };
 
-  const isAssemblyAIKeyMissing = !(settings.assemblyaiKey || '').trim();
+  const isAssemblyAIKeyMissing = isEmptyString(settings.assemblyaiKey);
   const isDisabled = isAssemblyAIKeyMissing || isSaving;
 
   const footer = (

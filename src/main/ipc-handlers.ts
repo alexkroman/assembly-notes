@@ -10,11 +10,11 @@ import { BrowserWindow, shell } from 'electron';
 
 import type { AutoUpdaterService } from './auto-updater.js';
 import { DI_TOKENS, container } from './container.js';
-import type { DatabaseService } from './database.js';
 import { registerHandler, registerEvent } from './ipc-registry.js';
 import type { RecordingDataService } from './services/recordingDataService.js';
 import type { RecordingManager } from './services/recordingManager.js';
 import type { SettingsService } from './services/settingsService.js';
+import type { TranscriptFileService } from './services/transcriptFileService.js';
 import type { StateBroadcaster } from './state-broadcaster.js';
 import {
   updateCurrentRecordingTitle,
@@ -53,8 +53,8 @@ function setupIpcHandlers(
   const stateBroadcaster = container.resolve<StateBroadcaster>(
     DI_TOKENS.StateBroadcaster
   );
-  const databaseService = container.resolve<DatabaseService>(
-    DI_TOKENS.DatabaseService
+  const transcriptFileService = container.resolve<TranscriptFileService>(
+    DI_TOKENS.TranscriptFileService
   );
   const settingsService = container.resolve<SettingsService>(
     DI_TOKENS.SettingsService
@@ -106,21 +106,23 @@ function setupIpcHandlers(
   // ==================== Recording Data ====================
 
   registerHandler('get-all-recordings', () =>
-    databaseService.getAllRecordings()
+    transcriptFileService.getAllTranscripts()
   );
 
   registerHandler('search-recordings', (query) =>
-    databaseService.searchRecordings(query)
+    transcriptFileService.searchTranscripts(query)
   );
 
-  registerHandler('get-recording', (id) => databaseService.getRecording(id));
+  registerHandler('get-recording', (id) =>
+    transcriptFileService.getTranscriptById(id)
+  );
 
-  registerHandler('delete-recording', (id) => {
-    databaseService.deleteRecording(id);
+  registerHandler('delete-recording', async (id) => {
+    await transcriptFileService.deleteTranscript(id);
     return true;
   });
 
-  registerHandler('update-recording-title', (recordingId, title) => {
+  registerHandler('update-recording-title', async (recordingId, title) => {
     const state = store.getState();
     const currentRecording = state.recordings.currentRecording;
 
@@ -131,12 +133,12 @@ function setupIpcHandlers(
       return;
     }
 
-    databaseService.updateRecording(recordingId, { title });
+    await transcriptFileService.updateTranscript(recordingId, { title });
     store.dispatch(updateCurrentRecordingTitle(title));
     stateBroadcaster.recordingsTitle(title);
   });
 
-  registerHandler('update-recording-summary', (recordingId, summary) => {
+  registerHandler('update-recording-summary', async (recordingId, summary) => {
     const state = store.getState();
     const currentRecording = state.recordings.currentRecording;
 
@@ -147,21 +149,23 @@ function setupIpcHandlers(
       return;
     }
 
-    databaseService.updateRecording(recordingId, { summary });
+    await transcriptFileService.updateTranscript(recordingId, { summary });
     store.dispatch(updateCurrentRecordingSummary(summary));
     stateBroadcaster.recordingsSummary(summary);
   });
 
-  registerHandler('get-audio-file-path', (recordingId) => {
-    const recording = databaseService.getRecording(recordingId);
+  registerHandler('get-audio-file-path', async (recordingId) => {
+    const recording =
+      await transcriptFileService.getTranscriptById(recordingId);
     if (recording?.audio_filename) {
       return audioRecordingService.getAudioFilePath(recording.audio_filename);
     }
     return null;
   });
 
-  registerHandler('show-audio-in-folder', (recordingId) => {
-    const recording = databaseService.getRecording(recordingId);
+  registerHandler('show-audio-in-folder', async (recordingId) => {
+    const recording =
+      await transcriptFileService.getTranscriptById(recordingId);
     if (recording?.audio_filename) {
       const filepath = audioRecordingService.getAudioFilePath(
         recording.audio_filename
