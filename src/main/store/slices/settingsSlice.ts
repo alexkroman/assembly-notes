@@ -1,6 +1,6 @@
 import { PayloadAction, createSlice } from '@reduxjs/toolkit';
 
-import { DEFAULT_DICTATION_STYLING_PROMPT } from '../../../constants/dictationPrompts.js';
+import { DEFAULT_DICTATION_STYLING_PROMPT } from '../../../constants/prompts.js';
 import type { FullSettingsState, SettingsState } from '../../../types/index.js';
 import { isNonEmptyString } from '../../../utils/strings.js';
 

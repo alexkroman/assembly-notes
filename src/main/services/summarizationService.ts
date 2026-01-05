@@ -1,6 +1,6 @@
 import { inject, injectable } from 'tsyringe';
 
-import { SUMMARIZATION_SYSTEM_PROMPT } from '../../constants/systemPrompts.js';
+import { SUMMARIZATION_SYSTEM_PROMPT } from '../../constants/prompts.js';
 import { DI_TOKENS } from '../di-tokens.js';
 
 // Abstract interface for AssemblyAI Lemur client

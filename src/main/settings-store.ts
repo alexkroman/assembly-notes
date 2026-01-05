@@ -3,7 +3,7 @@ import crypto from 'crypto';
 import { safeStorage } from 'electron';
 import Store from 'electron-store';
 
-import { DEFAULT_DICTATION_STYLING_PROMPT } from '../constants/dictationPrompts.js';
+import { DEFAULT_DICTATION_STYLING_PROMPT } from '../constants/prompts.js';
 import type { PromptTemplate } from '../types/common.js';
 
 // Settings store schema - assemblyaiKey stored encrypted

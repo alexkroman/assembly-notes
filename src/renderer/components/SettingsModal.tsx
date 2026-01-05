@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 
 import { Modal } from './Modal.js';
-import { DEFAULT_DICTATION_STYLING_PROMPT } from '../../constants/dictationPrompts.js';
+import { DEFAULT_DICTATION_STYLING_PROMPT } from '../../constants/prompts.js';
 import type { SettingsModalProps } from '../../types/components.js';
 import type { FullSettingsState } from '../../types/redux.js';
 import { isEmptyString } from '../../utils/strings.js';

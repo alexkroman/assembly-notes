@@ -1,4 +1,4 @@
-import { DEFAULT_DICTATION_STYLING_PROMPT } from '../../src/constants/dictationPrompts.js';
+import { DEFAULT_DICTATION_STYLING_PROMPT } from '../../src/constants/prompts.js';
 import { SettingsSchema } from '../../src/types/common.js';
 
 // Helper function to create default mock settings

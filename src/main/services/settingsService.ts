@@ -1,7 +1,7 @@
 import type { Store } from '@reduxjs/toolkit';
 import { inject, injectable } from 'tsyringe';
 
-import { DEFAULT_DICTATION_STYLING_PROMPT } from '../../constants/dictationPrompts.js';
+import { DEFAULT_DICTATION_STYLING_PROMPT } from '../../constants/prompts.js';
 import type { PromptTemplate, SettingsSchema } from '../../types/common.js';
 import { isNonEmptyString } from '../../utils/strings.js';
 import { DI_TOKENS } from '../di-tokens.js';
