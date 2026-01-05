@@ -5,14 +5,10 @@ import Database from 'better-sqlite3';
 import { app } from 'electron';
 import { inject, injectable } from 'tsyringe';
 
-import type {
-  PromptTemplate,
-  Recording,
-  SettingsSchema,
-} from '../../types/common.js';
+import type { PromptTemplate, Recording } from '../../types/common.js';
 import { DI_TOKENS } from '../di-tokens.js';
 import type Logger from '../logger.js';
-import { settingsStore } from '../settings-store.js';
+import { settingsStore, type SettingsStoreSchema } from '../settings-store.js';
 import { TranscriptFileService } from './transcriptFileService.js';
 
 /**
@@ -112,9 +108,15 @@ export class MigrationService {
       for (const row of rows) {
         try {
           // Skip migrating if we already have a non-empty value
-          const existingValue = settingsStore.get(
-            row.key as keyof SettingsSchema
-          );
+          // Special handling for API key which uses encrypted storage
+          let existingValue: unknown;
+          if (row.key === 'assemblyaiKey') {
+            existingValue = settingsStore.getAssemblyAIKey();
+          } else {
+            existingValue = settingsStore.get(
+              row.key as keyof SettingsStoreSchema
+            );
+          }
           if (
             existingValue !== '' &&
             existingValue !== false &&
@@ -136,7 +138,7 @@ export class MigrationService {
           switch (row.key) {
             case 'assemblyaiKey':
               if (typeof value === 'string' && value) {
-                settingsStore.set('assemblyaiKey', value);
+                settingsStore.setAssemblyAIKey(value); // Encrypt with safeStorage
               }
               break;
             case 'summaryPrompt':

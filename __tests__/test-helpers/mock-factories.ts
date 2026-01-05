@@ -229,16 +229,36 @@ export function createMockTranscriptFileService(): jest.Mocked<TranscriptFileSer
 
 export function createMockStateBroadcaster(): jest.Mocked<StateBroadcaster> {
   return {
-    settingsUpdated: jest.fn(),
-    recordingStarted: jest.fn(),
-    recordingStopped: jest.fn(),
-    recordingError: jest.fn(),
+    broadcast: jest.fn(),
+    // Recording state
+    recordingStatus: jest.fn(),
     recordingConnection: jest.fn(),
+    recordingError: jest.fn(),
+    recordingDictation: jest.fn(),
+    recordingTransitioning: jest.fn(),
+    recordingReset: jest.fn(),
+    // Transcription state
     transcriptionSegment: jest.fn(),
     transcriptionBuffer: jest.fn(),
-    transcriptionUpdated: jest.fn(),
-    recordingUpdated: jest.fn(),
-    recordingsListUpdated: jest.fn(),
+    transcriptionError: jest.fn(),
+    transcriptionClear: jest.fn(),
+    transcriptionLoad: jest.fn(),
+    // Settings state
+    settingsUpdated: jest.fn(),
+    // Update state
+    updateChecking: jest.fn(),
+    updateAvailable: jest.fn(),
+    updateNotAvailable: jest.fn(),
+    updateDownloading: jest.fn(),
+    updateProgress: jest.fn(),
+    updateDownloaded: jest.fn(),
+    updateError: jest.fn(),
+    updateReset: jest.fn(),
+    // Recordings state
+    recordingsCurrent: jest.fn(),
+    recordingsTitle: jest.fn(),
+    recordingsSummary: jest.fn(),
+    recordingsTranscript: jest.fn(),
   } as unknown as jest.Mocked<StateBroadcaster>;
 }
 
