@@ -6,6 +6,7 @@ import { v4 as uuidv4 } from 'uuid';
 
 import { DatabaseService } from '../database.js';
 import { DI_TOKENS } from '../di-tokens.js';
+import type { StateBroadcaster } from '../state-broadcaster.js';
 import { stopRecording } from '../store/slices/recordingSlice.js';
 import {
   setCurrentRecording,
@@ -24,7 +25,9 @@ export class RecordingDataService {
     @inject(DI_TOKENS.Store)
     private store: Store<RootState> & { dispatch: AppDispatch },
     @inject(DI_TOKENS.DatabaseService) private database: DatabaseService,
-    @inject(DI_TOKENS.Logger) private logger: typeof Logger
+    @inject(DI_TOKENS.Logger) private logger: typeof Logger,
+    @inject(DI_TOKENS.StateBroadcaster)
+    private stateBroadcaster: StateBroadcaster
   ) {}
 
   async newRecording(): Promise<string | null> {
@@ -32,6 +35,7 @@ export class RecordingDataService {
 
     // Clear existing transcription state first
     this.store.dispatch(clearTranscription());
+    this.stateBroadcaster.transcriptionClear();
 
     // Check if there's an ongoing recording and stop it
     const state = this.store.getState();
@@ -68,6 +72,7 @@ export class RecordingDataService {
       };
 
       this.store.dispatch(setCurrentRecording(newRecording));
+      this.stateBroadcaster.recordingsCurrent(newRecording);
       this.logger.info(`Created new recording with ID: ${recordingId}`);
       return recordingId;
     } catch (error) {
@@ -85,11 +90,14 @@ export class RecordingDataService {
       }
 
       this.store.dispatch(setCurrentRecording(recording));
+      this.stateBroadcaster.recordingsCurrent(recording);
 
       if (recording.transcript) {
         this.store.dispatch(loadExistingTranscript(recording.transcript));
+        this.stateBroadcaster.transcriptionLoad(recording.transcript);
       } else {
         this.store.dispatch(clearTranscription());
+        this.stateBroadcaster.transcriptionClear();
       }
 
       this.logger.info(`Loaded recording: ${recordingId}`);
@@ -121,6 +129,7 @@ export class RecordingDataService {
       );
       // Update the current recording in the store with the new transcript
       this.store.dispatch(updateCurrentRecordingTranscript(fullTranscript));
+      this.stateBroadcaster.recordingsTranscript(fullTranscript);
     } catch (error) {
       this.logger.error(`Failed to save transcript: ${String(error)}`);
     }
@@ -135,6 +144,7 @@ export class RecordingDataService {
         this.store.getState().recordings.currentRecording?.id;
       if (currentRecordingId === recordingId) {
         this.store.dispatch(updateCurrentRecordingSummary(summary));
+        this.stateBroadcaster.recordingsSummary(summary);
       }
 
       this.logger.info(`Saved summary for recording: ${recordingId}`);

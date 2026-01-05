@@ -1,5 +1,4 @@
 import { contextBridge, ipcRenderer } from 'electron';
-import { preload as electronReduxPreload } from 'electron-redux/es/preload.js';
 
 import type {
   TranscriptData,
@@ -10,7 +9,9 @@ import type {
   UpdateInfo,
   DownloadProgress,
   SlackInstallation,
+  Recording,
 } from '../types/index.js';
+import { IPC_STATE_CHANNELS } from '../types/ipc-events.js';
 
 const electronAPI = {
   enableLoopbackAudio: () => ipcRenderer.invoke('enable-loopback-audio'),
@@ -173,9 +174,171 @@ const logger = {
   },
 };
 
-// Initialize electron-redux bridge
-electronReduxPreload();
+// State API for main process state synchronization (replaces electron-redux)
+const stateAPI = {
+  // Recording state events
+  onRecordingStatus: (
+    callback: (payload: {
+      status: string;
+      recordingId?: string | null;
+      startTime?: number | null;
+      error?: string | null;
+    }) => void
+  ) =>
+    ipcRenderer.on(IPC_STATE_CHANNELS.RECORDING_STATUS, (_event, data) => {
+      callback(data as Parameters<typeof callback>[0]);
+    }),
+  onRecordingConnection: (
+    callback: (payload: {
+      stream: 'microphone' | 'system';
+      connected: boolean;
+    }) => void
+  ) =>
+    ipcRenderer.on(IPC_STATE_CHANNELS.RECORDING_CONNECTION, (_event, data) => {
+      callback(data as Parameters<typeof callback>[0]);
+    }),
+  onRecordingError: (callback: (payload: { error: string }) => void) =>
+    ipcRenderer.on(IPC_STATE_CHANNELS.RECORDING_ERROR, (_event, data) => {
+      callback(data as Parameters<typeof callback>[0]);
+    }),
+  onRecordingDictation: (
+    callback: (payload: { isDictating: boolean }) => void
+  ) =>
+    ipcRenderer.on(IPC_STATE_CHANNELS.RECORDING_DICTATION, (_event, data) => {
+      callback(data as Parameters<typeof callback>[0]);
+    }),
+  onRecordingTransitioning: (
+    callback: (payload: { isTransitioning: boolean }) => void
+  ) =>
+    ipcRenderer.on(
+      IPC_STATE_CHANNELS.RECORDING_TRANSITIONING,
+      (_event, data) => {
+        callback(data as Parameters<typeof callback>[0]);
+      }
+    ),
+  onRecordingReset: (callback: () => void) =>
+    ipcRenderer.on(IPC_STATE_CHANNELS.RECORDING_RESET, () => {
+      callback();
+    }),
+
+  // Transcription state events
+  onTranscriptionSegment: (
+    callback: (payload: {
+      text: string;
+      timestamp: number;
+      isFinal: boolean;
+      source: 'microphone' | 'system';
+    }) => void
+  ) =>
+    ipcRenderer.on(IPC_STATE_CHANNELS.TRANSCRIPTION_SEGMENT, (_event, data) => {
+      callback(data as Parameters<typeof callback>[0]);
+    }),
+  onTranscriptionBuffer: (
+    callback: (payload: {
+      source: 'microphone' | 'system';
+      text: string;
+    }) => void
+  ) =>
+    ipcRenderer.on(IPC_STATE_CHANNELS.TRANSCRIPTION_BUFFER, (_event, data) => {
+      callback(data as Parameters<typeof callback>[0]);
+    }),
+  onTranscriptionError: (callback: (payload: { error: string }) => void) =>
+    ipcRenderer.on(IPC_STATE_CHANNELS.TRANSCRIPTION_ERROR, (_event, data) => {
+      callback(data as Parameters<typeof callback>[0]);
+    }),
+  onTranscriptionClear: (callback: () => void) =>
+    ipcRenderer.on(IPC_STATE_CHANNELS.TRANSCRIPTION_CLEAR, () => {
+      callback();
+    }),
+  onTranscriptionLoad: (callback: (payload: { transcript: string }) => void) =>
+    ipcRenderer.on(IPC_STATE_CHANNELS.TRANSCRIPTION_LOAD, (_event, data) => {
+      callback(data as Parameters<typeof callback>[0]);
+    }),
+
+  // Settings state events
+  onSettingsUpdated: (callback: (payload: Record<string, unknown>) => void) =>
+    ipcRenderer.on(IPC_STATE_CHANNELS.SETTINGS_UPDATED, (_event, data) => {
+      callback(data as Parameters<typeof callback>[0]);
+    }),
+  onSettingsSlackInstallation: (
+    callback: (payload: { installation: SlackInstallation | null }) => void
+  ) =>
+    ipcRenderer.on(
+      IPC_STATE_CHANNELS.SETTINGS_SLACK_INSTALLATION,
+      (_event, data) => {
+        callback(data as Parameters<typeof callback>[0]);
+      }
+    ),
+
+  // Update state events
+  onUpdateChecking: (callback: () => void) =>
+    ipcRenderer.on(IPC_STATE_CHANNELS.UPDATE_CHECKING, () => {
+      callback();
+    }),
+  onUpdateAvailable: (
+    callback: (payload: { updateInfo: UpdateInfo }) => void
+  ) =>
+    ipcRenderer.on(IPC_STATE_CHANNELS.UPDATE_AVAILABLE, (_event, data) => {
+      callback(data as Parameters<typeof callback>[0]);
+    }),
+  onUpdateNotAvailable: (callback: () => void) =>
+    ipcRenderer.on(IPC_STATE_CHANNELS.UPDATE_NOT_AVAILABLE, () => {
+      callback();
+    }),
+  onUpdateDownloading: (callback: () => void) =>
+    ipcRenderer.on(IPC_STATE_CHANNELS.UPDATE_DOWNLOADING, () => {
+      callback();
+    }),
+  onUpdateProgress: (callback: (payload: { percent: number }) => void) =>
+    ipcRenderer.on(IPC_STATE_CHANNELS.UPDATE_PROGRESS, (_event, data) => {
+      callback(data as Parameters<typeof callback>[0]);
+    }),
+  onUpdateDownloaded: (
+    callback: (payload: { updateInfo: UpdateInfo }) => void
+  ) =>
+    ipcRenderer.on(IPC_STATE_CHANNELS.UPDATE_DOWNLOADED, (_event, data) => {
+      callback(data as Parameters<typeof callback>[0]);
+    }),
+  onUpdateError: (callback: (payload: { error: string }) => void) =>
+    ipcRenderer.on(IPC_STATE_CHANNELS.UPDATE_ERROR, (_event, data) => {
+      callback(data as Parameters<typeof callback>[0]);
+    }),
+  onUpdateReset: (callback: () => void) =>
+    ipcRenderer.on(IPC_STATE_CHANNELS.UPDATE_RESET, () => {
+      callback();
+    }),
+
+  // Recordings state events
+  onRecordingsCurrent: (
+    callback: (payload: { recording: Recording | null }) => void
+  ) =>
+    ipcRenderer.on(IPC_STATE_CHANNELS.RECORDINGS_CURRENT, (_event, data) => {
+      callback(data as Parameters<typeof callback>[0]);
+    }),
+  onRecordingsTitle: (callback: (payload: { title: string }) => void) =>
+    ipcRenderer.on(IPC_STATE_CHANNELS.RECORDINGS_TITLE, (_event, data) => {
+      callback(data as Parameters<typeof callback>[0]);
+    }),
+  onRecordingsSummary: (callback: (payload: { summary: string }) => void) =>
+    ipcRenderer.on(IPC_STATE_CHANNELS.RECORDINGS_SUMMARY, (_event, data) => {
+      callback(data as Parameters<typeof callback>[0]);
+    }),
+  onRecordingsTranscript: (
+    callback: (payload: { transcript: string }) => void
+  ) =>
+    ipcRenderer.on(IPC_STATE_CHANNELS.RECORDINGS_TRANSCRIPT, (_event, data) => {
+      callback(data as Parameters<typeof callback>[0]);
+    }),
+
+  // Cleanup - remove all state listeners
+  removeAllStateListeners: () => {
+    Object.values(IPC_STATE_CHANNELS).forEach((channel) => {
+      ipcRenderer.removeAllListeners(channel);
+    });
+  },
+};
 
 // Expose APIs through contextBridge
 contextBridge.exposeInMainWorld('electronAPI', electronAPI);
+contextBridge.exposeInMainWorld('stateAPI', stateAPI);
 contextBridge.exposeInMainWorld('logger', logger);

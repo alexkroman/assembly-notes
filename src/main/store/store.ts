@@ -3,7 +3,6 @@ import {
   type ThunkAction,
   type Action,
 } from '@reduxjs/toolkit';
-import { stateSyncEnhancer } from 'electron-redux/es/main.js';
 
 import recordingReducer from './slices/recordingSlice.js';
 import recordingsReducer from './slices/recordingsSlice.js';
@@ -19,8 +18,6 @@ export const store = configureStore({
     settings: settingsReducer,
     update: updateReducer,
   },
-  enhancers: (getDefaultEnhancers) =>
-    getDefaultEnhancers().concat(stateSyncEnhancer()),
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({
       serializableCheck: {

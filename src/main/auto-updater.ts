@@ -5,6 +5,7 @@ import pkg from 'electron-updater';
 import { injectable, inject } from 'tsyringe';
 
 import { DI_TOKENS } from './di-tokens.js';
+import type { StateBroadcaster } from './state-broadcaster.js';
 import {
   startChecking,
   updateAvailable,
@@ -26,7 +27,9 @@ export class AutoUpdaterService {
     @inject(DI_TOKENS.MainWindow) private mainWindow: BrowserWindow,
     @inject(DI_TOKENS.Store) private store: Store<RootState>,
     @inject(DI_TOKENS.Logger)
-    private logger: typeof import('./logger.js').default
+    private logger: typeof import('./logger.js').default,
+    @inject(DI_TOKENS.StateBroadcaster)
+    private stateBroadcaster: StateBroadcaster
   ) {}
 
   init(): void {
@@ -98,6 +101,7 @@ export class AutoUpdaterService {
         allowDowngrade: autoUpdater.allowDowngrade,
       });
       this.store.dispatch(startChecking());
+      this.stateBroadcaster.updateChecking();
     });
 
     autoUpdater.on('update-available', (info: UpdateInfo) => {
@@ -108,6 +112,7 @@ export class AutoUpdaterService {
         releaseDate: info.releaseDate || '',
       };
       this.store.dispatch(updateAvailable(serializedInfo));
+      this.stateBroadcaster.updateAvailable(serializedInfo);
       if (!this.mainWindow.isDestroyed()) {
         this.mainWindow.webContents.send('update-available', serializedInfo);
       }
@@ -116,6 +121,7 @@ export class AutoUpdaterService {
     autoUpdater.on('update-not-available', (info: UpdateInfo) => {
       this.logger.info('Update not available:', info);
       this.store.dispatch(updateNotAvailable());
+      this.stateBroadcaster.updateNotAvailable();
     });
 
     autoUpdater.on('error', (err: Error) => {
@@ -131,6 +137,7 @@ export class AutoUpdaterService {
 
       this.logger.error('Error in auto-updater:', err);
       this.store.dispatch(setError(err.message));
+      this.stateBroadcaster.updateError(err.message);
 
       // Send error to renderer
       if (!this.mainWindow.isDestroyed()) {
@@ -144,12 +151,14 @@ export class AutoUpdaterService {
       if (!state.update.downloading) {
         this.logger.info('Download started');
         this.store.dispatch(startDownloading());
+        this.stateBroadcaster.updateDownloading();
       }
 
       this.logger.debug(
         `Download progress: ${progressObj.percent.toFixed(2)}%`
       );
       this.store.dispatch(updateProgress(progressObj));
+      this.stateBroadcaster.updateProgress(progressObj.percent);
       if (!this.mainWindow.isDestroyed()) {
         this.mainWindow.webContents.send('download-progress', progressObj);
       }
@@ -164,6 +173,7 @@ export class AutoUpdaterService {
         releaseDate: info.releaseDate || '',
       };
       this.store.dispatch(downloadComplete(serializedInfo));
+      this.stateBroadcaster.updateDownloaded(serializedInfo);
 
       if (!this.mainWindow.isDestroyed()) {
         this.mainWindow.webContents.send('update-downloaded', serializedInfo);

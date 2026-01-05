@@ -10,6 +10,7 @@ import {
 } from '../../errors/index.js';
 import { DI_TOKENS } from '../di-tokens.js';
 import type Logger from '../logger.js';
+import type { StateBroadcaster } from '../state-broadcaster.js';
 import { AudioRecordingService } from './audioRecordingService.js';
 import { RecordingDataService } from './recordingDataService.js';
 import { SummarizationService } from './summarizationService.js';
@@ -52,7 +53,9 @@ export class RecordingManager {
     @inject(DI_TOKENS.SummarizationService)
     private summarizationService: SummarizationService,
     @inject(DI_TOKENS.AudioRecordingService)
-    private audioRecordingService: AudioRecordingService
+    private audioRecordingService: AudioRecordingService,
+    @inject(DI_TOKENS.StateBroadcaster)
+    private stateBroadcaster: StateBroadcaster
   ) {
     this.errorLogger = new ErrorLogger(this.logger);
     this.setupStoreSubscriptions();
@@ -124,6 +127,7 @@ export class RecordingManager {
           component: 'RecordingManager',
         });
         this.store.dispatch(setRecordingError(error.message));
+        this.stateBroadcaster.recordingError(error.message);
         return false;
       }
 
@@ -157,11 +161,9 @@ export class RecordingManager {
               );
 
               // Show a less alarming message to the user
-              this.store.dispatch(
-                setRecordingError(
-                  `Dictation connection interrupted. Attempting to reconnect...`
-                )
-              );
+              const reconnectMsg = `Dictation connection interrupted. Attempting to reconnect...`;
+              this.store.dispatch(setRecordingError(reconnectMsg));
+              this.stateBroadcaster.recordingError(reconnectMsg);
 
               // Don't stop dictation for connection resets
               return;
@@ -175,11 +177,10 @@ export class RecordingManager {
               operation: 'dictationTranscription',
               component: 'RecordingManager',
             });
-            this.store.dispatch(
-              setRecordingError(
-                this.errorLogger.getUserFriendlyMessage(transcriptionError)
-              )
-            );
+            const userFriendlyMsg =
+              this.errorLogger.getUserFriendlyMessage(transcriptionError);
+            this.store.dispatch(setRecordingError(userFriendlyMsg));
+            this.stateBroadcaster.recordingError(userFriendlyMsg);
           },
           onConnectionStatus: (stream: string, connected: boolean) => {
             this.store.dispatch(
@@ -187,6 +188,10 @@ export class RecordingManager {
                 stream: stream as 'microphone' | 'system',
                 connected,
               })
+            );
+            this.stateBroadcaster.recordingConnection(
+              stream as 'microphone' | 'system',
+              connected
             );
           },
         });
@@ -200,9 +205,9 @@ export class RecordingManager {
         operation: 'startTranscriptionForDictation',
         component: 'RecordingManager',
       });
-      this.store.dispatch(
-        setRecordingError(this.errorLogger.getUserFriendlyMessage(error))
-      );
+      const errorMsg = this.errorLogger.getUserFriendlyMessage(error);
+      this.store.dispatch(setRecordingError(errorMsg));
+      this.stateBroadcaster.recordingError(errorMsg);
       return false;
     }
   }
@@ -218,6 +223,7 @@ export class RecordingManager {
           component: 'RecordingManager',
         });
         this.store.dispatch(setRecordingError(error.message));
+        this.stateBroadcaster.recordingError(error.message);
         return false;
       }
 
@@ -235,6 +241,7 @@ export class RecordingManager {
           component: 'RecordingManager',
         });
         this.store.dispatch(setRecordingError(error.message));
+        this.stateBroadcaster.recordingError(error.message);
         return false;
       }
 
@@ -267,16 +274,20 @@ export class RecordingManager {
                     text: data.text,
                   })
                 );
+                this.stateBroadcaster.transcriptionBuffer(
+                  data.streamType,
+                  data.text
+                );
               } else {
                 // Handle final transcripts - add to segments and clear buffers
-                this.store.dispatch(
-                  addTranscriptSegment({
-                    text: data.text,
-                    timestamp: Date.now(),
-                    isFinal: true,
-                    source: data.streamType,
-                  })
-                );
+                const segment = {
+                  text: data.text,
+                  timestamp: Date.now(),
+                  isFinal: true,
+                  source: data.streamType,
+                };
+                this.store.dispatch(addTranscriptSegment(segment));
+                this.stateBroadcaster.transcriptionSegment(segment);
                 // Clear the buffer for this source since we now have the final transcript
                 this.store.dispatch(
                   updateTranscriptBuffer({
@@ -284,6 +295,7 @@ export class RecordingManager {
                     text: '',
                   })
                 );
+                this.stateBroadcaster.transcriptionBuffer(data.streamType, '');
                 // Auto-save transcript after receiving final transcript
                 this.recordingDataService.saveCurrentTranscription();
               }
@@ -306,11 +318,9 @@ export class RecordingManager {
               );
 
               // Show a less alarming message to the user
-              this.store.dispatch(
-                setRecordingError(
-                  `${stream === 'microphone' ? 'Microphone' : 'System audio'} connection interrupted. Attempting to reconnect...`
-                )
-              );
+              const reconnectMsg = `${stream === 'microphone' ? 'Microphone' : 'System audio'} connection interrupted. Attempting to reconnect...`;
+              this.store.dispatch(setRecordingError(reconnectMsg));
+              this.stateBroadcaster.recordingError(reconnectMsg);
 
               // Don't stop recording for connection resets - let it try to recover
               return;
@@ -327,11 +337,10 @@ export class RecordingManager {
               metadata: { stream },
             });
 
-            this.store.dispatch(
-              setRecordingError(
-                this.errorLogger.getUserFriendlyMessage(transcriptionError)
-              )
-            );
+            const userFriendlyMsg =
+              this.errorLogger.getUserFriendlyMessage(transcriptionError);
+            this.store.dispatch(setRecordingError(userFriendlyMsg));
+            this.stateBroadcaster.recordingError(userFriendlyMsg);
 
             // Check if it's a critical error that requires stopping
             if (
@@ -349,6 +358,10 @@ export class RecordingManager {
                 stream: stream as 'microphone' | 'system',
                 connected,
               })
+            );
+            this.stateBroadcaster.recordingConnection(
+              stream as 'microphone' | 'system',
+              connected
             );
           },
         });
@@ -372,9 +385,9 @@ export class RecordingManager {
         ...(recordingId && { recordingId }),
       });
 
-      this.store.dispatch(
-        setRecordingError(this.errorLogger.getUserFriendlyMessage(error))
-      );
+      const errorMsg = this.errorLogger.getUserFriendlyMessage(error);
+      this.store.dispatch(setRecordingError(errorMsg));
+      this.stateBroadcaster.recordingError(errorMsg);
       return false;
     }
   }

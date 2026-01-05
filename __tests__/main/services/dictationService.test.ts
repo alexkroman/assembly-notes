@@ -150,6 +150,23 @@ describe('DictationService', () => {
     container.register(DI_TOKENS.AssemblyAIFactoryWithLemur, {
       useValue: mockAssemblyAIFactory,
     });
+    container.register(DI_TOKENS.StateBroadcaster, {
+      useValue: {
+        recordingStatus: jest.fn(),
+        recordingConnection: jest.fn(),
+        recordingError: jest.fn(),
+        recordingDictation: jest.fn(),
+        recordingTransitioning: jest.fn(),
+        recordingReset: jest.fn(),
+        transcriptionSegment: jest.fn(),
+        transcriptionBuffer: jest.fn(),
+        transcriptionError: jest.fn(),
+        transcriptionClear: jest.fn(),
+        transcriptionLoad: jest.fn(),
+        settingsUpdated: jest.fn(),
+        broadcast: jest.fn(),
+      },
+    });
 
     dictationService = container.resolve(DictationService);
   });

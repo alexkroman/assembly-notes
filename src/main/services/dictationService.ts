@@ -6,6 +6,7 @@ import { injectable, inject } from 'tsyringe';
 
 import { DI_TOKENS } from '../di-tokens.js';
 import type { DictationStatusWindow } from '../dictationStatusWindow.js';
+import type { StateBroadcaster } from '../state-broadcaster.js';
 import { RecordingManager } from './recordingManager.js';
 import type { IAssemblyAIFactoryWithLemur } from './summarizationService.js';
 import { TranscriptionService } from './transcriptionService.js';
@@ -34,7 +35,9 @@ export class DictationService {
     @inject(DI_TOKENS.Store)
     private store: Store<RootState> & { dispatch: AppDispatch },
     @inject(DI_TOKENS.AssemblyAIFactoryWithLemur)
-    private assemblyAIFactory: IAssemblyAIFactoryWithLemur
+    private assemblyAIFactory: IAssemblyAIFactoryWithLemur,
+    @inject(DI_TOKENS.StateBroadcaster)
+    private stateBroadcaster: StateBroadcaster
   ) {}
 
   public initialize(): void {
@@ -85,6 +88,7 @@ export class DictationService {
     }
 
     this.store.dispatch(setTransitioning(true));
+    this.stateBroadcaster.recordingTransitioning(true);
 
     log.info('Starting dictation mode');
 
@@ -106,6 +110,7 @@ export class DictationService {
         this.transcriptionService.offDictationText(this.transcriptionHandler);
         this.transcriptionHandler = null;
         this.store.dispatch(setTransitioning(false));
+        this.stateBroadcaster.recordingTransitioning(false);
         return;
       }
 
@@ -115,9 +120,11 @@ export class DictationService {
       setTimeout(() => {
         this.notifyDictationStatus(true);
         this.store.dispatch(setTransitioning(false));
+        this.stateBroadcaster.recordingTransitioning(false);
       }, 400);
     } catch (error) {
       this.store.dispatch(setTransitioning(false));
+      this.stateBroadcaster.recordingTransitioning(false);
       throw error;
     }
   }
@@ -131,6 +138,7 @@ export class DictationService {
     }
 
     this.store.dispatch(setTransitioning(true));
+    this.stateBroadcaster.recordingTransitioning(true);
 
     this.isDictating = false;
     this.clearSilenceTimer();
@@ -173,6 +181,7 @@ export class DictationService {
       await this.recordingManager.stopTranscriptionForDictation();
     } finally {
       this.store.dispatch(setTransitioning(false));
+      this.stateBroadcaster.recordingTransitioning(false);
     }
   }
 

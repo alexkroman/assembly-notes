@@ -8,7 +8,9 @@ import type {
   TranscriptData,
   ConnectionStatusData,
   RecordingStoppedData,
+  SlackInstallation,
 } from './common.js';
+import type { StateAPI } from './ipc-events.js';
 
 // Window interface extensions
 declare global {
@@ -108,6 +110,8 @@ declare global {
       error: (...args: unknown[]) => void;
       debug: (...args: unknown[]) => void;
     };
+
+    stateAPI: StateAPI;
   }
 
   // Audio Worklet types

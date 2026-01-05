@@ -1,5 +1,4 @@
 import { configureStore } from '@reduxjs/toolkit';
-import { stateSyncEnhancer } from 'electron-redux/es/renderer.js';
 
 // Import API slice
 // Import slice reducers
@@ -31,8 +30,6 @@ export function createRendererStore() {
       ui: uiReducer,
       [apiSlice.reducerPath]: apiSlice.reducer,
     },
-    enhancers: (getDefaultEnhancers) =>
-      getDefaultEnhancers().concat(stateSyncEnhancer()),
     middleware: (getDefaultMiddleware) =>
       // eslint-disable-next-line @typescript-eslint/no-unsafe-return
       getDefaultMiddleware({

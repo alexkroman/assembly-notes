@@ -33,6 +33,12 @@ const mockDatabase = {
   updateSettings: jest.fn(),
 };
 
+const mockStateBroadcaster = {
+  settingsUpdated: jest.fn(),
+  settingsSlackInstallation: jest.fn(),
+  broadcast: jest.fn(),
+};
+
 describe('SettingsService', () => {
   let settingsService: SettingsService;
 
@@ -46,11 +52,16 @@ describe('SettingsService', () => {
     container.registerInstance(DI_TOKENS.Store, mockStore as any);
     container.registerInstance(DI_TOKENS.Logger, mockLogger);
     container.registerInstance(DI_TOKENS.DatabaseService, mockDatabase as any);
+    container.registerInstance(
+      DI_TOKENS.StateBroadcaster,
+      mockStateBroadcaster as any
+    );
 
     settingsService = new SettingsService(
       mockStore as any,
       mockLogger as any,
-      mockDatabase as any
+      mockDatabase as any,
+      mockStateBroadcaster as any
     );
   });
 

@@ -2,6 +2,7 @@ export const DI_TOKENS = {
   MainWindow: Symbol('MainWindow'),
   Store: Symbol('Store'),
   Logger: Symbol('Logger'),
+  StateBroadcaster: Symbol('StateBroadcaster'),
   DatabaseService: Symbol('DatabaseService'),
   SettingsService: Symbol('SettingsService'),
   TranscriptionService: Symbol('TranscriptionService'),

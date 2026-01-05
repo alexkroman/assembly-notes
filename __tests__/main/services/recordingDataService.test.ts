@@ -55,11 +55,26 @@ describe('RecordingDataService', () => {
       debug: jest.fn(),
     } as any;
 
+    // Mock the state broadcaster
+    const mockStateBroadcaster = {
+      recordingsCurrent: jest.fn(),
+      recordingsTitle: jest.fn(),
+      recordingsSummary: jest.fn(),
+      recordingsTranscript: jest.fn(),
+      transcriptionClear: jest.fn(),
+      transcriptionLoad: jest.fn(),
+      broadcast: jest.fn(),
+    };
+
     // Register mocks in the container
     container.clearInstances();
     container.registerInstance(DI_TOKENS.Store, store);
     container.registerInstance(DI_TOKENS.DatabaseService, mockDatabase);
     container.registerInstance(DI_TOKENS.Logger, mockLogger);
+    container.registerInstance(
+      DI_TOKENS.StateBroadcaster,
+      mockStateBroadcaster
+    );
 
     // Create the service
     recordingDataService = container.resolve(RecordingDataService);

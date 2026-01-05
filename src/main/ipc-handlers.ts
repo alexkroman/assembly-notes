@@ -15,6 +15,7 @@ import type { RecordingDataService } from './services/recordingDataService.js';
 import type { RecordingManager } from './services/recordingManager.js';
 import type { SettingsService } from './services/settingsService.js';
 import type { SlackIntegrationService } from './services/slackIntegrationService.js';
+import type { StateBroadcaster } from './state-broadcaster.js';
 import {
   updateCurrentRecordingTitle,
   updateCurrentRecordingSummary,
@@ -49,6 +50,9 @@ function setupIpcHandlers(
   );
   const store = container.resolve<Store<RootState> & { dispatch: AppDispatch }>(
     DI_TOKENS.Store
+  );
+  const stateBroadcaster = container.resolve<StateBroadcaster>(
+    DI_TOKENS.StateBroadcaster
   );
 
   ipcMain.on(
@@ -126,6 +130,7 @@ function setupIpcHandlers(
 
       // Update Redux state to maintain single source of truth
       store.dispatch(updateCurrentRecordingTitle(title));
+      stateBroadcaster.recordingsTitle(title);
       return Promise.resolve();
     }
   );
@@ -155,6 +160,7 @@ function setupIpcHandlers(
 
       // Update Redux state to maintain single source of truth
       store.dispatch(updateCurrentRecordingSummary(summary));
+      stateBroadcaster.recordingsSummary(summary);
       return Promise.resolve();
     }
   );

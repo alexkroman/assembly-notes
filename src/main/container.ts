@@ -26,6 +26,7 @@ import {
   AssemblyAIFactory,
   TranscriptionService,
 } from './services/transcriptionService.js';
+import { StateBroadcaster } from './state-broadcaster.js';
 import { store, type AppDispatch, type RootState } from './store/store.js';
 
 export function setupContainer(mainWindow: BrowserWindow): void {
@@ -46,6 +47,9 @@ export function setupContainer(mainWindow: BrowserWindow): void {
   container.register(DI_TOKENS.Logger, {
     useValue: logger,
   });
+
+  // Register StateBroadcaster (must be registered before services that depend on it)
+  container.registerSingleton(DI_TOKENS.StateBroadcaster, StateBroadcaster);
 
   // Register external dependencies
   container.register(DI_TOKENS.AssemblyAIFactory, {

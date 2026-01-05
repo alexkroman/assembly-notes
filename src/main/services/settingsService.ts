@@ -6,6 +6,7 @@ import type { SlackInstallation, SettingsSchema } from '../../types/common.js';
 import type { DatabaseService } from '../database.js';
 import { DI_TOKENS } from '../di-tokens.js';
 import type Logger from '../logger.js';
+import type { StateBroadcaster } from '../state-broadcaster.js';
 import { updateSettings } from '../store/slices/settingsSlice.js';
 import type { AppDispatch, RootState } from '../store/store.js';
 
@@ -15,13 +16,16 @@ export class SettingsService {
     @inject(DI_TOKENS.Store)
     private store: Store<RootState> & { dispatch: AppDispatch },
     @inject(DI_TOKENS.Logger) private logger: typeof Logger,
-    @inject(DI_TOKENS.DatabaseService) private databaseService: DatabaseService
+    @inject(DI_TOKENS.DatabaseService) private databaseService: DatabaseService,
+    @inject(DI_TOKENS.StateBroadcaster)
+    private stateBroadcaster: StateBroadcaster
   ) {}
 
   initializeSettings(): void {
     try {
       const settings = this.getSettings();
       this.store.dispatch(updateSettings(settings));
+      this.stateBroadcaster.settingsUpdated(settings);
     } catch (error: unknown) {
       this.logger.error('Failed to load settings:', error);
     }
@@ -71,6 +75,7 @@ export class SettingsService {
       persistedUpdates
     );
     this.store.dispatch(updateSettings(persistedUpdates));
+    this.stateBroadcaster.settingsUpdated(persistedUpdates);
   }
 
   getAssemblyAIKey(): string {
