@@ -9,7 +9,7 @@ export const DI_TOKENS = {
   RecordingDataService: Symbol('RecordingDataService'),
   AutoUpdaterService: Symbol('AutoUpdaterService'),
   AssemblyAIFactory: Symbol('AssemblyAIFactory'),
-  AssemblyAIFactoryWithLemur: Symbol('AssemblyAIFactoryWithLemur'),
+  LLMGatewayService: Symbol('LLMGatewayService'),
   SummarizationService: Symbol('SummarizationService'),
   DictationService: Symbol('DictationService'),
   AudioRecordingService: Symbol('AudioRecordingService'),

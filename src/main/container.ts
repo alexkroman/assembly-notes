@@ -9,15 +9,13 @@ import { DictationStatusWindow } from './dictationStatusWindow.js';
 import logger from './logger.js';
 import { AudioRecordingService } from './services/audioRecordingService.js';
 import { DictationService } from './services/dictationService.js';
+import { LLMGatewayService } from './services/llmGatewayService.js';
 import { MigrationService } from './services/migrationService.js';
 import { PostHogService } from './services/posthogService.js';
 import { RecordingDataService } from './services/recordingDataService.js';
 import { RecordingManager } from './services/recordingManager.js';
 import { SettingsService } from './services/settingsService.js';
-import {
-  AssemblyAIFactoryWithLemur,
-  SummarizationService,
-} from './services/summarizationService.js';
+import { SummarizationService } from './services/summarizationService.js';
 import { TranscriptFileService } from './services/transcriptFileService.js';
 import {
   AssemblyAIFactory,
@@ -52,9 +50,7 @@ export function setupContainer(mainWindow: BrowserWindow): void {
   container.register(DI_TOKENS.AssemblyAIFactory, {
     useClass: AssemblyAIFactory,
   });
-  container.register(DI_TOKENS.AssemblyAIFactoryWithLemur, {
-    useClass: AssemblyAIFactoryWithLemur,
-  });
+  container.registerSingleton(DI_TOKENS.LLMGatewayService, LLMGatewayService);
 
   // Register services as singletons
   container.registerSingleton(DI_TOKENS.PostHogService, PostHogService);

@@ -7,9 +7,9 @@ import { injectable, inject } from 'tsyringe';
 import { DI_TOKENS } from '../di-tokens.js';
 import type { DictationStatusWindow } from '../dictationStatusWindow.js';
 import type { StateBroadcaster } from '../state-broadcaster.js';
+import type { LLMGatewayService } from './llmGatewayService.js';
 import type { PostHogService } from './posthogService.js';
 import { RecordingManager } from './recordingManager.js';
-import type { IAssemblyAIFactoryWithLemur } from './summarizationService.js';
 import { TranscriptionService } from './transcriptionService.js';
 import { setTransitioning } from '../store/slices/recordingSlice.js';
 import type { RootState, AppDispatch } from '../store/store.js';
@@ -35,8 +35,8 @@ export class DictationService {
     private dictationStatusWindow: DictationStatusWindow,
     @inject(DI_TOKENS.Store)
     private store: Store<RootState> & { dispatch: AppDispatch },
-    @inject(DI_TOKENS.AssemblyAIFactoryWithLemur)
-    private assemblyAIFactory: IAssemblyAIFactoryWithLemur,
+    @inject(DI_TOKENS.LLMGatewayService)
+    private llmGateway: LLMGatewayService,
     @inject(DI_TOKENS.StateBroadcaster)
     private stateBroadcaster: StateBroadcaster,
     @inject(DI_TOKENS.PostHogService)
@@ -348,56 +348,58 @@ export class DictationService {
     signal?: AbortSignal
   ): Promise<string | null> {
     try {
-      log.debug('Styling text with AssemblyAI Lemur:', originalText);
+      log.debug('Styling text with LLM Gateway:', originalText);
 
-      const aai = await this.assemblyAIFactory.createClient(apiKey);
-      const lemur = aai.lemur;
+      if (signal?.aborted) {
+        throw new Error('AbortError');
+      }
 
-      const prompt = `Take this dictated text and rewrite it according to the following style instructions:
+      const chatOptions: { maxTokens: number; signal?: AbortSignal } = {
+        maxTokens: 1000,
+      };
+      if (signal) {
+        chatOptions.signal = signal;
+      }
+
+      const response = await this.llmGateway.chat(
+        [
+          {
+            role: 'user',
+            content: `Take this dictated text and rewrite it according to the following style instructions:
 
 ${stylePrompt}
 
 Dictated text to reformat: "${originalText}"
 
-Return ONLY the reformatted text, nothing else. No explanations, no commentary, no additional content.`;
+Return ONLY the reformatted text, nothing else. No explanations, no commentary, no additional content.`,
+          },
+        ],
+        apiKey,
+        chatOptions
+      );
 
       if (signal?.aborted) {
         throw new Error('AbortError');
       }
 
-      const response = await lemur.task({
-        prompt,
-        input_text: originalText,
-        final_model: 'anthropic/claude-sonnet-4-20250514',
-      });
+      log.debug('LLM Gateway response:', response);
 
-      if (signal?.aborted) {
-        throw new Error('AbortError');
-      }
+      const styledText = response.replace(/^["']|["']$/g, '').trim();
 
-      log.debug('Lemur API response:', JSON.stringify(response, null, 2));
+      log.debug('Styled text received:', styledText);
+      log.debug('Original text was:', originalText);
+      log.debug('Text changed:', styledText !== originalText);
 
-      if (response.response) {
-        const styledText = response.response.replace(/^["']|["']$/g, '').trim();
-
-        log.debug('Styled text received:', styledText);
-        log.debug('Original text was:', originalText);
-        log.debug('Text changed:', styledText !== originalText);
-
-        return styledText !== originalText ? styledText : null;
-      }
-
-      log.warn('No response field in Lemur API response');
-      return null;
+      return styledText !== originalText ? styledText : null;
     } catch (error) {
       if (error instanceof Error && error.message === 'AbortError') {
         log.debug('Styling operation was aborted');
         throw error;
       }
-      log.error('Failed to style text with Lemur API:', error);
+      log.error('Failed to style text with LLM Gateway:', error);
       this.posthog.trackError(error, {
         service: 'DictationService',
-        operation: 'styleTextWithLemur',
+        operation: 'styleText',
         fatal: false,
       });
 

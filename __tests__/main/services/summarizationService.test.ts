@@ -2,29 +2,22 @@ import { container } from 'tsyringe';
 
 import { DI_TOKENS } from '../../../src/main/di-tokens';
 import { SummarizationService } from '../../../src/main/services/summarizationService';
-import {
-  createMockLemurClient,
-  type MockLemurClient,
-} from '../../test-helpers/mock-factories';
 
 describe('SummarizationService', () => {
   let summarizationService: SummarizationService;
-  let mockLemurClient: MockLemurClient;
-  let mockAssemblyAIFactory: { createClient: jest.Mock };
+  let mockLLMGatewayService: { chat: jest.Mock };
 
   beforeEach(() => {
     jest.clearAllMocks();
 
-    // Create mocks using factories
-    mockLemurClient = createMockLemurClient();
-    const mockAssemblyAIClient = { lemur: mockLemurClient };
-    mockAssemblyAIFactory = {
-      createClient: jest.fn().mockResolvedValue(mockAssemblyAIClient),
+    // Create mock LLM Gateway service
+    mockLLMGatewayService = {
+      chat: jest.fn().mockResolvedValue('Mock summary response'),
     };
 
     // Register mocks in container
-    container.register(DI_TOKENS.AssemblyAIFactoryWithLemur, {
-      useValue: mockAssemblyAIFactory,
+    container.register(DI_TOKENS.LLMGatewayService, {
+      useValue: mockLLMGatewayService,
     });
 
     summarizationService = container.resolve(SummarizationService);
@@ -48,28 +41,37 @@ describe('SummarizationService', () => {
       );
 
       expect(result).toBe(mockResponse);
-      expect(mockAssemblyAIFactory.createClient).toHaveBeenCalledWith(
+      expect(mockLLMGatewayService.chat).toHaveBeenCalledWith(
+        expect.arrayContaining([
+          expect.objectContaining({ role: 'system' }),
+          expect.objectContaining({
+            role: 'user',
+            content: expect.stringContaining(mockSummaryPrompt),
+          }),
+        ]),
         mockApiKey
       );
-      expect(mockLemurClient.task).toHaveBeenCalledWith({
-        prompt: expect.stringContaining(mockSummaryPrompt),
-        input_text: mockTranscript,
-        final_model: 'anthropic/claude-sonnet-4-20250514',
-      });
     });
 
-    it('should include system prompt in combined prompt', async () => {
+    it('should include system prompt in messages', async () => {
       await summarizationService.summarizeTranscript(
         mockTranscript,
         mockSummaryPrompt,
         mockApiKey
       );
 
-      const taskCall = mockLemurClient.task.mock.calls[0][0];
-      // Check for key elements that define the system prompt's purpose
-      expect(taskCall.prompt).toMatch(/meeting|summariz/i);
-      expect(taskCall.prompt).toMatch(/action|task/i);
-      expect(taskCall.prompt).toContain(mockSummaryPrompt);
+      const chatCall = mockLLMGatewayService.chat.mock.calls[0];
+      const messages = chatCall[0];
+      const systemMessage = messages.find(
+        (m: { role: string }) => m.role === 'system'
+      );
+      const userMessage = messages.find(
+        (m: { role: string }) => m.role === 'user'
+      );
+
+      expect(systemMessage).toBeDefined();
+      expect(userMessage.content).toContain(mockSummaryPrompt);
+      expect(userMessage.content).toContain(mockTranscript);
     });
 
     it('should throw error when API key is missing', async () => {
@@ -81,7 +83,7 @@ describe('SummarizationService', () => {
         )
       ).rejects.toThrow('AssemblyAI API key not available');
 
-      expect(mockAssemblyAIFactory.createClient).not.toHaveBeenCalled();
+      expect(mockLLMGatewayService.chat).not.toHaveBeenCalled();
     });
 
     it('should throw error when API key is null', async () => {
@@ -94,9 +96,9 @@ describe('SummarizationService', () => {
       ).rejects.toThrow('AssemblyAI API key not available');
     });
 
-    it('should handle Lemur API errors', async () => {
-      const apiError = new Error('Lemur API error');
-      mockLemurClient.task.mockRejectedValue(apiError);
+    it('should handle LLM Gateway errors', async () => {
+      const apiError = new Error('LLM Gateway error');
+      mockLLMGatewayService.chat.mockRejectedValue(apiError);
 
       await expect(
         summarizationService.summarizeTranscript(
@@ -104,20 +106,7 @@ describe('SummarizationService', () => {
           mockSummaryPrompt,
           mockApiKey
         )
-      ).rejects.toThrow('Lemur API error');
-    });
-
-    it('should handle factory creation errors', async () => {
-      const factoryError = new Error('Failed to create client');
-      mockAssemblyAIFactory.createClient.mockRejectedValue(factoryError);
-
-      await expect(
-        summarizationService.summarizeTranscript(
-          mockTranscript,
-          mockSummaryPrompt,
-          mockApiKey
-        )
-      ).rejects.toThrow('Failed to create client');
+      ).rejects.toThrow('LLM Gateway error');
     });
 
     it('should handle empty transcript', async () => {
@@ -128,11 +117,10 @@ describe('SummarizationService', () => {
       );
 
       expect(result).toBe(mockResponse);
-      expect(mockLemurClient.task).toHaveBeenCalledWith({
-        prompt: expect.any(String),
-        input_text: '',
-        final_model: 'anthropic/claude-sonnet-4-20250514',
-      });
+      const userMessage = mockLLMGatewayService.chat.mock.calls[0][0].find(
+        (m: { role: string }) => m.role === 'user'
+      );
+      expect(userMessage.content).toContain('Transcript:\n');
     });
 
     it('should handle empty summary prompt', async () => {
@@ -143,10 +131,10 @@ describe('SummarizationService', () => {
       );
 
       expect(result).toBe(mockResponse);
-      const taskCall = mockLemurClient.task.mock.calls[0][0];
-      // Check for key elements that define the system prompt's purpose
-      expect(taskCall.prompt).toMatch(/meeting|summariz/i);
-      expect(taskCall.prompt).toMatch(/action|task/i);
+      const systemMessage = mockLLMGatewayService.chat.mock.calls[0][0].find(
+        (m: { role: string }) => m.role === 'system'
+      );
+      expect(systemMessage).toBeDefined();
     });
 
     it('should handle very long transcripts', async () => {
@@ -159,11 +147,10 @@ describe('SummarizationService', () => {
       );
 
       expect(result).toBe(mockResponse);
-      expect(mockLemurClient.task).toHaveBeenCalledWith({
-        prompt: expect.any(String),
-        input_text: longTranscript,
-        final_model: 'anthropic/claude-sonnet-4-20250514',
-      });
+      const userMessage = mockLLMGatewayService.chat.mock.calls[0][0].find(
+        (m: { role: string }) => m.role === 'user'
+      );
+      expect(userMessage.content).toContain(longTranscript);
     });
 
     it('should handle special characters in transcript', async () => {
@@ -177,34 +164,10 @@ describe('SummarizationService', () => {
       );
 
       expect(result).toBe(mockResponse);
-      expect(mockLemurClient.task).toHaveBeenCalledWith({
-        prompt: expect.any(String),
-        input_text: specialTranscript,
-        final_model: 'anthropic/claude-sonnet-4-20250514',
-      });
-    });
-
-    it('should handle undefined response from Lemur', async () => {
-      mockLemurClient.task.mockResolvedValue({});
-
-      const result = await summarizationService.summarizeTranscript(
-        mockTranscript,
-        mockSummaryPrompt,
-        mockApiKey
+      const userMessage = mockLLMGatewayService.chat.mock.calls[0][0].find(
+        (m: { role: string }) => m.role === 'user'
       );
-
-      expect(result).toBeUndefined();
-    });
-
-    it('should use correct Claude model', async () => {
-      await summarizationService.summarizeTranscript(
-        mockTranscript,
-        mockSummaryPrompt,
-        mockApiKey
-      );
-
-      const taskCall = mockLemurClient.task.mock.calls[0][0];
-      expect(taskCall.final_model).toBe('anthropic/claude-sonnet-4-20250514');
+      expect(userMessage.content).toContain(specialTranscript);
     });
   });
 });

@@ -33,7 +33,7 @@ export class SettingsService {
 
   getSettings(): SettingsSchema {
     return {
-      assemblyaiKey: settingsStore.getAssemblyAIKey(), // Decrypted from safeStorage
+      assemblyaiKey: settingsStore.get('assemblyaiKey'),
       summaryPrompt:
         settingsStore.get('summaryPrompt') ||
         'Summarize the key points from this meeting transcript:',
@@ -65,12 +65,7 @@ export class SettingsService {
     for (const [key, value] of Object.entries(updates)) {
       // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- defensive check for runtime safety
       if (value !== undefined) {
-        // Special handling for API key - use encrypted storage
-        if (key === 'assemblyaiKey') {
-          settingsStore.setAssemblyAIKey(value as string);
-        } else {
-          settingsStore.set(key as keyof SettingsStoreSchema, value);
-        }
+        settingsStore.set(key as keyof SettingsStoreSchema, value);
       }
     }
 
@@ -81,7 +76,7 @@ export class SettingsService {
   }
 
   getAssemblyAIKey(): string {
-    return settingsStore.getAssemblyAIKey();
+    return settingsStore.get('assemblyaiKey');
   }
 
   getSummaryPrompt(): string {
@@ -111,10 +106,6 @@ export class SettingsService {
 
   // Helper method to safely check if a setting has a non-empty trimmed value
   hasNonEmptySetting(key: keyof SettingsSchema): boolean {
-    // Special handling for API key which is stored encrypted
-    if (key === 'assemblyaiKey') {
-      return isNonEmptyString(settingsStore.getAssemblyAIKey());
-    }
     const value = settingsStore.get(key as keyof SettingsStoreSchema);
     return isNonEmptyString(value);
   }
