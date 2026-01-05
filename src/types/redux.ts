@@ -77,7 +77,6 @@ export interface FullSettingsState {
   autoStart: boolean;
   userId?: string; // Unique user identifier
   // Dictation styling settings
-  dictationStylingEnabled: boolean;
   dictationStylingPrompt: string;
   dictationSilenceTimeout: number;
   // Audio processing settings

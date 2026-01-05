@@ -24,7 +24,6 @@ const initialState: SettingsState = {
   // Computed properties for safe trim operations
   hasAssemblyAIKey: false,
   // Dictation styling settings
-  dictationStylingEnabled: false,
   dictationStylingPrompt: DEFAULT_DICTATION_STYLING_PROMPT,
   dictationSilenceTimeout: 2000,
   // Audio processing settings

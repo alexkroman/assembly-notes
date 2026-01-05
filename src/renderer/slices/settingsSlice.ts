@@ -12,7 +12,6 @@ const initialState: SettingsState = {
   loading: false,
   error: null,
   hasAssemblyAIKey: false,
-  dictationStylingEnabled: false,
   dictationStylingPrompt: DEFAULT_DICTATION_STYLING_PROMPT,
   dictationSilenceTimeout: 2000,
 };

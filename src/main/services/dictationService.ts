@@ -157,11 +157,7 @@ export class DictationService {
 
     try {
       // If there's any buffered text when stopping, insert it
-      const settings = this.store.getState().settings;
-      if (
-        settings.dictationStylingEnabled &&
-        this.unstyledTextBuffer.length > 0
-      ) {
+      if (this.unstyledTextBuffer.length > 0) {
         const bufferedText = this.unstyledTextBuffer.join(' ');
         const safeText = this.sanitizeTextForTyping(bufferedText);
         const textToInsert = this.isFirstInsertion ? safeText : ' ' + safeText;
@@ -188,32 +184,16 @@ export class DictationService {
   private handleDictationText(text: string): void {
     if (!this.isDictating) return;
 
-    const settings = this.store.getState().settings;
-
-    // Only insert text if stylization is disabled
-    // When stylization is enabled, text will be inserted after styling
-    if (!settings.dictationStylingEnabled) {
-      try {
-        const safeText = this.sanitizeTextForTyping(text);
-        const textToInsert = this.isFirstInsertion ? safeText : ' ' + safeText;
-        robotjs.typeString(textToInsert);
-        log.debug(`Inserted final text: "${safeText}"`);
-        this.isFirstInsertion = false;
-      } catch (error) {
-        log.error('Failed to insert text in real-time:', error);
-      }
-    } else {
-      // Buffer the text for styling
-      this.unstyledTextBuffer.push(text);
-      log.debug(`Buffering text for styling: "${text}"`);
-    }
+    // Buffer text for styling (styling is always enabled)
+    this.unstyledTextBuffer.push(text);
+    log.debug(`Buffering text for styling: "${text}"`);
 
     this.resetSilenceTimer();
   }
 
   private resetSilenceTimer(): void {
     const settings = this.store.getState().settings;
-    if (!settings.dictationStylingEnabled || !settings.assemblyaiKey) {
+    if (!settings.assemblyaiKey) {
       return;
     }
 
@@ -243,7 +223,7 @@ export class DictationService {
     }
 
     const settings = this.store.getState().settings;
-    if (!settings.dictationStylingEnabled || !settings.assemblyaiKey) {
+    if (!settings.assemblyaiKey) {
       return;
     }
 

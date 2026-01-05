@@ -39,7 +39,6 @@ export class SettingsService {
         'Summarize the key points from this meeting transcript:',
       prompts: settingsStore.get('prompts'),
       autoStart: settingsStore.get('autoStart'),
-      dictationStylingEnabled: settingsStore.get('dictationStylingEnabled'),
       dictationStylingPrompt:
         settingsStore.get('dictationStylingPrompt') ||
         DEFAULT_DICTATION_STYLING_PROMPT,
@@ -63,9 +62,12 @@ export class SettingsService {
   updateSettings(updates: Partial<SettingsSchema>): void {
     this.logger.info('SettingsService.updateSettings called with:', updates);
 
-    // Persist each setting to electron-store
+    // Persist each setting to electron-store (skip undefined values)
     for (const [key, value] of Object.entries(updates)) {
-      settingsStore.set(key as keyof SettingsStoreSchema, value);
+      // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- defensive check for runtime safety
+      if (value !== undefined) {
+        settingsStore.set(key as keyof SettingsStoreSchema, value);
+      }
     }
 
     // Update Redux store

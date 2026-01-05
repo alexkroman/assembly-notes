@@ -332,7 +332,7 @@ export class RecordingManager {
               );
               this.stateBroadcaster.transcriptionBuffer(data.streamType, '');
               // Auto-save transcript after receiving final transcript
-              this.recordingDataService.saveCurrentTranscription();
+              void this.recordingDataService.saveCurrentTranscription();
             }
           },
           onError: (stream: string, error: unknown) => {
@@ -372,7 +372,7 @@ export class RecordingManager {
   async stopTranscription(): Promise<boolean> {
     try {
       // Save current transcription before stopping
-      this.recordingDataService.saveCurrentTranscription();
+      void this.recordingDataService.saveCurrentTranscription();
 
       // Clear keep-alive interval
       this.stopKeepAliveInterval();
@@ -398,7 +398,7 @@ export class RecordingManager {
           await this.audioRecordingService.stopRecording(recordingId);
         if (audioFilename) {
           // Update the recording with the audio filename
-          this.recordingDataService.updateAudioFilename(
+          void this.recordingDataService.updateAudioFilename(
             recordingId,
             audioFilename
           );
@@ -526,7 +526,10 @@ export class RecordingManager {
           this.logger.info(
             `Saving summary for recording: ${currentRecordingId}`
           );
-          this.recordingDataService.saveSummary(currentRecordingId, summary);
+          void this.recordingDataService.saveSummary(
+            currentRecordingId,
+            summary
+          );
         }
       }
 

@@ -9,7 +9,6 @@ export const createMockSettings = (
   summaryPrompt: 'Summarize the key points from this meeting transcript:',
   prompts: [],
   autoStart: false,
-  dictationStylingEnabled: false,
   dictationStylingPrompt: DEFAULT_DICTATION_STYLING_PROMPT,
   dictationSilenceTimeout: 2000,
   ...overrides,

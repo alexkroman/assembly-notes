@@ -157,9 +157,6 @@ export class MigrationService {
                 settingsStore.set('userId', value);
               }
               break;
-            case 'dictationStylingEnabled':
-              settingsStore.set('dictationStylingEnabled', Boolean(value));
-              break;
             case 'dictationStylingPrompt':
               if (typeof value === 'string' && value) {
                 settingsStore.set('dictationStylingPrompt', value);
