@@ -34,11 +34,6 @@ const mockElectronAPI = {
     assemblyaiKey: 'test-key',
     autoStart: false,
   }),
-  onSlackOAuthSuccess: jest.fn(),
-  onSlackOAuthError: jest.fn(),
-  slackOAuthInitiate: jest.fn().mockResolvedValue(undefined),
-  slackOAuthRemoveInstallation: jest.fn().mockResolvedValue(undefined),
-  slackOAuthRefreshChannels: jest.fn().mockResolvedValue(undefined),
 };
 
 Object.defineProperty(window, 'electronAPI', {
@@ -53,9 +48,6 @@ const createMockStore = (initialState: any = {}) => {
         state = {
           assemblyaiKey: '',
           autoStart: false,
-          slackInstallation: null,
-          selectedChannelId: '',
-          slackChannels: '',
         }
       ) => state,
     },
@@ -63,9 +55,6 @@ const createMockStore = (initialState: any = {}) => {
       settings: {
         assemblyaiKey: '',
         autoStart: false,
-        slackInstallation: null,
-        selectedChannelId: '',
-        slackChannels: '',
         ...(initialState.settings || {}),
       },
     },
@@ -93,8 +82,6 @@ describe('SettingsModal', () => {
       data: {
         assemblyaiKey: 'test-key',
         autoStart: false,
-        slackInstallation: null,
-        slackChannels: '',
         summaryPrompt: 'Test prompt',
         prompts: [],
       },
@@ -129,8 +116,6 @@ describe('SettingsModal', () => {
       data: {
         assemblyaiKey: '',
         autoStart: false,
-        slackInstallation: null,
-        slackChannels: '',
         summaryPrompt: 'Test prompt',
         prompts: [],
       },

@@ -15,17 +15,24 @@ _Voice-to-text dictation with custom prompts_
 
 ## Features
 
-**Meetings**
+### Meeting Recording
 
-- Record microphone and system audio together
-- Live transcription with AssemblyAI
-- AI summaries via AssemblyAI
-- Post to Slack
+- **Dual audio capture** - Records microphone and system audio simultaneously
+- **Real-time transcription** - Live speech-to-text via AssemblyAI
+- **AI summaries** - Automatic meeting summaries with customizable prompts
+- **Recording history** - Browse and search past meetings
 
-**Dictation**
+### Dictation Mode
 
-- Voice-to-text with custom prompts
-- Smart formatting
+- **Voice-to-text** - Quick dictation with keyboard shortcut
+- **Custom prompts** - Transform dictation with AI (e.g., "make professional", "fix grammar")
+- **Clipboard integration** - Results copied automatically
+
+### Privacy & Security
+
+- **Local storage** - Transcripts stored as Markdown files on your machine
+- **Encrypted credentials** - API keys secured with OS-level encryption
+- **Sandboxed** - Runs in Electron's sandbox mode for security
 
 ## Download
 
@@ -37,16 +44,32 @@ _Voice-to-text dictation with custom prompts_
 | Ubuntu/Debian (x64)   | [DEB](https://github.com/alexkroman/assembly-notes/releases/latest/download/Assembly-Notes-linux-x64.deb)     |
 | Ubuntu/Debian (ARM64) | [DEB](https://github.com/alexkroman/assembly-notes/releases/latest/download/Assembly-Notes-linux-arm64.deb)   |
 
-Other Linux: Use [AppImage](https://github.com/alexkroman/assembly-notes/releases/latest)
+Other Linux distributions: Use [AppImage](https://github.com/alexkroman/assembly-notes/releases/latest)
 
 ## Quick Start
 
-1. Download and install
+1. Download and install for your platform
 2. Add your [AssemblyAI API key](https://www.assemblyai.com/) in Settings
-3. (Optional) Connect Slack for auto-posting
-4. Start recording or dictating
+3. Click **Start Recording** or use keyboard shortcuts
 
-### Development
+### Keyboard Shortcuts
+
+| Action               | macOS         | Windows/Linux  |
+| -------------------- | ------------- | -------------- |
+| Start/Stop Recording | `Cmd+Shift+R` | `Ctrl+Shift+R` |
+| Toggle Dictation     | `Cmd+Shift+D` | `Ctrl+Shift+D` |
+
+## Configuration
+
+### AssemblyAI (Required)
+
+1. Sign up at [assemblyai.com](https://www.assemblyai.com/) (free tier available)
+2. Copy your API key from the dashboard
+3. Paste in Assembly Notes Settings
+
+## Development
+
+**Requirements:** Node.js 24+, npm 10+
 
 ```bash
 git clone https://github.com/alexkroman/assembly-notes.git
@@ -55,81 +78,64 @@ npm install
 npm start
 ```
 
-## Configuration
-
-### AssemblyAI (Required)
-
-1. Get a free API key at [assemblyai.com](https://www.assemblyai.com/)
-2. Add it in Settings
-
-### Slack (Optional)
-
-1. Create a Slack app using [`slack-app-manifest.json`](./slack-app-manifest.json)
-2. Add Client ID and Secret in Settings
-3. Connect and choose channels
-
-[See detailed setup →](#slack-setup)
-
-## Development
-
-**Requirements:** Node.js 24+, npm 10+
-
 ### Commands
 
 ```bash
 # Development
-npm start              # Start app
-npm run dev            # Start with hot reload
-npm test               # Run tests
+npm start              # Build and start app
+npm run dev            # Watch mode with hot reload
+npm run start:fresh    # Start with fresh state
 
-# Build
-npm run build:mac      # macOS
-npm run build:win      # Windows
-npm run build:linux    # Linux
+# Testing
+npm test               # Run all tests
+npm run test:watch     # Watch mode
+npm run test:coverage  # With coverage report
 
-# Code quality
-npm run lint           # Check code
-npm run format         # Format code
-npm run typecheck      # Type check
+# Code Quality
+npm run lint           # ESLint check
+npm run format         # Prettier format
+npm run typecheck      # TypeScript check
+npm run fix            # Auto-fix lint + format
+
+# Building
+npm run build:mac      # macOS DMG
+npm run build:win      # Windows installer
+npm run build:linux    # Linux AppImage/DEB
 ```
 
 ### Tech Stack
 
-- Electron + TypeScript + React
-- AssemblyAI SDK for transcription
-- SQLite for local storage
-- Redux for state management
+- **Electron** - Cross-platform desktop framework
+- **TypeScript** - Type-safe JavaScript
+- **React** - UI components
+- **Redux Toolkit** - State management
+- **AssemblyAI SDK** - Real-time transcription
+- **Vite** - Fast build tooling
+- **tsyringe** - Dependency injection
 
-## Slack Setup
+### Data Storage
 
-<details>
-<summary>Detailed instructions</summary>
+Transcripts are stored as Markdown files with YAML frontmatter:
 
-1. **Create Slack app**
-   - Go to [api.slack.com/apps](https://api.slack.com/apps)
-   - Create from manifest using [`slack-app-manifest.json`](./slack-app-manifest.json)
-
-2. **Get credentials**
-   - Copy Client ID and Secret from Basic Information
-
-3. **Connect**
-   - Add credentials in Assembly Notes Settings
-   - Click Connect to Slack
-   - Authorize and select channels
-
-**Private channels:** Invite bot with `/invite @assembly-notes`  
-**DMs:** Select any user, no invite needed
-
-</details>
+```
+{userData}/
+├── config.json          # Settings (electron-store)
+├── transcripts/
+│   ├── 2024-01-15_team-standup.md
+│   ├── 2024-01-16_client-call.md
+│   └── ...
+└── recordings/
+    └── {id}.wav         # Audio files
+```
 
 ## Contributing
 
-1. Fork the repo
-2. Create a branch (`git checkout -b feature/name`)
-3. Make changes
-4. Run tests (`npm test`)
-5. Commit (`git commit -m 'Add feature'`)
-6. Push and open a PR
+1. Fork the repository
+2. Create a feature branch: `git checkout -b feature/my-feature`
+3. Make changes and add tests
+4. Ensure tests pass: `npm test`
+5. Commit with a clear message
+6. Push and open a Pull Request
 
 ## License
 

@@ -81,9 +81,7 @@ const createDefaultState = (overrides = {}) => ({
   },
   settings: {
     assemblyaiKey: 'test-api-key',
-    dictationStylingEnabled: false,
     dictationStylingPrompt: 'Test prompt',
-    dictationSilenceTimeout: 2000,
   },
 });
 
@@ -113,7 +111,7 @@ const mockMainWindow = {
 } as unknown as BrowserWindow;
 
 const mockAssemblyAIFactory = {
-  createClient: jest.fn().mockReturnValue({
+  createClient: jest.fn().mockResolvedValue({
     lemur: {
       task: jest.fn().mockResolvedValue({ response: 'styled text' }),
     },
@@ -149,6 +147,30 @@ describe('DictationService', () => {
     });
     container.register(DI_TOKENS.AssemblyAIFactoryWithLemur, {
       useValue: mockAssemblyAIFactory,
+    });
+    container.register(DI_TOKENS.StateBroadcaster, {
+      useValue: {
+        recordingStatus: jest.fn(),
+        recordingConnection: jest.fn(),
+        recordingError: jest.fn(),
+        recordingDictation: jest.fn(),
+        recordingTransitioning: jest.fn(),
+        recordingReset: jest.fn(),
+        transcriptionSegment: jest.fn(),
+        transcriptionBuffer: jest.fn(),
+        transcriptionError: jest.fn(),
+        transcriptionClear: jest.fn(),
+        transcriptionLoad: jest.fn(),
+        settingsUpdated: jest.fn(),
+        broadcast: jest.fn(),
+      },
+    });
+    container.register(DI_TOKENS.PostHogService, {
+      useValue: {
+        trackError: jest.fn(),
+        captureEvent: jest.fn(),
+        captureException: jest.fn(),
+      },
     });
 
     dictationService = container.resolve(DictationService);
@@ -399,7 +421,7 @@ describe('DictationService', () => {
   });
 
   describe('handleDictationText', () => {
-    it('should type text when dictating is active', async () => {
+    it('should buffer text for styling when dictating is active', async () => {
       mockRecordingManager.startTranscriptionForDictation.mockResolvedValue(
         true
       );
@@ -409,21 +431,38 @@ describe('DictationService', () => {
       const handler = mockTranscriptionService.onDictationText.mock.calls[0][0];
       handler('test text');
 
-      expect(robotjs.typeString).toHaveBeenCalledWith('test text');
+      // Text should be buffered, not typed immediately (styling is always enabled)
+      expect(robotjs.typeString).not.toHaveBeenCalled();
+
+      // Advance past the silence timeout to trigger styling
+      await jest.advanceTimersByTimeAsync(2100);
+
+      // Now text should have been typed (styled or fallback)
+      expect(robotjs.typeString).toHaveBeenCalled();
     });
 
-    it('should add space before subsequent text insertions', async () => {
+    it('should insert buffered text when stopping dictation', async () => {
       mockRecordingManager.startTranscriptionForDictation.mockResolvedValue(
         true
       );
       await dictationService.startDictation();
       const handler = mockTranscriptionService.onDictationText.mock.calls[0][0];
 
+      // Buffer some text
       handler('first text');
-      expect(robotjs.typeString).toHaveBeenCalledWith('first text');
-
       handler('second text');
-      expect(robotjs.typeString).toHaveBeenCalledWith(' second text');
+
+      // Text should be buffered, not typed immediately
+      expect(robotjs.typeString).not.toHaveBeenCalled();
+
+      // Stop dictation - should insert remaining buffered text
+      mockStore.getState.mockReturnValue(
+        createDefaultState({ isDictating: true })
+      );
+      await dictationService.stopDictation();
+
+      // Buffered text should have been inserted
+      expect(robotjs.typeString).toHaveBeenCalledWith('first text second text');
     });
 
     it('should not type text when dictating is not active', () => {

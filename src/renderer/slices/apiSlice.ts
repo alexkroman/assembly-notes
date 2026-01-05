@@ -6,6 +6,27 @@ import type {
   Recording,
 } from '../../types/index.js';
 
+/**
+ * Wraps an async IPC call with standardized error handling.
+ * Reduces boilerplate in RTK Query endpoints.
+ */
+async function ipcQuery<T>(
+  fn: () => Promise<T>,
+  errorMessage: string
+): Promise<{ data: T } | { error: { status: 'CUSTOM_ERROR'; error: string } }> {
+  try {
+    const data = await fn();
+    return { data };
+  } catch (error) {
+    return {
+      error: {
+        status: 'CUSTOM_ERROR',
+        error: error instanceof Error ? error.message : errorMessage,
+      },
+    };
+  }
+}
+
 // Renderer-side API slice that calls IPC methods
 export const apiSlice = createApi({
   reducerPath: 'api',
@@ -14,145 +35,72 @@ export const apiSlice = createApi({
   endpoints: (builder) => ({
     // Settings endpoints
     getSettings: builder.query<FullSettingsState, undefined>({
-      queryFn: async () => {
-        try {
-          const data = await window.electronAPI.getSettings();
-          return { data };
-        } catch (error) {
-          return {
-            error: {
-              status: 'CUSTOM_ERROR',
-              error:
-                error instanceof Error
-                  ? error.message
-                  : 'Failed to get settings',
-            },
-          };
-        }
-      },
+      queryFn: () =>
+        ipcQuery(
+          () => window.electronAPI.getSettings(),
+          'Failed to get settings'
+        ),
       providesTags: ['Settings'],
     }),
 
     updateSettings: builder.mutation<boolean, Partial<FullSettingsState>>({
-      queryFn: async (updates) => {
-        try {
-          const data = await window.electronAPI.saveSettings(updates);
-          return { data };
-        } catch (error) {
-          return {
-            error: {
-              status: 'CUSTOM_ERROR',
-              error:
-                error instanceof Error
-                  ? error.message
-                  : 'Failed to update settings',
-            },
-          };
-        }
-      },
+      queryFn: (updates) =>
+        ipcQuery(
+          () => window.electronAPI.saveSettings(updates),
+          'Failed to update settings'
+        ),
       invalidatesTags: ['Settings'],
     }),
 
     updatePrompt: builder.mutation<boolean, { summaryPrompt: string }>({
-      queryFn: async (promptSettings) => {
-        try {
-          const data = await window.electronAPI.savePrompt(promptSettings);
-          return { data };
-        } catch (error) {
-          return {
-            error: {
-              status: 'CUSTOM_ERROR',
-              error:
-                error instanceof Error
-                  ? error.message
-                  : 'Failed to update prompt',
-            },
-          };
-        }
-      },
+      queryFn: (promptSettings) =>
+        ipcQuery(
+          () => window.electronAPI.savePrompt(promptSettings),
+          'Failed to update prompt'
+        ),
       invalidatesTags: ['Settings'],
     }),
 
     updatePrompts: builder.mutation<boolean, PromptTemplate[]>({
-      queryFn: async (prompts) => {
-        try {
-          const data = await window.electronAPI.savePrompts(prompts);
-          return { data };
-        } catch (error) {
-          return {
-            error: {
-              status: 'CUSTOM_ERROR',
-              error:
-                error instanceof Error
-                  ? error.message
-                  : 'Failed to update prompts',
-            },
-          };
-        }
-      },
+      queryFn: (prompts) =>
+        ipcQuery(
+          () => window.electronAPI.savePrompts(prompts),
+          'Failed to update prompts'
+        ),
       invalidatesTags: ['Settings'],
     }),
 
     // Recordings endpoints
     getAllRecordings: builder.query<Recording[], undefined>({
-      queryFn: async () => {
-        try {
-          const data =
-            (await window.electronAPI.getAllRecordings()) as Recording[];
-          return { data };
-        } catch (error) {
-          return {
-            error: {
-              status: 'CUSTOM_ERROR',
-              error:
-                error instanceof Error
-                  ? error.message
-                  : 'Failed to fetch recordings',
-            },
-          };
-        }
-      },
+      queryFn: () =>
+        ipcQuery(
+          () => window.electronAPI.getAllRecordings(),
+          'Failed to fetch recordings'
+        ),
       providesTags: ['RecordingsList'],
     }),
 
     searchRecordings: builder.query<Recording[], string>({
-      queryFn: async (query) => {
-        try {
-          const data = (await window.electronAPI.searchRecordings(
-            query
-          )) as Recording[];
-          return { data };
-        } catch (error) {
-          return {
-            error: {
-              status: 'CUSTOM_ERROR',
-              error:
-                error instanceof Error
-                  ? error.message
-                  : 'Failed to search recordings',
-            },
-          };
-        }
-      },
+      queryFn: (query) =>
+        ipcQuery(
+          () => window.electronAPI.searchRecordings(query),
+          'Failed to search recordings'
+        ),
       providesTags: ['RecordingsList'],
     }),
 
     getRecording: builder.query<Recording, string>({
       queryFn: async (id) => {
-        try {
-          const data = (await window.electronAPI.getRecording(id)) as Recording;
-          return { data };
-        } catch (error) {
+        const result = await ipcQuery(
+          () => window.electronAPI.getRecording(id),
+          'Failed to fetch recording'
+        );
+        if ('data' in result && !result.data) {
           return {
-            error: {
-              status: 'CUSTOM_ERROR',
-              error:
-                error instanceof Error
-                  ? error.message
-                  : 'Failed to fetch recording',
-            },
+            error: { status: 'CUSTOM_ERROR', error: 'Recording not found' },
           };
         }
+        return result as { data: Recording };
       },
       providesTags: (_, __, id) => [{ type: 'Recording', id }],
     }),
@@ -161,22 +109,11 @@ export const apiSlice = createApi({
       boolean,
       { id: string; title: string }
     >({
-      queryFn: async ({ id, title }) => {
-        try {
+      queryFn: ({ id, title }) =>
+        ipcQuery(async () => {
           await window.electronAPI.updateRecordingTitle(id, title);
-          return { data: true };
-        } catch (error) {
-          return {
-            error: {
-              status: 'CUSTOM_ERROR',
-              error:
-                error instanceof Error
-                  ? error.message
-                  : 'Failed to update recording title',
-            },
-          };
-        }
-      },
+          return true;
+        }, 'Failed to update recording title'),
       invalidatesTags: (_, __, { id }) => [
         { type: 'Recording', id },
         'RecordingsList',
@@ -187,22 +124,11 @@ export const apiSlice = createApi({
       boolean,
       { id: string; summary: string }
     >({
-      queryFn: async ({ id, summary }) => {
-        try {
+      queryFn: ({ id, summary }) =>
+        ipcQuery(async () => {
           await window.electronAPI.updateRecordingSummary(id, summary);
-          return { data: true };
-        } catch (error) {
-          return {
-            error: {
-              status: 'CUSTOM_ERROR',
-              error:
-                error instanceof Error
-                  ? error.message
-                  : 'Failed to update recording summary',
-            },
-          };
-        }
-      },
+          return true;
+        }, 'Failed to update recording summary'),
       invalidatesTags: (_, __, { id }) => [
         { type: 'Recording', id },
         'RecordingsList',
@@ -210,22 +136,11 @@ export const apiSlice = createApi({
     }),
 
     deleteRecording: builder.mutation<boolean, string>({
-      queryFn: async (id) => {
-        try {
-          const data = await window.electronAPI.deleteRecording(id);
-          return { data };
-        } catch (error) {
-          return {
-            error: {
-              status: 'CUSTOM_ERROR',
-              error:
-                error instanceof Error
-                  ? error.message
-                  : 'Failed to delete recording',
-            },
-          };
-        }
-      },
+      queryFn: (id) =>
+        ipcQuery(
+          () => window.electronAPI.deleteRecording(id),
+          'Failed to delete recording'
+        ),
       invalidatesTags: (_, __, id) => [
         { type: 'Recording', id },
         'RecordingsList',

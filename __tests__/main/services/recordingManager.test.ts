@@ -1,119 +1,149 @@
 import 'reflect-metadata';
-import { Store } from '@reduxjs/toolkit';
-import { BrowserWindow } from 'electron';
 import { container } from 'tsyringe';
 
 import { DI_TOKENS } from '../../../src/main/di-tokens';
 import { RecordingManager } from '../../../src/main/services/recordingManager';
 import { resetTestContainer } from '../../test-helpers/container-setup';
+import {
+  createMockStore,
+  createMockLogger,
+  createMockBrowserWindow,
+  createMockStateBroadcaster,
+  type MockStore,
+  type MockLogger,
+  type MockBrowserWindow,
+} from '../../test-helpers/mock-factories';
 
-// Create default state
-const defaultState = {
-  recording: {
-    status: 'idle',
-    recordingId: null,
-    startTime: null,
-    error: null,
-    connectionStatus: { microphone: false, system: false },
-  },
-  recordings: {
-    currentRecording: {
-      id: 'test-recording-id',
-      title: 'Test Recording',
-      transcript: '',
-      created_at: Date.now(),
-      updated_at: Date.now(),
+// Create test fixtures
+function createDefaultTestState() {
+  return {
+    recording: {
+      status: 'idle' as const,
+      recordingId: null,
+      startTime: null,
+      error: null,
+      connectionStatus: { microphone: false, system: false },
+      isDictating: false,
+      isTransitioning: false,
     },
-  },
-  transcription: {
-    currentTranscript: 'Test transcript content',
-    isTranscribing: false,
-  },
-  settings: { assemblyaiKey: 'test-api-key' },
-};
+    recordings: {
+      recordings: [],
+      currentRecording: {
+        id: 'test-recording-id',
+        title: 'Test Recording',
+        transcript: '',
+        created_at: Date.now(),
+        updated_at: Date.now(),
+      },
+      loading: false,
+      error: null,
+    },
+    transcription: {
+      currentTranscript: 'Test transcript content',
+      transcriptSegments: [],
+      microphoneBuffer: '',
+      systemBuffer: '',
+    },
+    settings: {
+      assemblyaiKey: 'test-api-key',
+      summaryPrompt: '',
+      prompts: [],
+      autoStart: false,
+      loading: false,
+      error: null,
+      hasAssemblyAIKey: true,
+      dictationStylingPrompt: '',
+      microphoneGain: 1.0,
+      systemAudioGain: 0.7,
+    },
+    updates: {
+      status: 'idle' as const,
+      updateInfo: null,
+      downloadProgress: null,
+      error: null,
+    },
+  };
+}
 
-// Mock Redux store with minimal implementation
-const mockStore = {
-  getState: jest.fn(() => defaultState),
-  dispatch: jest.fn(),
-  subscribe: jest.fn(() => jest.fn()), // Return unsubscribe function
-} as any;
+function createMockTranscriptionService() {
+  return {
+    createCombinedConnection: jest.fn(),
+    createMicrophoneOnlyConnection: jest.fn(),
+    sendAudio: jest.fn(),
+    sendKeepAlive: jest.fn(),
+    closeConnections: jest.fn(),
+    closeTranscriber: jest.fn(),
+    emitSpeechActivity: jest.fn(),
+    emitDictationText: jest.fn(),
+  };
+}
 
-const mockLogger = {
-  info: jest.fn(),
-  warn: jest.fn(),
-  error: jest.fn(),
-  debug: jest.fn(),
-};
-
-const mockMainWindow = {
-  webContents: { send: jest.fn() },
-} as unknown as BrowserWindow;
-
-const mockTranscriptionService = {
-  createCombinedConnection: jest.fn(),
-  createMicrophoneOnlyConnection: jest.fn(),
-  sendAudio: jest.fn(),
-  sendKeepAlive: jest.fn(),
-  closeConnections: jest.fn(),
-  closeTranscriber: jest.fn(),
-  emitSpeechActivity: jest.fn(),
-  emitDictationText: jest.fn(),
-} as any;
-
-const mockSummarizationService = {
-  summarizeTranscript: jest.fn(),
-} as any;
-
-const mockRecordingDataService = {
-  saveCurrentTranscription: jest.fn(),
-  saveSummary: jest.fn(),
-  updateAudioFilename: jest.fn(),
-} as any;
+function createMockAudioRecordingService() {
+  return {
+    startRecording: jest.fn(),
+    stopRecording: jest.fn().mockResolvedValue('test-audio.wav'),
+    appendAudioData: jest.fn(),
+    getAudioFilePath: jest.fn().mockReturnValue('/path/to/audio.wav'),
+    deleteAudioFile: jest.fn(),
+    cleanup: jest.fn(),
+  };
+}
 
 describe('RecordingManager', () => {
   let recordingManager: RecordingManager;
+  let mockStore: MockStore;
+  let mockLogger: MockLogger;
+  let mockMainWindow: MockBrowserWindow;
+  let mockTranscriptionService: ReturnType<
+    typeof createMockTranscriptionService
+  >;
+  let defaultState: ReturnType<typeof createDefaultTestState>;
 
   beforeEach(() => {
     // Reset the container and mocks
     resetTestContainer();
     jest.clearAllMocks();
 
-    // Reset getState to return default state
+    // Create mocks using factories
+    defaultState = createDefaultTestState();
+    mockStore = createMockStore() as unknown as MockStore;
     mockStore.getState.mockReturnValue(defaultState);
-
-    // Setup mock store dispatch
     mockStore.dispatch.mockImplementation(() => ({
-      unwrap: () =>
-        Promise.resolve({
-          recordingId: 'test-recording-id',
-        }),
+      unwrap: () => Promise.resolve({ recordingId: 'test-recording-id' }),
     }));
 
-    // Register all mocks before resolving
-    container.register(DI_TOKENS.Store, {
-      useValue: mockStore as unknown as Store,
-    });
+    mockLogger = createMockLogger();
+    mockMainWindow = createMockBrowserWindow();
+    mockTranscriptionService = createMockTranscriptionService();
+
+    // Register all mocks
+    container.register(DI_TOKENS.Store, { useValue: mockStore });
     container.register(DI_TOKENS.Logger, { useValue: mockLogger });
     container.register(DI_TOKENS.MainWindow, { useValue: mockMainWindow });
     container.register(DI_TOKENS.RecordingDataService, {
-      useValue: mockRecordingDataService,
+      useValue: {
+        saveCurrentTranscription: jest.fn(),
+        saveSummary: jest.fn(),
+        updateAudioFilename: jest.fn(),
+      },
     });
     container.register(DI_TOKENS.TranscriptionService, {
       useValue: mockTranscriptionService,
     });
     container.register(DI_TOKENS.SummarizationService, {
-      useValue: mockSummarizationService,
+      useValue: { summarizeTranscript: jest.fn() },
     });
-    // Add mock for AudioRecordingService
     container.register(DI_TOKENS.AudioRecordingService, {
+      useValue: createMockAudioRecordingService(),
+    });
+    container.register(DI_TOKENS.StateBroadcaster, {
+      useValue: createMockStateBroadcaster(),
+    });
+    container.register(DI_TOKENS.PostHogService, {
       useValue: {
-        startRecording: jest.fn(),
-        stopRecording: jest.fn().mockResolvedValue('test-audio.wav'),
-        appendAudioData: jest.fn(),
-        getAudioFilePath: jest.fn().mockReturnValue('/path/to/audio.wav'),
-        deleteAudioFile: jest.fn(),
-        cleanup: jest.fn(),
+        trackError: jest.fn(),
+        captureEvent: jest.fn(),
+        captureException: jest.fn(),
       },
     });
 

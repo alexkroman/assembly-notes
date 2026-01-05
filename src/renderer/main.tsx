@@ -9,10 +9,17 @@ import {
 } from './audio-processing';
 import { initAutoUpdaterUI } from './auto-updater-ui';
 import { App } from './components/App';
+import { useMainProcessSync } from './hooks/useMainProcessSync';
 import { acquireStreams, releaseStreams } from './media';
 import { PostHogProvider } from './services/posthog';
 import { createRendererStore, setStatus } from './store';
 import './assets/tailwind.css';
+
+// Wrapper component that sets up main process state synchronization
+function AppWithSync() {
+  useMainProcessSync();
+  return <App />;
+}
 
 // Initialize auto-updater UI
 initAutoUpdaterUI();
@@ -92,7 +99,7 @@ try {
     <React.StrictMode>
       <PostHogProvider>
         <Provider store={store}>
-          <App />
+          <AppWithSync />
         </Provider>
       </PostHogProvider>
     </React.StrictMode>

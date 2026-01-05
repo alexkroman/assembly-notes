@@ -5,10 +5,25 @@ import log from 'electron-log';
 import { PostHog } from 'posthog-node';
 import { injectable } from 'tsyringe';
 
+/**
+ * Error context for tracking errors with additional metadata
+ */
+export interface ErrorContext {
+  /** The service or component where the error occurred */
+  service: string;
+  /** The operation being performed when the error occurred */
+  operation: string;
+  /** Whether the error is fatal/unrecoverable */
+  fatal?: boolean;
+  /** Additional properties to include with the error */
+  [key: string]: unknown;
+}
+
 @injectable()
 export class PostHogService {
   private client: PostHog | null = null;
   private isInitialized = false;
+  private userId: string | null = null;
 
   constructor() {
     // Don't initialize PostHog in test environment
@@ -57,6 +72,22 @@ export class PostHogService {
     }
   }
 
+  /**
+   * Set the user ID for tracking (called when settings are loaded)
+   */
+  public setUserId(userId: string): void {
+    this.userId = userId;
+    if (this.client && this.isInitialized) {
+      this.client.identify({
+        distinctId: userId,
+        properties: {
+          app_version: app.getVersion(),
+          platform: process.platform,
+        },
+      });
+    }
+  }
+
   private setupErrorHandlers(): void {
     // Capture unhandled errors without interfering with Electron's default behavior
     process.on('uncaughtException', (error: Error) => {
@@ -89,6 +120,25 @@ export class PostHogService {
     });
   }
 
+  /**
+   * Track an error with context - call this alongside logger.error()
+   *
+   * @example
+   * this.logger.error('Failed to save recording:', error);
+   * this.posthog.trackError(error, {
+   *   service: 'RecordingDataService',
+   *   operation: 'saveRecording',
+   *   recordingId: id,
+   * });
+   */
+  public trackError(error: unknown, context: ErrorContext): void {
+    const err = error instanceof Error ? error : new Error(String(error));
+    this.captureException(err, {
+      ...context,
+      error_context: `${context.service}.${context.operation}`,
+    });
+  }
+
   public captureException(
     error: Error,
     additionalProperties?: Record<string, unknown>
@@ -102,9 +152,14 @@ export class PostHogService {
       distinctId: this.getDistinctId(),
       event: '$exception',
       properties: {
+        $exception_message: error.message,
+        $exception_type: error.name,
+        $exception_stack_trace_raw: sanitizedStack,
         error_message: error.message,
         error_name: error.name,
         error_stack: sanitizedStack,
+        app_version: app.getVersion(),
+        platform: process.platform,
         timestamp: new Date().toISOString(),
         ...additionalProperties,
       },
@@ -121,6 +176,8 @@ export class PostHogService {
       distinctId: this.getDistinctId(),
       event: eventName,
       properties: {
+        app_version: app.getVersion(),
+        platform: process.platform,
         timestamp: new Date().toISOString(),
         ...properties,
       },
@@ -133,11 +190,15 @@ export class PostHogService {
     return stack
       .replace(/api[_-]?key["\s:=]+["']?[\w-]+["']?/gi, 'api_key=REDACTED')
       .replace(/token["\s:=]+["']?[\w-]+["']?/gi, 'token=REDACTED')
-      .replace(/password["\s:=]+["']?[\w-]+["']?/gi, 'password=REDACTED');
+      .replace(/password["\s:=]+["']?[\w-]+["']?/gi, 'password=REDACTED')
+      .replace(/secret["\s:=]+["']?[\w-]+["']?/gi, 'secret=REDACTED');
   }
 
   private getDistinctId(): string {
-    // Use a machine-specific ID (you might want to persist this)
+    // Use the user ID if available, otherwise fall back to machine ID
+    if (this.userId) {
+      return this.userId;
+    }
     return `electron-${process.platform}-${app.getVersion()}`;
   }
 

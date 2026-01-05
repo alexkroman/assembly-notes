@@ -18,9 +18,9 @@
 
     /**
      * Specify how TypeScript looks up a file from a given module specifier.
-     * 'Node' for standard Node.js module resolution with ES modules.
+     * 'Bundler' allows proper ESM package resolution without requiring .js extensions.
      */
-    "moduleResolution": "Node",
+    "moduleResolution": "Bundler",
 
     /**
      * Specify a set of bundled library declaration files that describe the target runtime environment.
@@ -178,5 +178,5 @@
   },
   "include": ["src/**/*", "types/**/*"],
   "typeRoots": ["./node_modules/@types", "./types"],
-  "exclude": ["node_modules", "dist", "build"]
+  "exclude": ["node_modules", "dist", "build", "src/preload/**/*"]
 }

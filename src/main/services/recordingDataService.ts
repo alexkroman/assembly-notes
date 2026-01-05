@@ -1,11 +1,14 @@
+import crypto from 'crypto';
+
 import 'reflect-metadata';
 import { Store } from '@reduxjs/toolkit';
 import Logger from 'electron-log';
 import { injectable, inject } from 'tsyringe';
-import { v4 as uuidv4 } from 'uuid';
 
-import { DatabaseService } from '../database.js';
 import { DI_TOKENS } from '../di-tokens.js';
+import type { StateBroadcaster } from '../state-broadcaster.js';
+import type { PostHogService } from './posthogService.js';
+import { TranscriptFileService } from './transcriptFileService.js';
 import { stopRecording } from '../store/slices/recordingSlice.js';
 import {
   setCurrentRecording,
@@ -23,8 +26,13 @@ export class RecordingDataService {
   constructor(
     @inject(DI_TOKENS.Store)
     private store: Store<RootState> & { dispatch: AppDispatch },
-    @inject(DI_TOKENS.DatabaseService) private database: DatabaseService,
-    @inject(DI_TOKENS.Logger) private logger: typeof Logger
+    @inject(DI_TOKENS.TranscriptFileService)
+    private transcriptFileService: TranscriptFileService,
+    @inject(DI_TOKENS.Logger) private logger: typeof Logger,
+    @inject(DI_TOKENS.StateBroadcaster)
+    private stateBroadcaster: StateBroadcaster,
+    @inject(DI_TOKENS.PostHogService)
+    private posthog: PostHogService
   ) {}
 
   async newRecording(): Promise<string | null> {
@@ -32,6 +40,7 @@ export class RecordingDataService {
 
     // Clear existing transcription state first
     this.store.dispatch(clearTranscription());
+    this.stateBroadcaster.transcriptionClear();
 
     // Check if there's an ongoing recording and stop it
     const state = this.store.getState();
@@ -46,19 +55,11 @@ export class RecordingDataService {
       await this.waitForRecordingToStop();
     }
 
-    const recordingId = uuidv4();
+    const recordingId = crypto.randomUUID();
     const timestamp = Date.now();
 
     try {
-      this.database.createRecording({
-        id: recordingId,
-        title,
-        timestamp,
-        summary: null,
-        transcript: '',
-      });
-
-      // Create the recording object that matches the Recording type
+      // Create the recording object
       const newRecording = {
         id: recordingId,
         title,
@@ -67,29 +68,48 @@ export class RecordingDataService {
         updated_at: timestamp,
       };
 
-      this.store.dispatch(setCurrentRecording(newRecording));
+      // Save to markdown file
+      const filename =
+        await this.transcriptFileService.saveTranscript(newRecording);
+
+      // Store filename for future updates
+      const recordingWithFilename = {
+        ...newRecording,
+        filename,
+      };
+
+      this.store.dispatch(setCurrentRecording(recordingWithFilename));
+      this.stateBroadcaster.recordingsCurrent(recordingWithFilename);
       this.logger.info(`Created new recording with ID: ${recordingId}`);
       return recordingId;
     } catch (error) {
       this.logger.error(`Failed to create recording: ${String(error)}`);
+      this.posthog.trackError(error, {
+        service: 'RecordingDataService',
+        operation: 'newRecording',
+      });
       return null;
     }
   }
 
-  loadRecording(recordingId: string): boolean {
+  async loadRecording(recordingId: string): Promise<boolean> {
     try {
-      const recording = this.database.getRecordingById(recordingId);
+      const recording =
+        await this.transcriptFileService.getTranscriptById(recordingId);
       if (!recording) {
         this.logger.warn(`Recording ${recordingId} not found`);
         return false;
       }
 
       this.store.dispatch(setCurrentRecording(recording));
+      this.stateBroadcaster.recordingsCurrent(recording);
 
       if (recording.transcript) {
         this.store.dispatch(loadExistingTranscript(recording.transcript));
+        this.stateBroadcaster.transcriptionLoad(recording.transcript);
       } else {
         this.store.dispatch(clearTranscription());
+        this.stateBroadcaster.transcriptionClear();
       }
 
       this.logger.info(`Loaded recording: ${recordingId}`);
@@ -98,13 +118,19 @@ export class RecordingDataService {
       this.logger.error(
         `Failed to load recording ${recordingId}: ${String(error)}`
       );
+      this.posthog.trackError(error, {
+        service: 'RecordingDataService',
+        operation: 'loadRecording',
+        recordingId,
+      });
       return false;
     }
   }
 
-  saveCurrentTranscription(): void {
+  async saveCurrentTranscription(): Promise<void> {
     const state = this.store.getState();
-    const currentRecordingId = state.recordings.currentRecording?.id;
+    const currentRecording = state.recordings.currentRecording;
+    const currentRecordingId = currentRecording?.id;
     const transcription = state.transcription.currentTranscript;
 
     if (!currentRecordingId) {
@@ -115,50 +141,78 @@ export class RecordingDataService {
     const fullTranscript = transcription;
 
     try {
-      this.database.updateRecordingTranscript(
-        currentRecordingId,
-        fullTranscript
-      );
+      await this.transcriptFileService.updateTranscript(currentRecordingId, {
+        transcript: fullTranscript,
+      });
       // Update the current recording in the store with the new transcript
       this.store.dispatch(updateCurrentRecordingTranscript(fullTranscript));
+      this.stateBroadcaster.recordingsTranscript(fullTranscript);
     } catch (error) {
       this.logger.error(`Failed to save transcript: ${String(error)}`);
+      this.posthog.trackError(error, {
+        service: 'RecordingDataService',
+        operation: 'saveCurrentTranscription',
+      });
     }
   }
 
-  saveSummary(recordingId: string, summary: string): void {
+  async saveSummary(recordingId: string, summary: string): Promise<void> {
     try {
-      this.database.updateRecordingSummary(recordingId, summary);
+      await this.transcriptFileService.updateTranscript(recordingId, {
+        summary,
+      });
 
       // Only update Redux if this is for the current recording
       const currentRecordingId =
         this.store.getState().recordings.currentRecording?.id;
       if (currentRecordingId === recordingId) {
         this.store.dispatch(updateCurrentRecordingSummary(summary));
+        this.stateBroadcaster.recordingsSummary(summary);
       }
 
       this.logger.info(`Saved summary for recording: ${recordingId}`);
     } catch (error) {
       this.logger.error(`Failed to save summary: ${String(error)}`);
+      this.posthog.trackError(error, {
+        service: 'RecordingDataService',
+        operation: 'saveSummary',
+        recordingId,
+      });
     }
   }
 
-  getRecordingTranscript(recordingId: string): string | null {
+  async getRecordingTranscript(recordingId: string): Promise<string | null> {
     try {
-      const recording = this.database.getRecordingById(recordingId);
+      const recording =
+        await this.transcriptFileService.getTranscriptById(recordingId);
       return recording?.transcript ?? null;
     } catch (error) {
       this.logger.error(`Failed to get recording transcript: ${String(error)}`);
+      this.posthog.trackError(error, {
+        service: 'RecordingDataService',
+        operation: 'getRecordingTranscript',
+        recordingId,
+      });
       return null;
     }
   }
 
-  updateAudioFilename(recordingId: string, audioFilename: string): void {
+  async updateAudioFilename(
+    recordingId: string,
+    audioFilename: string
+  ): Promise<void> {
     try {
-      this.database.updateRecordingAudioFilename(recordingId, audioFilename);
+      await this.transcriptFileService.updateTranscript(recordingId, {
+        audio_filename: audioFilename,
+      });
       this.logger.info(`Updated audio filename for recording: ${recordingId}`);
     } catch (error) {
       this.logger.error(`Failed to update audio filename: ${String(error)}`);
+      this.posthog.trackError(error, {
+        service: 'RecordingDataService',
+        operation: 'updateAudioFilename',
+        recordingId,
+      });
     }
   }
 

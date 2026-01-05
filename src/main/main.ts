@@ -9,7 +9,8 @@ import { initMain as initAudioLoopback } from 'electron-audio-loopback';
 dotenv.config();
 
 // Set different app name for development builds - MUST be done early!
-if (!app.isPackaged) {
+// Use USE_PROD_DATA=true to run dev against production database
+if (!app.isPackaged && process.env['USE_PROD_DATA'] !== 'true') {
   app.setName('Assembly-Notes-Dev');
 }
 
@@ -18,11 +19,11 @@ const __dirname = path.dirname(__filename);
 
 import type { AutoUpdaterService } from './auto-updater.js';
 import { setupContainer, container, DI_TOKENS } from './container.js';
-import type { DatabaseService } from './database.js';
 import type { DictationStatusWindow } from './dictationStatusWindow.js';
 import { setupIpcHandlers } from './ipc-handlers.js';
 import log from './logger.js';
 import type { DictationService } from './services/dictationService.js';
+import type { MigrationService } from './services/migrationService.js';
 import type { PostHogService } from './services/posthogService.js';
 import type { SettingsService } from './services/settingsService.js';
 import { store } from './store/store.js';
@@ -46,7 +47,7 @@ function createWindow(): void {
       preload: path.join(__dirname, '../preload/preload.js'),
       contextIsolation: true,
       nodeIntegration: false,
-      sandbox: false,
+      sandbox: true,
     },
   });
 
@@ -98,17 +99,9 @@ function createWindow(): void {
   if (useViteDevServer) {
     // Load from Vite dev server (npm run dev)
     void mainWindow.loadURL('http://localhost:5173');
-    // Open DevTools in development (but not in tests)
-    if (process.env['NODE_ENV'] !== 'test') {
-      mainWindow.webContents.openDevTools();
-    }
   } else {
     // Load the built file (npm start or production)
     void mainWindow.loadFile(path.join(__dirname, '../renderer/index.html'));
-    // Open DevTools in development mode (but not in tests)
-    if (isDevMode && process.env['NODE_ENV'] !== 'test') {
-      mainWindow.webContents.openDevTools();
-    }
   }
 
   log.info('🎯 About to resolve AutoUpdaterService from container');
@@ -125,7 +118,12 @@ function createWindow(): void {
   const settingsService = container.resolve<SettingsService>(
     DI_TOKENS.SettingsService
   );
-  settingsService.initializeSettings();
+
+  // Wait for the renderer to finish loading before broadcasting settings
+  // This ensures the IPC listeners are set up in the renderer
+  mainWindow.webContents.once('did-finish-load', () => {
+    settingsService.initializeSettings();
+  });
 
   // Initialize dictation service
   const dictationService = container.resolve<DictationService>(
@@ -160,9 +158,8 @@ void app.whenReady().then(async () => {
     process.env['ELECTRON_DISABLE_SECURITY_WARNINGS'] = 'true';
 
     try {
-      const { default: installExtension, REACT_DEVELOPER_TOOLS } = await import(
-        'electron-devtools-installer'
-      );
+      const { installExtension, REACT_DEVELOPER_TOOLS } =
+        await import('electron-devtools-installer');
       await installExtension(REACT_DEVELOPER_TOOLS);
       log.info('React DevTools installed successfully');
     } catch (e) {
@@ -176,6 +173,16 @@ void app.whenReady().then(async () => {
   }
 
   createWindow();
+
+  // Run migration after container is set up (inside createWindow)
+  log.info('Running migration if needed...');
+  const migrationService = container.resolve<MigrationService>(
+    DI_TOKENS.MigrationService
+  );
+  const migrationSuccess = await migrationService.runMigrationIfNeeded();
+  if (!migrationSuccess) {
+    log.error('Migration failed - some data may not have been exported');
+  }
 
   const template: Electron.MenuItemConstructorOptions[] = [
     {
@@ -248,10 +255,6 @@ void app.whenReady().then(async () => {
 app.on('window-all-closed', function () {
   if (process.platform !== 'darwin') {
     log.info('All windows closed, quitting app');
-    const databaseService = container.resolve<DatabaseService>(
-      DI_TOKENS.DatabaseService
-    );
-    databaseService.close();
 
     // Cleanup dictation service
     const dictationService = container.resolve<DictationService>(
@@ -292,14 +295,6 @@ app.on('before-quit', () => {
       DI_TOKENS.PostHogService
     );
     posthogService.shutdown();
-  }
-
-  if (container.isRegistered(DI_TOKENS.DatabaseService)) {
-    // Close database
-    const databaseService = container.resolve<DatabaseService>(
-      DI_TOKENS.DatabaseService
-    );
-    databaseService.close();
   }
 });
 

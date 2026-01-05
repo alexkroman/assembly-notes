@@ -4,28 +4,26 @@ import 'reflect-metadata';
 import { container } from 'tsyringe';
 
 import { AutoUpdaterService } from './auto-updater.js';
-import { DatabaseService } from './database.js';
 import { DI_TOKENS } from './di-tokens.js';
 import { DictationStatusWindow } from './dictationStatusWindow.js';
 import logger from './logger.js';
 import { AudioRecordingService } from './services/audioRecordingService.js';
 import { DictationService } from './services/dictationService.js';
+import { MigrationService } from './services/migrationService.js';
 import { PostHogService } from './services/posthogService.js';
 import { RecordingDataService } from './services/recordingDataService.js';
 import { RecordingManager } from './services/recordingManager.js';
 import { SettingsService } from './services/settingsService.js';
 import {
-  SlackIntegrationService,
-  FetchHttpClient,
-} from './services/slackIntegrationService.js';
-import {
   AssemblyAIFactoryWithLemur,
   SummarizationService,
 } from './services/summarizationService.js';
+import { TranscriptFileService } from './services/transcriptFileService.js';
 import {
   AssemblyAIFactory,
   TranscriptionService,
 } from './services/transcriptionService.js';
+import { StateBroadcaster } from './state-broadcaster.js';
 import { store, type AppDispatch, type RootState } from './store/store.js';
 
 export function setupContainer(mainWindow: BrowserWindow): void {
@@ -47,6 +45,9 @@ export function setupContainer(mainWindow: BrowserWindow): void {
     useValue: logger,
   });
 
+  // Register StateBroadcaster (must be registered before services that depend on it)
+  container.registerSingleton(DI_TOKENS.StateBroadcaster, StateBroadcaster);
+
   // Register external dependencies
   container.register(DI_TOKENS.AssemblyAIFactory, {
     useClass: AssemblyAIFactory,
@@ -54,18 +55,15 @@ export function setupContainer(mainWindow: BrowserWindow): void {
   container.register(DI_TOKENS.AssemblyAIFactoryWithLemur, {
     useClass: AssemblyAIFactoryWithLemur,
   });
-  container.register(DI_TOKENS.HttpClient, {
-    useClass: FetchHttpClient,
-  });
 
   // Register services as singletons
   container.registerSingleton(DI_TOKENS.PostHogService, PostHogService);
-  container.registerSingleton(DI_TOKENS.DatabaseService, DatabaseService);
-  container.registerSingleton(DI_TOKENS.SettingsService, SettingsService);
   container.registerSingleton(
-    DI_TOKENS.SlackIntegrationService,
-    SlackIntegrationService
+    DI_TOKENS.TranscriptFileService,
+    TranscriptFileService
   );
+  container.registerSingleton(DI_TOKENS.MigrationService, MigrationService);
+  container.registerSingleton(DI_TOKENS.SettingsService, SettingsService);
   container.registerSingleton(
     DI_TOKENS.TranscriptionService,
     TranscriptionService

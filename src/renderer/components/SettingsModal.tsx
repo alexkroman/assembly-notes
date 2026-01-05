@@ -1,11 +1,11 @@
 import React, { useEffect, useState } from 'react';
 
 import { Modal } from './Modal.js';
-import { SlackOAuthConnectionOnly } from './SlackOAuthConnectionOnly.js';
-import { DEFAULT_DICTATION_STYLING_PROMPT } from '../../constants/dictationPrompts.js';
+import { DEFAULT_DICTATION_STYLING_PROMPT } from '../../constants/prompts.js';
 import type { SettingsModalProps } from '../../types/components.js';
 import type { FullSettingsState } from '../../types/redux.js';
-import { useAppDispatch, useAppSelector } from '../hooks/redux.js';
+import { isEmptyString } from '../../utils/strings.js';
+import { useAppDispatch } from '../hooks/redux.js';
 import {
   useGetSettingsQuery,
   useUpdateSettingsMutation,
@@ -20,19 +20,12 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ onClose }) => {
     error,
   } = useGetSettingsQuery(undefined);
   const [updateSettings, { isLoading: isSaving }] = useUpdateSettingsMutation();
-  const reduxSlackInstallation = useAppSelector(
-    (state) => state.settings.slackInstallation
-  );
   const [settings, setSettings] = useState<FullSettingsState>({
     assemblyaiKey: '',
-    slackChannels: '',
-    slackInstallation: null,
     summaryPrompt: 'Summarize the key points from this meeting transcript:',
     prompts: [],
     autoStart: false,
-    dictationStylingEnabled: false,
     dictationStylingPrompt: DEFAULT_DICTATION_STYLING_PROMPT,
-    dictationSilenceTimeout: 2000,
   });
   const dispatch = useAppDispatch();
 
@@ -42,14 +35,6 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ onClose }) => {
       setSettings(fetchedSettings);
     }
   }, [fetchedSettings]);
-
-  useEffect(() => {
-    // Sync slackInstallation from Redux state when OAuth completes
-    setSettings((prev) => ({
-      ...prev,
-      slackInstallation: reduxSlackInstallation,
-    }));
-  }, [reduxSlackInstallation]);
 
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
@@ -65,17 +50,12 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ onClose }) => {
   }, [settings.assemblyaiKey]);
 
   const handleSave = async () => {
-    if (!(settings.assemblyaiKey || '').trim()) {
+    if (isEmptyString(settings.assemblyaiKey)) {
       return;
     }
 
     try {
-      // Ensure we're saving the current slackInstallation from Redux state
-      const settingsToSave = {
-        ...settings,
-        slackInstallation: reduxSlackInstallation ?? settings.slackInstallation,
-      };
-      await updateSettings(settingsToSave).unwrap();
+      await updateSettings(settings).unwrap();
       dispatch(setStatus('Settings saved successfully'));
       onClose();
     } catch (error) {
@@ -92,20 +72,20 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ onClose }) => {
   };
 
   const handleCancel = () => {
-    if (!(settings.assemblyaiKey || '').trim()) {
+    if (isEmptyString(settings.assemblyaiKey)) {
       return;
     }
     onClose();
   };
 
   const handleClose = () => {
-    if (!(settings.assemblyaiKey || '').trim()) {
+    if (isEmptyString(settings.assemblyaiKey)) {
       return;
     }
     onClose();
   };
 
-  const isAssemblyAIKeyMissing = !(settings.assemblyaiKey || '').trim();
+  const isAssemblyAIKeyMissing = isEmptyString(settings.assemblyaiKey);
   const isDisabled = isAssemblyAIKeyMissing || isSaving;
 
   const footer = (
@@ -139,7 +119,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ onClose }) => {
         footer={null}
         size="large"
         testId="settings-modal"
-        bodyTestId="slack-settings"
+        bodyTestId="settings-body"
         closeDisabled={true}
       >
         <div>Loading settings...</div>
@@ -155,7 +135,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ onClose }) => {
         footer={null}
         size="large"
         testId="settings-modal"
-        bodyTestId="slack-settings"
+        bodyTestId="settings-body"
         closeDisabled={false}
       >
         <div>Error loading settings. Please try again.</div>
@@ -170,7 +150,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ onClose }) => {
       footer={footer}
       size="large"
       testId="settings-modal"
-      bodyTestId="slack-settings"
+      bodyTestId="settings-body"
       closeDisabled={isAssemblyAIKeyMissing}
     >
       <div className="form-group">
@@ -194,103 +174,44 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ onClose }) => {
       </div>
 
       <div className="form-group">
-        <label className="flex items-center gap-2 text-xs font-medium text-white/[0.85]">
-          <input
-            type="checkbox"
-            checked={settings.dictationStylingEnabled}
+        <label
+          htmlFor="dictationStylingPrompt"
+          className="block mb-0.5 text-xs font-medium text-white/[0.85]"
+        >
+          Dictation Auto-Styling Instructions:
+        </label>
+        <div className="flex flex-col">
+          <textarea
+            id="dictationStylingPrompt"
+            value={settings.dictationStylingPrompt}
             onChange={(e) => {
-              handleInputChange('dictationStylingEnabled', e.target.checked);
+              handleInputChange('dictationStylingPrompt', e.target.value);
             }}
-            className="rounded"
-            data-testid="dictation-styling-enabled"
+            placeholder="Enter instructions for how to style your dictated text..."
+            className="form-input h-32"
+            data-testid="dictation-styling-prompt"
           />
-          Enable Dictation Auto-Styling
-        </label>
-        <p className="text-xs text-white/60 mt-1">
-          Automatically improve grammar and style of dictated text after 2+
-          seconds of silence
-        </p>
-      </div>
-
-      {settings.dictationStylingEnabled && (
-        <>
-          <div className="form-group">
-            <label
-              htmlFor="dictationStylingPrompt"
-              className="block mb-0.5 text-xs font-medium text-white/[0.85]"
-            >
-              Styling Instructions:
-            </label>
-            <div className="flex flex-col">
-              <textarea
-                id="dictationStylingPrompt"
-                value={settings.dictationStylingPrompt}
-                onChange={(e) => {
-                  handleInputChange('dictationStylingPrompt', e.target.value);
+          {settings.dictationStylingPrompt !==
+            DEFAULT_DICTATION_STYLING_PROMPT && (
+            <div className="mt-1 flex items-center gap-1">
+              <button
+                className="px-2 py-0.5 text-[10px] bg-white/[0.06] border border-white/[0.12] rounded-sm text-white/[0.60] cursor-pointer transition-all duration-200 hover:bg-white/[0.09] hover:text-white/[0.85] hover:border-white/[0.18] flex items-center gap-1"
+                onClick={(e) => {
+                  e.preventDefault();
+                  handleInputChange(
+                    'dictationStylingPrompt',
+                    DEFAULT_DICTATION_STYLING_PROMPT
+                  );
                 }}
-                placeholder="Enter instructions for how to style your dictated text..."
-                className="form-input h-20"
-                data-testid="dictation-styling-prompt"
-              />
-              {settings.dictationStylingPrompt !==
-                DEFAULT_DICTATION_STYLING_PROMPT && (
-                <div className="mt-1 flex items-center gap-1">
-                  <button
-                    className="px-2 py-0.5 text-[10px] bg-white/[0.06] border border-white/[0.12] rounded-sm text-white/[0.60] cursor-pointer transition-all duration-200 hover:bg-white/[0.09] hover:text-white/[0.85] hover:border-white/[0.18] flex items-center gap-1"
-                    onClick={(e) => {
-                      e.preventDefault();
-                      handleInputChange(
-                        'dictationStylingPrompt',
-                        DEFAULT_DICTATION_STYLING_PROMPT
-                      );
-                    }}
-                    title="Reset this prompt to its default content"
-                    type="button"
-                  >
-                    <span className="text-xs">↺</span>
-                    Revert to default
-                  </button>
-                </div>
-              )}
+                title="Reset this prompt to its default content"
+                type="button"
+              >
+                <span className="text-xs">↺</span>
+                Revert to default
+              </button>
             </div>
-          </div>
-
-          <div className="form-group">
-            <label
-              htmlFor="dictationSilenceTimeout"
-              className="block mb-0.5 text-xs font-medium text-white/[0.85]"
-            >
-              Silence Timeout (milliseconds):
-            </label>
-            <input
-              type="number"
-              id="dictationSilenceTimeout"
-              value={settings.dictationSilenceTimeout}
-              onChange={(e) => {
-                handleInputChange(
-                  'dictationSilenceTimeout',
-                  parseInt(e.target.value) || 2000
-                );
-              }}
-              min="1000"
-              max="10000"
-              step="500"
-              className="form-input"
-              data-testid="dictation-silence-timeout"
-            />
-            <p className="text-xs text-white/60 mt-1">
-              How long to wait after silence before styling text (recommended:
-              2000-3000ms)
-            </p>
-          </div>
-        </>
-      )}
-
-      <div className="form-group">
-        <label className="block mb-0.5 text-xs font-medium text-white/[0.85]">
-          Slack Connection (optional):
-        </label>
-        <SlackOAuthConnectionOnly />
+          )}
+        </div>
       </div>
     </Modal>
   );

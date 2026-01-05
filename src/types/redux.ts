@@ -2,12 +2,7 @@
 
 import type { EntityState } from '@reduxjs/toolkit';
 
-import type {
-  PromptTemplate,
-  Recording,
-  UpdateInfo,
-  SlackInstallation,
-} from './common.js';
+import type { PromptTemplate, Recording, UpdateInfo } from './common.js';
 
 // Recording slice state
 export type RecordingStatus =
@@ -77,17 +72,12 @@ export interface UpdateState {
 // Settings slice state
 export interface FullSettingsState {
   assemblyaiKey: string;
-  // Slack OAuth fields
-  slackInstallation: SlackInstallation | null;
-  slackChannels: string; // Comma-separated favorite channel names
   summaryPrompt: string;
   prompts: PromptTemplate[];
   autoStart: boolean;
   userId?: string; // Unique user identifier
   // Dictation styling settings
-  dictationStylingEnabled: boolean;
   dictationStylingPrompt: string;
-  dictationSilenceTimeout: number;
   // Audio processing settings
   microphoneGain?: number; // Microphone volume level (0.0 to 2.0, default 1.0)
   systemAudioGain?: number; // System audio volume level (0.0 to 2.0, default 0.7)
@@ -98,12 +88,11 @@ export interface SettingsState extends FullSettingsState {
   error: string | null;
   // Computed properties for safe trim operations
   hasAssemblyAIKey: boolean;
-  hasSlackConfigured: boolean;
 }
 
 // UI slice state (renderer)
 export type Page = 'list' | 'recording';
-export type ModalType = 'settings' | 'prompt' | 'channel' | null;
+export type ModalType = 'settings' | 'prompt' | null;
 
 export interface UIState {
   currentPage: Page;

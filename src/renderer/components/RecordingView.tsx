@@ -2,7 +2,6 @@ import React, { useEffect, useRef, useCallback, useState } from 'react';
 
 import type { RecordingViewProps } from '../../types/components.js';
 import { useAppSelector } from '../hooks/redux';
-import { useChannels } from '../hooks/useChannels';
 import { usePrompts } from '../hooks/usePrompts';
 import { useRecording } from '../hooks/useRecording';
 
@@ -10,11 +9,9 @@ export const RecordingView: React.FC<RecordingViewProps> = ({
   recordingId,
   onNavigateToList,
   onShowPromptModal,
-  onShowChannelModal,
   isStoppingForNavigation = false,
 }) => {
   const { isNewRecording } = useAppSelector((state) => state.ui);
-  const settings = useAppSelector((state) => state.settings);
   const currentRecording = useAppSelector(
     (state) =>
       (
@@ -33,7 +30,6 @@ export const RecordingView: React.FC<RecordingViewProps> = ({
     isStopping,
     isStarting,
     isSummarizing,
-    isPostingToSlack,
     transcript,
     partialTranscript,
     summary,
@@ -41,11 +37,9 @@ export const RecordingView: React.FC<RecordingViewProps> = ({
     setRecordingTitle,
     handleToggleRecording,
     handleSummarize,
-    handlePostToSlack,
     setSummary,
   } = useRecording(recordingId);
 
-  const { channels, selectedChannelId, handleChannelChange } = useChannels();
   const { prompts, selectedPromptIndex, handlePromptChange } = usePrompts();
 
   const summaryRef = useRef<HTMLTextAreaElement>(null);
@@ -247,9 +241,6 @@ export const RecordingView: React.FC<RecordingViewProps> = ({
     scrollToBottom,
   ]);
 
-  // Check if Slack is configured using the same method as SlackOAuthConnectionOnly
-  const hasSlackConfigured = Boolean(settings.slackInstallation);
-
   return (
     <div
       id="recordingViewPage"
@@ -319,52 +310,6 @@ export const RecordingView: React.FC<RecordingViewProps> = ({
           >
             {isSummarizing ? 'Summarizing...' : 'Summarize'}
           </button>
-
-          {!hasSlackConfigured && (
-            <span className="slack-tip text-[10px] text-white/[0.45] ml-2 italic">
-              Tip: Configure Slack in Settings
-            </span>
-          )}
-
-          {hasSlackConfigured && (
-            <>
-              <select
-                className="px-2 py-1 text-xs bg-white/[0.09] border border-white/[0.18] rounded-sm text-white flex-1 h-7 overflow-hidden text-ellipsis whitespace-nowrap transition-all duration-200 hover:bg-white/[0.12] hover:border-white/[0.24] focus:outline-none focus:border-white/[0.45] focus:bg-white/[0.12]"
-                data-testid="channel-btn"
-                value={selectedChannelId}
-                onChange={(e) => {
-                  if (e.target.value === 'manage') {
-                    onShowChannelModal();
-                  } else {
-                    handleChannelChange(e.target.value);
-                  }
-                }}
-              >
-                <option value="">Post summary to...</option>
-                {channels.map((channel) => (
-                  <option key={channel.id} value={channel.id}>
-                    #{channel.name} {channel.isPrivate ? '🔒' : ''}
-                  </option>
-                ))}
-                <option value="manage">+ Manage Channels</option>
-              </select>
-
-              <button
-                type="button"
-                className="px-2 py-1 text-xs font-semibold rounded-sm cursor-pointer transition-all duration-200 h-7 tracking-wide w-[90px] bg-white/[0.09] border border-white/[0.18] text-white/[0.85] hover:bg-white/[0.12] hover:text-white disabled:text-white/[0.45] disabled:cursor-not-allowed disabled:opacity-50"
-                onClick={() => {
-                  void handlePostToSlack(summary, selectedChannelId);
-                }}
-                disabled={
-                  !(summary || '').trim() ||
-                  !selectedChannelId ||
-                  isPostingToSlack
-                }
-              >
-                {isPostingToSlack ? 'Posting...' : 'Post'}
-              </button>
-            </>
-          )}
         </div>
       </div>
 

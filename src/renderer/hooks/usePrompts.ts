@@ -1,7 +1,7 @@
 import { useState } from 'react';
 
 import { useAppSelector } from './redux.js';
-import { DEFAULT_PROMPTS } from '../../constants/defaultPrompts.js';
+import { DEFAULT_PROMPTS } from '../../constants/prompts.js';
 
 export const usePrompts = () => {
   const settings = useAppSelector((state) => state.settings);

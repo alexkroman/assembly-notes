@@ -11,34 +11,14 @@ export interface TranscriptionData {
   streamType: 'microphone' | 'system';
 }
 
-export interface SlackInstallation {
-  teamId: string;
-  teamName: string;
-  botToken: string;
-  botUserId: string;
-  scope: string;
-  installedAt: number;
-}
-
-export interface SlackChannel {
-  id: string;
-  name: string;
-  isPrivate: boolean;
-}
-
 export interface SettingsSchema {
   assemblyaiKey: string;
   summaryPrompt: string;
   prompts: PromptTemplate[];
-  // Slack OAuth fields
-  slackInstallation: SlackInstallation | null;
-  slackChannels: string; // Comma-separated favorite channel names
   autoStart: boolean;
   userId?: string; // Unique user identifier
   // Dictation styling settings
-  dictationStylingEnabled: boolean;
   dictationStylingPrompt: string;
-  dictationSilenceTimeout: number; // milliseconds
   // Audio processing settings
   microphoneGain?: number; // Microphone volume level (0.0 to 2.0, default 1.0)
   systemAudioGain?: number; // System audio volume level (0.0 to 2.0, default 0.7)

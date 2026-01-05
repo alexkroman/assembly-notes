@@ -1,23 +1,18 @@
 import { createSlice, type PayloadAction } from '@reduxjs/toolkit';
 
 import { settingsActions } from './syncActionTypes.js';
-import { DEFAULT_DICTATION_STYLING_PROMPT } from '../../constants/dictationPrompts.js';
+import { DEFAULT_DICTATION_STYLING_PROMPT } from '../../constants/prompts.js';
 import type { SettingsState } from '../../types/redux.js';
 
 const initialState: SettingsState = {
   assemblyaiKey: '',
-  slackChannels: '',
-  slackInstallation: null,
   summaryPrompt: '',
   prompts: [],
   autoStart: false,
   loading: false,
   error: null,
   hasAssemblyAIKey: false,
-  hasSlackConfigured: false,
-  dictationStylingEnabled: false,
   dictationStylingPrompt: DEFAULT_DICTATION_STYLING_PROMPT,
-  dictationSilenceTimeout: 2000,
 };
 
 const settingsSlice = createSlice({
@@ -30,9 +25,6 @@ const settingsSlice = createSlice({
         Object.assign(state, action.payload);
         state.loading = false;
         state.error = null;
-        if (action.payload.slackInstallation !== undefined) {
-          state.hasSlackConfigured = Boolean(action.payload.slackInstallation);
-        }
         if (action.payload.assemblyaiKey !== undefined) {
           state.hasAssemblyAIKey = Boolean(
             (action.payload.assemblyaiKey ?? '').trim()
@@ -54,11 +46,6 @@ const settingsSlice = createSlice({
           Object.assign(state, action.payload);
           state.loading = false;
           state.error = null;
-          if (action.payload.slackInstallation !== undefined) {
-            state.hasSlackConfigured = Boolean(
-              action.payload.slackInstallation
-            );
-          }
           if (action.payload.assemblyaiKey !== undefined) {
             state.hasAssemblyAIKey = Boolean(
               (action.payload.assemblyaiKey ?? '').trim()

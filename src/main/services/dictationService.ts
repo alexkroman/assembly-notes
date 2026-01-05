@@ -6,6 +6,8 @@ import { injectable, inject } from 'tsyringe';
 
 import { DI_TOKENS } from '../di-tokens.js';
 import type { DictationStatusWindow } from '../dictationStatusWindow.js';
+import type { StateBroadcaster } from '../state-broadcaster.js';
+import type { PostHogService } from './posthogService.js';
 import { RecordingManager } from './recordingManager.js';
 import type { IAssemblyAIFactoryWithLemur } from './summarizationService.js';
 import { TranscriptionService } from './transcriptionService.js';
@@ -34,7 +36,11 @@ export class DictationService {
     @inject(DI_TOKENS.Store)
     private store: Store<RootState> & { dispatch: AppDispatch },
     @inject(DI_TOKENS.AssemblyAIFactoryWithLemur)
-    private assemblyAIFactory: IAssemblyAIFactoryWithLemur
+    private assemblyAIFactory: IAssemblyAIFactoryWithLemur,
+    @inject(DI_TOKENS.StateBroadcaster)
+    private stateBroadcaster: StateBroadcaster,
+    @inject(DI_TOKENS.PostHogService)
+    private posthog: PostHogService
   ) {}
 
   public initialize(): void {
@@ -53,6 +59,11 @@ export class DictationService {
       }
     } catch (error) {
       log.error('Failed to initialize dictation service:', error);
+      this.posthog.trackError(error, {
+        service: 'DictationService',
+        operation: 'initialize',
+        fatal: true,
+      });
     }
   }
 
@@ -85,6 +96,7 @@ export class DictationService {
     }
 
     this.store.dispatch(setTransitioning(true));
+    this.stateBroadcaster.recordingTransitioning(true);
 
     log.info('Starting dictation mode');
 
@@ -103,9 +115,18 @@ export class DictationService {
         await this.recordingManager.startTranscriptionForDictation();
       if (!started) {
         log.error('Failed to start transcription for dictation');
+        this.posthog.trackError(
+          new Error('Failed to start transcription for dictation'),
+          {
+            service: 'DictationService',
+            operation: 'startDictation',
+            fatal: false,
+          }
+        );
         this.transcriptionService.offDictationText(this.transcriptionHandler);
         this.transcriptionHandler = null;
         this.store.dispatch(setTransitioning(false));
+        this.stateBroadcaster.recordingTransitioning(false);
         return;
       }
 
@@ -115,9 +136,11 @@ export class DictationService {
       setTimeout(() => {
         this.notifyDictationStatus(true);
         this.store.dispatch(setTransitioning(false));
+        this.stateBroadcaster.recordingTransitioning(false);
       }, 400);
     } catch (error) {
       this.store.dispatch(setTransitioning(false));
+      this.stateBroadcaster.recordingTransitioning(false);
       throw error;
     }
   }
@@ -131,6 +154,7 @@ export class DictationService {
     }
 
     this.store.dispatch(setTransitioning(true));
+    this.stateBroadcaster.recordingTransitioning(true);
 
     this.isDictating = false;
     this.clearSilenceTimer();
@@ -149,11 +173,7 @@ export class DictationService {
 
     try {
       // If there's any buffered text when stopping, insert it
-      const settings = this.store.getState().settings;
-      if (
-        settings.dictationStylingEnabled &&
-        this.unstyledTextBuffer.length > 0
-      ) {
+      if (this.unstyledTextBuffer.length > 0) {
         const bufferedText = this.unstyledTextBuffer.join(' ');
         const safeText = this.sanitizeTextForTyping(bufferedText);
         const textToInsert = this.isFirstInsertion ? safeText : ' ' + safeText;
@@ -173,38 +193,23 @@ export class DictationService {
       await this.recordingManager.stopTranscriptionForDictation();
     } finally {
       this.store.dispatch(setTransitioning(false));
+      this.stateBroadcaster.recordingTransitioning(false);
     }
   }
 
   private handleDictationText(text: string): void {
     if (!this.isDictating) return;
 
-    const settings = this.store.getState().settings;
-
-    // Only insert text if stylization is disabled
-    // When stylization is enabled, text will be inserted after styling
-    if (!settings.dictationStylingEnabled) {
-      try {
-        const safeText = this.sanitizeTextForTyping(text);
-        const textToInsert = this.isFirstInsertion ? safeText : ' ' + safeText;
-        robotjs.typeString(textToInsert);
-        log.debug(`Inserted final text: "${safeText}"`);
-        this.isFirstInsertion = false;
-      } catch (error) {
-        log.error('Failed to insert text in real-time:', error);
-      }
-    } else {
-      // Buffer the text for styling
-      this.unstyledTextBuffer.push(text);
-      log.debug(`Buffering text for styling: "${text}"`);
-    }
+    // Buffer text for styling (styling is always enabled)
+    this.unstyledTextBuffer.push(text);
+    log.debug(`Buffering text for styling: "${text}"`);
 
     this.resetSilenceTimer();
   }
 
   private resetSilenceTimer(): void {
     const settings = this.store.getState().settings;
-    if (!settings.dictationStylingEnabled || !settings.assemblyaiKey) {
+    if (!settings.assemblyaiKey) {
       return;
     }
 
@@ -212,7 +217,7 @@ export class DictationService {
       clearTimeout(this.silenceTimer);
     }
 
-    const silenceTimeout = settings.dictationSilenceTimeout || 2000;
+    const silenceTimeout = 2000; // Fixed 2 second silence timeout
     log.debug(`Resetting silence timer for ${String(silenceTimeout)}ms`);
 
     this.silenceTimer = setTimeout(() => {
@@ -234,7 +239,7 @@ export class DictationService {
     }
 
     const settings = this.store.getState().settings;
-    if (!settings.dictationStylingEnabled || !settings.assemblyaiKey) {
+    if (!settings.assemblyaiKey) {
       return;
     }
 
@@ -266,6 +271,11 @@ export class DictationService {
         log.debug('Styling operation was cancelled');
       } else {
         log.error('Failed to style text:', error);
+        this.posthog.trackError(error, {
+          service: 'DictationService',
+          operation: 'styleAndInsertText',
+          fatal: false,
+        });
       }
     } finally {
       // Only clear the controller if it's still the same one we created
@@ -385,6 +395,11 @@ Return ONLY the reformatted text, nothing else. No explanations, no commentary, 
         throw error;
       }
       log.error('Failed to style text with Lemur API:', error);
+      this.posthog.trackError(error, {
+        service: 'DictationService',
+        operation: 'styleTextWithLemur',
+        fatal: false,
+      });
 
       log.debug('Using fallback styling for:', originalText);
       const styledText = originalText

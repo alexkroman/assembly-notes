@@ -72,7 +72,10 @@ export class AudioRecordingService {
     }
   }
 
-  async stopRecording(recordingId: string): Promise<string | null> {
+  async stopRecording(
+    recordingId: string,
+    transcriptFilename?: string
+  ): Promise<string | null> {
     const buffer = this.recordingBuffers.get(recordingId);
     if (!buffer) {
       return null;
@@ -85,8 +88,10 @@ export class AudioRecordingService {
           ? this.concatenateBuffers(buffer.combined)
           : this.combineAudioBuffers(buffer.microphone, buffer.system);
 
-      // Generate filename
-      const filename = `${recordingId}.wav`;
+      // Generate filename - use transcript filename pattern if available
+      const filename = transcriptFilename
+        ? transcriptFilename.replace(/\.md$/, '.wav')
+        : `${recordingId}.wav`;
       const filepath = path.join(this.audioDir, filename);
 
       // Encode to WAV using wav-encoder

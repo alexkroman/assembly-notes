@@ -1,14 +1,15 @@
 import React, { useState } from 'react';
 
-import type { RecordingsListProps } from '../../types/components.js';
-import { useAppDispatch, useAppSelector } from '../hooks/redux';
-import { navigateToNewRecording, setActiveModal } from '../store';
 import { ConfirmModal } from './ConfirmModal';
+import type { RecordingsListProps } from '../../types/components.js';
+import { isEmptyString } from '../../utils/strings.js';
+import { useAppDispatch, useAppSelector } from '../hooks/redux';
 import {
   useGetAllRecordingsQuery,
   useSearchRecordingsQuery,
   useDeleteRecordingMutation,
 } from '../slices/apiSlice.js';
+import { navigateToNewRecording, setActiveModal } from '../store';
 import '../../types/global.d.ts';
 
 export const RecordingsList: React.FC<RecordingsListProps> = ({
@@ -154,7 +155,7 @@ export const RecordingsList: React.FC<RecordingsListProps> = ({
     });
   };
 
-  const isAssemblyAIKeyMissing = !(settings.assemblyaiKey || '').trim();
+  const isAssemblyAIKeyMissing = isEmptyString(settings.assemblyaiKey);
 
   return (
     <div
@@ -194,6 +195,17 @@ export const RecordingsList: React.FC<RecordingsListProps> = ({
               }
             >
               New Recording
+            </button>
+            <button
+              type="button"
+              className="px-2 h-8 rounded-sm bg-white/[0.12] border border-white/[0.24] text-white text-sm cursor-pointer transition-all duration-200 flex items-center justify-center whitespace-nowrap flex-shrink-0 min-w-[32px] hover:bg-white/[0.05]"
+              data-testid="open-folder-button"
+              onClick={() => {
+                void window.electronAPI.showTranscriptsFolder();
+              }}
+              title="Open recordings folder"
+            >
+              📁
             </button>
             <button
               type="button"

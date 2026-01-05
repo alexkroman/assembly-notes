@@ -1,56 +1,43 @@
-// Global type declarations
+/**
+ * Global Type Declarations
+ *
+ * Extends the Window interface with electronAPI, stateAPI, and logger.
+ * These are exposed via contextBridge in the preload script.
+ */
 
 import type {
   PromptTemplate,
   Settings,
   UpdateInfo,
   DownloadProgress,
-  TranscriptData,
-  ConnectionStatusData,
-  RecordingStoppedData,
+  Recording,
 } from './common.js';
+import type { StateAPI } from './ipc-events.js';
 
-// Window interface extensions
 declare global {
   interface Window {
     electronAPI: {
-      // App ready state
-      isReady: () => Promise<boolean>;
-      onReady: (callback: () => void) => void;
-
-      // Audio loopback
+      // Audio Loopback
       enableLoopbackAudio: () => Promise<void>;
       disableLoopbackAudio: () => Promise<void>;
 
-      // Recording controls
+      // Recording Control
       startRecording: () => Promise<boolean>;
       stopRecording: () => Promise<boolean>;
       newRecording: () => Promise<string | null>;
+      loadRecording: (id: string) => Promise<boolean>;
       summarizeTranscript: (transcript?: string) => Promise<boolean>;
-      sendMicrophoneAudio: (data: ArrayBuffer) => void;
-      sendSystemAudio: (data: ArrayBuffer) => void;
 
-      // Event listeners
-      onTranscript: (callback: (data: TranscriptData) => void) => void;
-      onSummary: (
-        callback: (data: { text: string; recordingId: string }) => void
-      ) => void;
-      onSummarizationStarted: (callback: () => void) => void;
-      onSummarizationCompleted: (callback: () => void) => void;
-      onDictationStatus: (callback: (isDictating: boolean) => void) => void;
-      onConnectionStatus: (
-        callback: (data: ConnectionStatusData) => void
-      ) => void;
-      onError: (callback: (message: string) => void) => void;
-      onStartAudioCapture: (callback: () => void) => void;
-      onStopAudioCapture: (callback: () => void) => void;
-      onResetAudioProcessing: (callback: () => void) => void;
-      onClearTranscripts: (callback: () => void) => void;
-      onNewRecordingCreated: (callback: (recordingId: string) => void) => void;
-      onRecordingStopped: (
-        callback: (data: RecordingStoppedData) => void
-      ) => void;
-      removeAllListeners: (channel: string) => void;
+      // Recording Data
+      getAllRecordings: () => Promise<Recording[]>;
+      searchRecordings: (query: string) => Promise<Recording[]>;
+      getRecording: (id: string) => Promise<Recording | null>;
+      deleteRecording: (id: string) => Promise<boolean>;
+      updateRecordingTitle: (id: string, title: string) => Promise<void>;
+      updateRecordingSummary: (id: string, summary: string) => Promise<void>;
+      getAudioFilePath: (recordingId: string) => Promise<string | null>;
+      showAudioInFolder: (recordingId: string) => Promise<boolean>;
+      showTranscriptsFolder: () => Promise<boolean>;
 
       // Settings
       getSettings: () => Promise<Settings>;
@@ -59,47 +46,42 @@ declare global {
         summaryPrompt: string;
       }) => Promise<boolean>;
       savePrompts: (prompts: PromptTemplate[]) => Promise<boolean>;
-      saveSelectedChannel: (channel: string) => Promise<boolean>;
 
-      // Slack integration
-      postToSlack: (
-        message: string,
-        channel: string
-      ) => Promise<{ success: boolean; error?: string }>;
-
-      // Slack OAuth
-      slackOAuthInitiate: () => Promise<void>;
-      slackOAuthRemoveInstallation: () => Promise<void>;
-      slackOAuthValidateChannels: (
-        teamId: string,
-        channelList: string
-      ) => Promise<void>;
-      onSlackOAuthSuccess: (
-        callback: (installation: SlackInstallation) => void
-      ) => void;
-      onSlackOAuthError: (callback: (error: string) => void) => void;
-
-      // Auto-updater
+      // Auto-Update
       installUpdate: () => Promise<void>;
       quitAndInstall: () => Promise<void>;
-      checkForUpdates: () => Promise<void>;
+
+      // Audio Streaming (fire-and-forget)
+      sendMicrophoneAudio: (data: ArrayBuffer) => void;
+      sendSystemAudio: (data: ArrayBuffer) => void;
+
+      // Event Listeners (main → renderer)
+      onSummary: (
+        callback: (data: { text: string; recordingId: string }) => void
+      ) => void;
+      onSummarizationStarted: (callback: () => void) => void;
+      onSummarizationCompleted: (callback: () => void) => void;
+      onDictationStatus: (callback: (isDictating: boolean) => void) => void;
+      onStartAudioCapture: (callback: () => void) => void;
+      onStopAudioCapture: (callback: () => void) => void;
+      onResetAudioProcessing: (callback: () => void) => void;
+
+      // Update Events
       onUpdateAvailable: (callback: (info: UpdateInfo) => void) => void;
       onDownloadProgress: (
         callback: (progress: DownloadProgress) => void
       ) => void;
       onUpdateDownloaded: (callback: (info: UpdateInfo) => void) => void;
       onUpdateError: (callback: (error: string) => void) => void;
+      onUpdateReadyToInstall: (callback: (info: UpdateInfo) => void) => void;
 
-      // Recording management
-      getAllRecordings: () => Promise<unknown[]>;
-      searchRecordings: (query: string) => Promise<unknown[]>;
-      getRecording: (id: string) => Promise<unknown>;
-      loadRecording: (id: string) => Promise<boolean>;
-      deleteRecording: (id: string) => Promise<boolean>;
-      updateRecordingTitle: (id: string, title: string) => Promise<void>;
-      updateRecordingSummary: (id: string, summary: string) => Promise<void>;
-      getAudioFilePath: (recordingId: string) => Promise<string | null>;
-      showAudioInFolder: (recordingId: string) => Promise<boolean>;
+      // Dictation Status Window
+      onDictationStatusUpdate: (
+        callback: (isDictating: boolean) => void
+      ) => void;
+
+      // Cleanup
+      removeAllListeners: (channel: string) => void;
     };
 
     logger: {
@@ -108,6 +90,8 @@ declare global {
       error: (...args: unknown[]) => void;
       debug: (...args: unknown[]) => void;
     };
+
+    stateAPI: StateAPI;
   }
 
   // Audio Worklet types
