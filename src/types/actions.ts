@@ -10,7 +10,6 @@ import type {
   TranscriptSegment,
   UpdateInfo,
   PromptTemplate,
-  SlackInstallation,
 } from './common.js';
 import type { ModalType } from './redux.js';
 
@@ -120,8 +119,6 @@ export type SettingsActionType =
 
 export interface SettingsUpdatePayload {
   assemblyaiKey?: string;
-  slackInstallation?: SlackInstallation | null;
-  slackChannels?: string;
   summaryPrompt?: string;
   prompts?: PromptTemplate[];
   autoStart?: boolean;

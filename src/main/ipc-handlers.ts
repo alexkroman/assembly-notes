@@ -15,7 +15,6 @@ import { registerHandler, registerEvent } from './ipc-registry.js';
 import type { RecordingDataService } from './services/recordingDataService.js';
 import type { RecordingManager } from './services/recordingManager.js';
 import type { SettingsService } from './services/settingsService.js';
-import type { SlackIntegrationService } from './services/slackIntegrationService.js';
 import type { StateBroadcaster } from './state-broadcaster.js';
 import {
   updateCurrentRecordingTitle,
@@ -41,9 +40,6 @@ function setupIpcHandlers(
   );
   const recordingDataService = container.resolve<RecordingDataService>(
     DI_TOKENS.RecordingDataService
-  );
-  const slackIntegrationService = container.resolve<SlackIntegrationService>(
-    DI_TOKENS.SlackIntegrationService
   );
   const autoUpdaterService = container.resolve<AutoUpdaterService>(
     DI_TOKENS.AutoUpdaterService
@@ -203,24 +199,6 @@ function setupIpcHandlers(
     settingsService.updateSettings({ prompts });
     return true;
   });
-
-  // ==================== Slack Integration ====================
-
-  registerHandler('post-to-slack', (message, channelId) =>
-    slackIntegrationService.postMessage(message, channelId)
-  );
-
-  registerHandler('slack-oauth-initiate', () =>
-    slackIntegrationService.initiateOAuth()
-  );
-
-  registerHandler('slack-oauth-remove-installation', () => {
-    slackIntegrationService.removeInstallation();
-  });
-
-  registerHandler('slack-oauth-get-current', () =>
-    slackIntegrationService.getCurrentInstallation()
-  );
 
   // ==================== Auto-Update ====================
 

@@ -1,11 +1,10 @@
 import React, { useEffect, useState } from 'react';
 
 import { Modal } from './Modal.js';
-import { SlackOAuthConnectionOnly } from './SlackOAuthConnectionOnly.js';
 import { DEFAULT_DICTATION_STYLING_PROMPT } from '../../constants/dictationPrompts.js';
 import type { SettingsModalProps } from '../../types/components.js';
 import type { FullSettingsState } from '../../types/redux.js';
-import { useAppDispatch, useAppSelector } from '../hooks/redux.js';
+import { useAppDispatch } from '../hooks/redux.js';
 import {
   useGetSettingsQuery,
   useUpdateSettingsMutation,
@@ -20,13 +19,8 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ onClose }) => {
     error,
   } = useGetSettingsQuery(undefined);
   const [updateSettings, { isLoading: isSaving }] = useUpdateSettingsMutation();
-  const reduxSlackInstallation = useAppSelector(
-    (state) => state.settings.slackInstallation
-  );
   const [settings, setSettings] = useState<FullSettingsState>({
     assemblyaiKey: '',
-    slackChannels: '',
-    slackInstallation: null,
     summaryPrompt: 'Summarize the key points from this meeting transcript:',
     prompts: [],
     autoStart: false,
@@ -42,14 +36,6 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ onClose }) => {
       setSettings(fetchedSettings);
     }
   }, [fetchedSettings]);
-
-  useEffect(() => {
-    // Sync slackInstallation from Redux state when OAuth completes
-    setSettings((prev) => ({
-      ...prev,
-      slackInstallation: reduxSlackInstallation,
-    }));
-  }, [reduxSlackInstallation]);
 
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
@@ -70,12 +56,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ onClose }) => {
     }
 
     try {
-      // Ensure we're saving the current slackInstallation from Redux state
-      const settingsToSave = {
-        ...settings,
-        slackInstallation: reduxSlackInstallation ?? settings.slackInstallation,
-      };
-      await updateSettings(settingsToSave).unwrap();
+      await updateSettings(settings).unwrap();
       dispatch(setStatus('Settings saved successfully'));
       onClose();
     } catch (error) {
@@ -139,7 +120,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ onClose }) => {
         footer={null}
         size="large"
         testId="settings-modal"
-        bodyTestId="slack-settings"
+        bodyTestId="settings-body"
         closeDisabled={true}
       >
         <div>Loading settings...</div>
@@ -155,7 +136,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ onClose }) => {
         footer={null}
         size="large"
         testId="settings-modal"
-        bodyTestId="slack-settings"
+        bodyTestId="settings-body"
         closeDisabled={false}
       >
         <div>Error loading settings. Please try again.</div>
@@ -170,7 +151,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ onClose }) => {
       footer={footer}
       size="large"
       testId="settings-modal"
-      bodyTestId="slack-settings"
+      bodyTestId="settings-body"
       closeDisabled={isAssemblyAIKeyMissing}
     >
       <div className="form-group">
@@ -285,13 +266,6 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ onClose }) => {
           </div>
         </>
       )}
-
-      <div className="form-group">
-        <label className="block mb-0.5 text-xs font-medium text-white/[0.85]">
-          Slack Connection (optional):
-        </label>
-        <SlackOAuthConnectionOnly />
-      </div>
     </Modal>
   );
 };

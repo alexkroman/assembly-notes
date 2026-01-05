@@ -45,17 +45,15 @@ describe('IPC Registry', () => {
     });
 
     it('should handle async handlers', async () => {
-      const handler = jest
-        .fn()
-        .mockResolvedValue({ success: true, error: undefined });
+      const handler = jest.fn().mockResolvedValue(true);
 
-      registerHandler('post-to-slack', handler);
+      registerHandler('start-recording', handler);
 
       const registeredHandler = (ipcMain.handle as jest.Mock).mock.calls[0][1];
-      const result = await registeredHandler({}, 'Hello', 'channel-123');
+      const result = await registeredHandler({});
 
-      expect(handler).toHaveBeenCalledWith('Hello', 'channel-123');
-      expect(result).toEqual({ success: true, error: undefined });
+      expect(handler).toHaveBeenCalledWith();
+      expect(result).toBe(true);
     });
 
     it('should handle handlers with no arguments', async () => {

@@ -65,7 +65,6 @@ export const useRecording = (recordingId: string | null) => {
   const [isStopping, setIsStopping] = useState(false);
   const [isStarting, setIsStarting] = useState(false);
   const [isSummarizing, setIsSummarizing] = useState(false);
-  const [isPostingToSlack, setIsPostingToSlack] = useState(false);
 
   // Refs for debouncing
   const titleDebounceRef = useRef<NodeJS.Timeout | null>(null);
@@ -206,58 +205,6 @@ export const useRecording = (recordingId: string | null) => {
     }
   };
 
-  const handlePostToSlack = async (message: string, channelId: string) => {
-    try {
-      setIsPostingToSlack(true);
-      dispatch(setStatus('Posting to Slack...'));
-
-      // Format the date similar to RecordingsList
-      const dateString = currentRecording?.created_at
-        ? new Date(currentRecording.created_at).toLocaleString()
-        : '';
-
-      // Build the title with date
-      let titleWithDate = (recordingTitle || '').trim();
-      if (titleWithDate && dateString) {
-        titleWithDate = `${titleWithDate} - ${dateString}`;
-      } else if (!titleWithDate && dateString) {
-        titleWithDate = dateString;
-      }
-
-      // Format message with proper title
-      const formattedMessage = titleWithDate
-        ? `${titleWithDate}\n\n${message}`
-        : message;
-
-      const result = await window.electronAPI.postToSlack(
-        formattedMessage,
-        channelId
-      );
-
-      if (result.success) {
-        dispatch(setStatus('Posted to Slack'));
-        posthog.capture('slack_post_success', {
-          recordingId: recordingId,
-          channelId: channelId,
-          messageLength: message.length,
-        });
-      } else {
-        dispatch(setStatus(`Slack error: ${result.error ?? 'Unknown error'}`));
-        posthog.capture('slack_post_error', {
-          error: result.error ?? 'Unknown error',
-        });
-      }
-    } catch (error) {
-      window.logger.error('Error posting to Slack:', error);
-      dispatch(setStatus('Error posting to Slack'));
-      posthog.capture('slack_post_error', {
-        error: error instanceof Error ? error.message : 'Unknown error',
-      });
-    } finally {
-      setIsPostingToSlack(false);
-    }
-  };
-
   // Immediate Redux updates + debounced database writes
   const handleTitleChange = useCallback(
     (title: string) => {
@@ -325,7 +272,6 @@ export const useRecording = (recordingId: string | null) => {
     isStopping,
     isStarting,
     isSummarizing,
-    isPostingToSlack,
     transcript: currentTranscript,
     partialTranscript,
     summary,
@@ -333,7 +279,6 @@ export const useRecording = (recordingId: string | null) => {
     setRecordingTitle: handleTitleChange,
     handleToggleRecording,
     handleSummarize,
-    handlePostToSlack,
     setSummary: handleSummaryChange,
   };
 };

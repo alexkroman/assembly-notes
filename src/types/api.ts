@@ -9,7 +9,6 @@ import type {
   PromptTemplate,
   UpdateInfo,
   DownloadProgress,
-  SlackInstallation,
   TranscriptData,
   ConnectionStatusData,
   RecordingStoppedData,
@@ -71,23 +70,6 @@ export interface SettingsAPI {
 }
 
 /**
- * Slack Integration API
- */
-export interface SlackAPI {
-  'post-to-slack': (
-    message: string,
-    channelId?: string
-  ) => Promise<{ success: boolean; error?: string }>;
-  'slack-oauth-initiate': () => Promise<void>;
-  'slack-oauth-remove-installation': () => void;
-  'slack-oauth-get-current': () => SlackInstallation | null;
-  'slack-oauth-validate-channels': (
-    teamId: string,
-    channelList: string
-  ) => void;
-}
-
-/**
  * Auto-Update API
  */
 export interface UpdateAPI {
@@ -114,7 +96,6 @@ export interface LoggingAPI {
 export type IpcAPI = RecordingAPI &
   AudioAPI &
   SettingsAPI &
-  SlackAPI &
   UpdateAPI &
   LoggingAPI;
 
@@ -151,10 +132,6 @@ export interface MainToRendererEvents {
   'update-downloaded': (info: UpdateInfo) => void;
   'update-error': (error: string) => void;
   'update-ready-to-install': (info: UpdateInfo) => void;
-
-  // Slack OAuth events
-  'slack-oauth-success': (installation: SlackInstallation) => void;
-  'slack-oauth-error': (error: string) => void;
 }
 
 // ============================================================================

@@ -1,41 +1,26 @@
 import { container } from 'tsyringe';
 
 import { DI_TOKENS } from '../../../src/main/di-tokens';
+import { SummarizationService } from '../../../src/main/services/summarizationService';
 import {
-  IAssemblyAIFactoryWithLemur,
-  IAssemblyAIClientWithLemur,
-  IAssemblyAILemurClient,
-  SummarizationService,
-} from '../../../src/main/services/summarizationService';
-
-// Mock Lemur client
-const mockLemurClient: IAssemblyAILemurClient = {
-  task: jest.fn(),
-};
-
-// Mock AssemblyAI client
-const mockAssemblyAIClient: IAssemblyAIClientWithLemur = {
-  lemur: mockLemurClient,
-};
-
-// Mock AssemblyAI factory
-const mockAssemblyAIFactory: IAssemblyAIFactoryWithLemur = {
-  createClient: jest.fn(() => Promise.resolve(mockAssemblyAIClient)),
-};
+  createMockLemurClient,
+  type MockLemurClient,
+} from '../../test-helpers/mock-factories';
 
 describe('SummarizationService', () => {
   let summarizationService: SummarizationService;
+  let mockLemurClient: MockLemurClient;
+  let mockAssemblyAIFactory: { createClient: jest.Mock };
 
   beforeEach(() => {
     jest.clearAllMocks();
 
-    // Reset the mock to its default behavior
-    (mockAssemblyAIFactory.createClient as jest.Mock).mockResolvedValue(
-      mockAssemblyAIClient
-    );
-    (mockLemurClient.task as jest.Mock).mockResolvedValue({
-      response: 'This is a summary of the meeting.',
-    });
+    // Create mocks using factories
+    mockLemurClient = createMockLemurClient();
+    const mockAssemblyAIClient = { lemur: mockLemurClient };
+    mockAssemblyAIFactory = {
+      createClient: jest.fn().mockResolvedValue(mockAssemblyAIClient),
+    };
 
     // Register mocks in container
     container.register(DI_TOKENS.AssemblyAIFactoryWithLemur, {
@@ -53,13 +38,7 @@ describe('SummarizationService', () => {
     const mockTranscript = 'This is a test transcript about a meeting.';
     const mockSummaryPrompt = 'Please summarize this meeting.';
     const mockApiKey = 'test-api-key';
-    const mockResponse = 'This is a summary of the meeting.';
-
-    beforeEach(() => {
-      (mockLemurClient.task as jest.Mock).mockResolvedValue({
-        response: mockResponse,
-      });
-    });
+    const mockResponse = 'Mock summary response';
 
     it('should successfully summarize transcript', async () => {
       const result = await summarizationService.summarizeTranscript(
@@ -86,7 +65,7 @@ describe('SummarizationService', () => {
         mockApiKey
       );
 
-      const taskCall = (mockLemurClient.task as jest.Mock).mock.calls[0][0];
+      const taskCall = mockLemurClient.task.mock.calls[0][0];
       // Check for key elements that define the system prompt's purpose
       expect(taskCall.prompt).toMatch(/meeting|summariz/i);
       expect(taskCall.prompt).toMatch(/action|task/i);
@@ -117,7 +96,7 @@ describe('SummarizationService', () => {
 
     it('should handle Lemur API errors', async () => {
       const apiError = new Error('Lemur API error');
-      (mockLemurClient.task as jest.Mock).mockRejectedValue(apiError);
+      mockLemurClient.task.mockRejectedValue(apiError);
 
       await expect(
         summarizationService.summarizeTranscript(
@@ -130,9 +109,7 @@ describe('SummarizationService', () => {
 
     it('should handle factory creation errors', async () => {
       const factoryError = new Error('Failed to create client');
-      (mockAssemblyAIFactory.createClient as jest.Mock).mockRejectedValue(
-        factoryError
-      );
+      mockAssemblyAIFactory.createClient.mockRejectedValue(factoryError);
 
       await expect(
         summarizationService.summarizeTranscript(
@@ -166,7 +143,7 @@ describe('SummarizationService', () => {
       );
 
       expect(result).toBe(mockResponse);
-      const taskCall = (mockLemurClient.task as jest.Mock).mock.calls[0][0];
+      const taskCall = mockLemurClient.task.mock.calls[0][0];
       // Check for key elements that define the system prompt's purpose
       expect(taskCall.prompt).toMatch(/meeting|summariz/i);
       expect(taskCall.prompt).toMatch(/action|task/i);
@@ -208,7 +185,7 @@ describe('SummarizationService', () => {
     });
 
     it('should handle undefined response from Lemur', async () => {
-      (mockLemurClient.task as jest.Mock).mockResolvedValue({});
+      mockLemurClient.task.mockResolvedValue({});
 
       const result = await summarizationService.summarizeTranscript(
         mockTranscript,
@@ -226,7 +203,7 @@ describe('SummarizationService', () => {
         mockApiKey
       );
 
-      const taskCall = (mockLemurClient.task as jest.Mock).mock.calls[0][0];
+      const taskCall = mockLemurClient.task.mock.calls[0][0];
       expect(taskCall.final_model).toBe('anthropic/claude-sonnet-4-20250514');
     });
   });

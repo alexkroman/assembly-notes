@@ -2,7 +2,7 @@ import type { Store } from '@reduxjs/toolkit';
 import { inject, injectable } from 'tsyringe';
 
 import { DEFAULT_DICTATION_STYLING_PROMPT } from '../../constants/dictationPrompts.js';
-import type { SlackInstallation, SettingsSchema } from '../../types/common.js';
+import type { SettingsSchema } from '../../types/common.js';
 import type { DatabaseService } from '../database.js';
 import { DI_TOKENS } from '../di-tokens.js';
 import type Logger from '../logger.js';
@@ -36,11 +36,9 @@ export class SettingsService {
 
     return {
       assemblyaiKey: dbSettings.assemblyaiKey,
-      slackChannels: dbSettings.slackChannels,
       summaryPrompt: dbSettings.summaryPrompt,
       prompts: dbSettings.prompts,
       autoStart: dbSettings.autoStart,
-      slackInstallation: dbSettings.slackInstallation,
       dictationStylingEnabled: dbSettings.dictationStylingEnabled || false,
       dictationStylingPrompt:
         dbSettings.dictationStylingPrompt || DEFAULT_DICTATION_STYLING_PROMPT,
@@ -48,62 +46,42 @@ export class SettingsService {
     };
   }
 
+  /**
+   * Generic getter for any setting key.
+   * Returns the value from the database for the specified key.
+   */
+  getSetting<K extends keyof SettingsSchema>(key: K): SettingsSchema[K] {
+    const settings = this.databaseService.getSettings();
+    return settings[key];
+  }
+
   updateSettings(updates: Partial<SettingsSchema>): void {
     this.logger.info('SettingsService.updateSettings called with:', updates);
 
-    // Build a new object with only the settings that will be persisted
-    const persistedUpdates = Object.entries(updates).reduce<
-      Partial<SettingsSchema>
-    >((acc, [key, value]) => {
-      // Only persist settings that have meaningful values
-      // For slackInstallation, null is meaningful (clears the installation)
-      // For other settings, only non-null/undefined values are meaningful
-      const shouldPersist = key === 'slackInstallation' || value != null;
+    // Persist each setting to the database
+    for (const [key, value] of Object.entries(updates)) {
+      this.databaseService.setSetting(key, value);
+    }
 
-      if (shouldPersist) {
-        this.databaseService.setSetting(key, value);
-        return { ...acc, [key]: value };
-      }
-
-      return acc;
-    }, {});
-
-    // Update Redux store with only the settings that were actually persisted
-    // This ensures Redux state matches what's in the database
-    this.logger.info(
-      'Dispatching persisted settings update to Redux:',
-      persistedUpdates
-    );
-    this.store.dispatch(updateSettings(persistedUpdates));
-    this.stateBroadcaster.settingsUpdated(persistedUpdates);
+    // Update Redux store
+    this.logger.info('Dispatching settings update to Redux:', updates);
+    this.store.dispatch(updateSettings(updates));
+    this.stateBroadcaster.settingsUpdated(updates);
   }
 
   getAssemblyAIKey(): string {
-    const settings = this.databaseService.getSettings();
-    return settings.assemblyaiKey;
-  }
-
-  getSlackChannels(): string {
-    const settings = this.databaseService.getSettings();
-    return settings.slackChannels;
-  }
-
-  getSlackInstallation(): SlackInstallation | null {
-    const settings = this.databaseService.getSettings();
-    return settings.slackInstallation;
+    return this.getSetting('assemblyaiKey');
   }
 
   getSummaryPrompt(): string {
-    const settings = this.databaseService.getSettings();
     return (
-      settings.summaryPrompt ||
+      this.getSetting('summaryPrompt') ||
       'Summarize the key points from this meeting transcript:'
     );
   }
 
   isAutoStartEnabled(): boolean {
-    const settings = this.databaseService.getSettings();
-    return settings.autoStart;
+    return this.getSetting('autoStart');
   }
 
   getPrompts(): { label: string; content: string }[] {
@@ -122,14 +100,7 @@ export class SettingsService {
 
   // Helper method to safely check if a setting has a non-empty trimmed value
   hasNonEmptySetting(key: keyof SettingsSchema): boolean {
-    const settings = this.databaseService.getSettings();
-    const value = settings[key];
+    const value = this.getSetting(key);
     return Boolean(value && typeof value === 'string' && value.trim());
-  }
-
-  // Helper method to check if Slack is configured
-  hasSlackConfigured(): boolean {
-    const installation = this.getSlackInstallation();
-    return installation !== null;
   }
 }

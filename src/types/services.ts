@@ -25,19 +25,12 @@ export type {
 } from '../main/services/summarizationService.js';
 
 // ============================================================================
-// Slack Integration Service Types
-// ============================================================================
-
-export type { IHttpClient } from '../main/services/slackIntegrationService.js';
-
-// ============================================================================
 // Service Class Types
 // ============================================================================
 
 // Re-export the service classes themselves as types
 export type { TranscriptionService } from '../main/services/transcriptionService.js';
 export type { SummarizationService } from '../main/services/summarizationService.js';
-export type { SlackIntegrationService } from '../main/services/slackIntegrationService.js';
 export type { SettingsService } from '../main/services/settingsService.js';
 export type { RecordingManager } from '../main/services/recordingManager.js';
 export type { RecordingDataService } from '../main/services/recordingDataService.js';
@@ -67,14 +60,6 @@ export interface TranscriptionConnectionResult {
 }
 
 /**
- * Return type for Slack message posting
- */
-export interface SlackPostResult {
-  success: boolean;
-  error?: string;
-}
-
-/**
  * Recording creation result
  */
 export type RecordingCreationResult = string | null;
@@ -99,14 +84,6 @@ export type SummarizationResult = string;
 export interface TranscriptionConfig {
   apiKey: string;
   sampleRate?: number;
-}
-
-/**
- * Configuration for Slack OAuth
- */
-export interface SlackOAuthConfig {
-  clientId: string;
-  clientSecret: string;
 }
 
 /**

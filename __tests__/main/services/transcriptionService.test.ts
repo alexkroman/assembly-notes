@@ -2,78 +2,46 @@ import 'reflect-metadata';
 import { container } from 'tsyringe';
 
 import { DI_TOKENS } from '../../../src/main/di-tokens';
-import {
-  IAssemblyAIClient,
-  IAssemblyAIFactory,
-  TranscriptionCallbacks,
-  TranscriptionService,
-} from '../../../src/main/services/transcriptionService';
+import { TranscriptionService } from '../../../src/main/services/transcriptionService';
 import {
   resetTestContainer,
   registerMock,
 } from '../../test-helpers/container-setup';
+import {
+  createMockRealtimeTranscriber,
+  createMockAssemblyAIClient,
+  createMockAssemblyAIFactory,
+  createMockTranscriptionCallbacks,
+  type MockRealtimeTranscriber,
+  type MockTranscriptionCallbacks,
+} from '../../test-helpers/mock-factories';
 
 // Mock assemblyai module
 jest.mock('assemblyai');
 
-// Mock RealtimeTranscriber
-const mockRealtimeTranscriber = {
-  connect: jest.fn(),
-  sendAudio: jest.fn(),
-  close: jest.fn(),
-  on: jest.fn(),
-  off: jest.fn(),
-};
-
-// Mock AssemblyAI client
-const mockAssemblyAIClient: IAssemblyAIClient = {
-  streaming: {
-    transcriber: jest.fn().mockReturnValue(mockRealtimeTranscriber),
-  },
-};
-
-// Mock AssemblyAI factory
-const mockAssemblyAIFactory = {
-  createClient: jest.fn().mockResolvedValue(mockAssemblyAIClient),
-} as unknown as jest.Mocked<IAssemblyAIFactory>;
-
 describe('TranscriptionService', () => {
   let transcriptionService: TranscriptionService;
-  let callbacks: TranscriptionCallbacks;
+  let callbacks: MockTranscriptionCallbacks;
+  let mockRealtimeTranscriber: MockRealtimeTranscriber;
+  let mockAssemblyAIFactory: ReturnType<typeof createMockAssemblyAIFactory>;
 
   beforeEach(() => {
     // Reset the container and mocks
     resetTestContainer();
     jest.clearAllMocks();
 
-    // Reset mock implementations
-    mockRealtimeTranscriber.connect.mockResolvedValue(undefined);
-    mockRealtimeTranscriber.close.mockResolvedValue(undefined);
-    mockRealtimeTranscriber.on.mockReturnValue(undefined);
-    mockRealtimeTranscriber.off.mockReturnValue(undefined);
-    mockRealtimeTranscriber.sendAudio.mockReturnValue(undefined);
-
-    // Ensure the streaming.transcriber method returns the mock
-    mockAssemblyAIClient.streaming.transcriber = jest
-      .fn()
-      .mockReturnValue(mockRealtimeTranscriber);
-
-    // Reset the factory mock to ensure it returns the client
-    mockAssemblyAIFactory.createClient.mockResolvedValue(mockAssemblyAIClient);
+    // Create mocks using factories
+    mockRealtimeTranscriber = createMockRealtimeTranscriber();
+    const mockAssemblyAIClient = createMockAssemblyAIClient(
+      mockRealtimeTranscriber
+    );
+    mockAssemblyAIFactory = createMockAssemblyAIFactory(mockAssemblyAIClient);
 
     // Register mocks using the helper
     registerMock(DI_TOKENS.AssemblyAIFactory, mockAssemblyAIFactory);
 
     transcriptionService = container.resolve(TranscriptionService);
-
-    callbacks = {
-      onTranscript: jest.fn(),
-      onError: jest.fn(),
-      onConnectionStatus: jest.fn(),
-    };
-
-    // Reset sendAudio mock to default implementation
-    mockRealtimeTranscriber.sendAudio.mockReset();
+    callbacks = createMockTranscriptionCallbacks();
   });
 
   afterEach(() => {

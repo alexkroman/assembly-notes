@@ -5,12 +5,7 @@
  * Defines the contract between main and renderer processes.
  */
 
-import type {
-  PromptTemplate,
-  Recording,
-  SettingsSchema,
-  SlackInstallation,
-} from './common.js';
+import type { PromptTemplate, Recording, SettingsSchema } from './common.js';
 
 // ============================================================================
 // IPC Handlers (Request/Response via ipcMain.handle)
@@ -57,17 +52,6 @@ export interface IPCHandlers {
     return: boolean;
   };
   'save-prompts': { args: [prompts: PromptTemplate[]]; return: boolean };
-
-  // Slack Integration
-  'post-to-slack': {
-    args: [message: string, channelId?: string];
-    return: { success: boolean; error?: string };
-  };
-  // eslint-disable-next-line @typescript-eslint/no-invalid-void-type
-  'slack-oauth-initiate': { args: []; return: void };
-  // eslint-disable-next-line @typescript-eslint/no-invalid-void-type
-  'slack-oauth-remove-installation': { args: []; return: void };
-  'slack-oauth-get-current': { args: []; return: SlackInstallation | null };
 
   // Auto-Update
   // eslint-disable-next-line @typescript-eslint/no-invalid-void-type

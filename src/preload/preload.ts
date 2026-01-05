@@ -11,7 +11,6 @@ import { createInvoker, createSender } from './typed-ipc.js';
 import type {
   UpdateInfo,
   DownloadProgress,
-  SlackInstallation,
   Recording,
 } from '../types/index.js';
 import { IPC_STATE_CHANNELS } from '../types/ipc-events.js';
@@ -47,14 +46,6 @@ const electronAPI = {
   saveSettings: createInvoker('save-settings'),
   savePrompt: createInvoker('save-prompt'),
   savePrompts: createInvoker('save-prompts'),
-
-  // Slack Integration
-  postToSlack: createInvoker('post-to-slack'),
-  slackOAuthInitiate: createInvoker('slack-oauth-initiate'),
-  slackOAuthRemoveInstallation: createInvoker(
-    'slack-oauth-remove-installation'
-  ),
-  slackOAuthGetCurrent: createInvoker('slack-oauth-get-current'),
 
   // Auto-Update
   installUpdate: createInvoker('install-update'),
@@ -116,16 +107,6 @@ const electronAPI = {
   onUpdateReadyToInstall: (callback: (info: UpdateInfo) => void) =>
     ipcRenderer.on('update-ready-to-install', (_event, info) => {
       callback(info as UpdateInfo);
-    }),
-
-  // Slack OAuth Events
-  onSlackOAuthSuccess: (callback: (installation: SlackInstallation) => void) =>
-    ipcRenderer.on('slack-oauth-success', (_event, installation) => {
-      callback(installation as SlackInstallation);
-    }),
-  onSlackOAuthError: (callback: (error: string) => void) =>
-    ipcRenderer.on('slack-oauth-error', (_event, error) => {
-      callback(error as string);
     }),
 
   // Dictation Status Window

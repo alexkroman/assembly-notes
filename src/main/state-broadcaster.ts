@@ -10,11 +10,7 @@ import Logger from 'electron-log';
 import { inject, injectable } from 'tsyringe';
 
 import { DI_TOKENS } from './di-tokens.js';
-import type {
-  Recording,
-  UpdateInfo,
-  SlackInstallation,
-} from '../types/common.js';
+import type { Recording, UpdateInfo } from '../types/common.js';
 import {
   IPC_STATE_CHANNELS,
   type IPCStateChannel,
@@ -117,12 +113,6 @@ export class StateBroadcaster {
 
   settingsUpdated(settings: Partial<SettingsState>): void {
     this.broadcast(IPC_STATE_CHANNELS.SETTINGS_UPDATED, settings);
-  }
-
-  settingsSlackInstallation(installation: SlackInstallation | null): void {
-    this.broadcast(IPC_STATE_CHANNELS.SETTINGS_SLACK_INSTALLATION, {
-      installation,
-    });
   }
 
   // ==================== Update State ====================

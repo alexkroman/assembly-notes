@@ -9,12 +9,7 @@ import { inject, injectable } from 'tsyringe';
 import { DI_TOKENS } from './di-tokens.js';
 import { DEFAULT_PROMPTS } from '../constants/defaultPrompts.js';
 import { DEFAULT_DICTATION_STYLING_PROMPT } from '../constants/dictationPrompts.js';
-import {
-  PromptTemplate,
-  Recording,
-  SettingsSchema,
-  SlackInstallation,
-} from '../types/common.js';
+import { PromptTemplate, Recording, SettingsSchema } from '../types/common.js';
 @injectable()
 class DatabaseService {
   private db: Database.Database;
@@ -152,8 +147,6 @@ class DatabaseService {
       customPrompt: '',
       summaryPrompt: '',
       prompts: JSON.stringify(DEFAULT_PROMPTS),
-      // Slack OAuth fields
-      slackInstallation: JSON.stringify(null),
       autoStart: false,
       userId: crypto.randomUUID(), // Generate default user ID
     };
@@ -221,10 +214,6 @@ class DatabaseService {
         assemblyaiKey: (settingsMap.get('assemblyaiKey') ?? '') as string,
         summaryPrompt: (settingsMap.get('summaryPrompt') ?? '') as string,
         prompts: (settingsMap.get('prompts') ?? []) as PromptTemplate[],
-        // Slack OAuth fields
-        slackInstallation: (settingsMap.get('slackInstallation') ??
-          null) as SlackInstallation | null,
-        slackChannels: (settingsMap.get('slackChannels') ?? '') as string,
         autoStart: (settingsMap.get('autoStart') ?? false) as boolean,
         // Dictation styling settings
         dictationStylingEnabled: (settingsMap.get('dictationStylingEnabled') ??
@@ -242,9 +231,6 @@ class DatabaseService {
         assemblyaiKey: '',
         summaryPrompt: '',
         prompts: [],
-        // Slack OAuth fields
-        slackInstallation: null,
-        slackChannels: '',
         autoStart: false,
         // Dictation styling settings
         dictationStylingEnabled: false,

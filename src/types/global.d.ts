@@ -10,7 +10,6 @@ import type {
   Settings,
   UpdateInfo,
   DownloadProgress,
-  SlackInstallation,
   Recording,
 } from './common.js';
 import type { StateAPI } from './ipc-events.js';
@@ -47,15 +46,6 @@ declare global {
       }) => Promise<boolean>;
       savePrompts: (prompts: PromptTemplate[]) => Promise<boolean>;
 
-      // Slack Integration
-      postToSlack: (
-        message: string,
-        channelId?: string
-      ) => Promise<{ success: boolean; error?: string }>;
-      slackOAuthInitiate: () => Promise<void>;
-      slackOAuthRemoveInstallation: () => Promise<void>;
-      slackOAuthGetCurrent: () => Promise<SlackInstallation | null>;
-
       // Auto-Update
       installUpdate: () => Promise<void>;
       quitAndInstall: () => Promise<void>;
@@ -83,12 +73,6 @@ declare global {
       onUpdateDownloaded: (callback: (info: UpdateInfo) => void) => void;
       onUpdateError: (callback: (error: string) => void) => void;
       onUpdateReadyToInstall: (callback: (info: UpdateInfo) => void) => void;
-
-      // Slack OAuth Events
-      onSlackOAuthSuccess: (
-        callback: (installation: SlackInstallation) => void
-      ) => void;
-      onSlackOAuthError: (callback: (error: string) => void) => void;
 
       // Dictation Status Window
       onDictationStatusUpdate: (

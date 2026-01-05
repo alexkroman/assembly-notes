@@ -40,15 +40,3 @@ export class NetworkUnavailableError extends NetworkError {
     super(message, ErrorCode.NETWORK_UNAVAILABLE);
   }
 }
-
-/**
- * Error thrown when Slack API call fails
- */
-export class SlackApiError extends NetworkError {
-  constructor(operation: string, slackError?: string) {
-    const message = slackError
-      ? `Slack API error during ${operation}: ${slackError}`
-      : `Slack API error during ${operation}`;
-    super(message, ErrorCode.SLACK_POST_FAILED);
-  }
-}

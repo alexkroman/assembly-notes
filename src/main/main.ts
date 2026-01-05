@@ -9,7 +9,8 @@ import { initMain as initAudioLoopback } from 'electron-audio-loopback';
 dotenv.config();
 
 // Set different app name for development builds - MUST be done early!
-if (!app.isPackaged) {
+// Use USE_PROD_DATA=true to run dev against production database
+if (!app.isPackaged && process.env['USE_PROD_DATA'] !== 'true') {
   app.setName('Assembly-Notes-Dev');
 }
 

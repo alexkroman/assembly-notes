@@ -7,7 +7,6 @@ import {
   setActiveModal,
   setStatus,
 } from '../store';
-import { ChannelModal } from './ChannelModal';
 import { ErrorBoundary } from './ErrorBoundary';
 import { PromptModal } from './PromptModal';
 import { RecordingErrorBoundary } from './RecordingErrorBoundary';
@@ -116,9 +115,6 @@ export const App: React.FC = () => {
                 onShowPromptModal={() => {
                   dispatch(setActiveModal('prompt'));
                 }}
-                onShowChannelModal={() => {
-                  dispatch(setActiveModal('channel'));
-                }}
                 isStoppingForNavigation={isStoppingForNavigation}
               />
             </RecordingErrorBoundary>
@@ -135,14 +131,6 @@ export const App: React.FC = () => {
 
         {activeModal === 'prompt' && (
           <PromptModal
-            onClose={() => {
-              dispatch(setActiveModal(null));
-            }}
-          />
-        )}
-
-        {activeModal === 'channel' && (
-          <ChannelModal
             onClose={() => {
               dispatch(setActiveModal(null));
             }}

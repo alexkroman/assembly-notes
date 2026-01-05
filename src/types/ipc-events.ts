@@ -6,7 +6,7 @@
  * via webContents.send(), renderer listens and dispatches to Redux.
  */
 
-import type { Recording, UpdateInfo, SlackInstallation } from './common.js';
+import type { Recording, UpdateInfo } from './common.js';
 import type {
   RecordingStatus,
   TranscriptSegment,
@@ -32,7 +32,6 @@ export const IPC_STATE_CHANNELS = {
 
   // Settings state
   SETTINGS_UPDATED: 'state:settings:updated',
-  SETTINGS_SLACK_INSTALLATION: 'state:settings:slack-installation',
 
   // Update state
   UPDATE_CHECKING: 'state:update:checking',
@@ -94,9 +93,6 @@ export interface IPCStatePayloads {
 
   // Settings payloads
   [IPC_STATE_CHANNELS.SETTINGS_UPDATED]: Partial<SettingsState>;
-  [IPC_STATE_CHANNELS.SETTINGS_SLACK_INSTALLATION]: {
-    installation: SlackInstallation | null;
-  };
 
   // Update payloads
   [IPC_STATE_CHANNELS.UPDATE_CHECKING]: Record<string, never>;
@@ -192,11 +188,6 @@ export interface StateAPI {
   onSettingsUpdated: (
     callback: (
       payload: IPCStatePayloads[typeof IPC_STATE_CHANNELS.SETTINGS_UPDATED]
-    ) => void
-  ) => void;
-  onSettingsSlackInstallation: (
-    callback: (
-      payload: IPCStatePayloads[typeof IPC_STATE_CHANNELS.SETTINGS_SLACK_INSTALLATION]
     ) => void
   ) => void;
 

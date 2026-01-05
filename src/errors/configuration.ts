@@ -24,15 +24,3 @@ export class MissingApiKeyError extends ConfigurationError {
     );
   }
 }
-
-/**
- * Error thrown when Slack configuration is missing or invalid
- */
-export class SlackNotConfiguredError extends ConfigurationError {
-  constructor() {
-    super(
-      'Slack is not configured. Please complete the Slack OAuth setup in settings.',
-      ErrorCode.SLACK_NOT_CONFIGURED
-    );
-  }
-}

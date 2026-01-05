@@ -15,10 +15,6 @@ import { RecordingDataService } from './services/recordingDataService.js';
 import { RecordingManager } from './services/recordingManager.js';
 import { SettingsService } from './services/settingsService.js';
 import {
-  SlackIntegrationService,
-  FetchHttpClient,
-} from './services/slackIntegrationService.js';
-import {
   AssemblyAIFactoryWithLemur,
   SummarizationService,
 } from './services/summarizationService.js';
@@ -58,18 +54,11 @@ export function setupContainer(mainWindow: BrowserWindow): void {
   container.register(DI_TOKENS.AssemblyAIFactoryWithLemur, {
     useClass: AssemblyAIFactoryWithLemur,
   });
-  container.register(DI_TOKENS.HttpClient, {
-    useClass: FetchHttpClient,
-  });
 
   // Register services as singletons
   container.registerSingleton(DI_TOKENS.PostHogService, PostHogService);
   container.registerSingleton(DI_TOKENS.DatabaseService, DatabaseService);
   container.registerSingleton(DI_TOKENS.SettingsService, SettingsService);
-  container.registerSingleton(
-    DI_TOKENS.SlackIntegrationService,
-    SlackIntegrationService
-  );
   container.registerSingleton(
     DI_TOKENS.TranscriptionService,
     TranscriptionService
