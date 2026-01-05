@@ -185,6 +185,12 @@ function setupIpcHandlers(
     }
   );
 
+  ipcMain.handle('show-transcripts-folder', async () => {
+    const transcriptsDir = transcriptFileService.getTranscriptsDir();
+    await shell.openPath(transcriptsDir);
+    return true;
+  });
+
   // ==================== Settings ====================
 
   ipcMain.handle('get-settings', () => settingsService.getSettings());

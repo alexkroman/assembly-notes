@@ -42,6 +42,7 @@ export interface IPCHandlers {
   };
   'get-audio-file-path': { args: [recordingId: string]; return: string | null };
   'show-audio-in-folder': { args: [recordingId: string]; return: boolean };
+  'show-transcripts-folder': { args: []; return: boolean };
 
   // Settings
   'get-settings': { args: []; return: SettingsSchema };

@@ -37,6 +37,7 @@ declare global {
       updateRecordingSummary: (id: string, summary: string) => Promise<void>;
       getAudioFilePath: (recordingId: string) => Promise<string | null>;
       showAudioInFolder: (recordingId: string) => Promise<boolean>;
+      showTranscriptsFolder: () => Promise<boolean>;
 
       // Settings
       getSettings: () => Promise<Settings>;

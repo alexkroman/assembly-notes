@@ -178,5 +178,5 @@
   },
   "include": ["src/**/*", "types/**/*"],
   "typeRoots": ["./node_modules/@types", "./types"],
-  "exclude": ["node_modules", "dist", "build"]
+  "exclude": ["node_modules", "dist", "build", "src/preload/**/*"]
 }

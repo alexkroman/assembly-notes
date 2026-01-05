@@ -19,7 +19,7 @@ export default defineConfig(({ command, mode }) => {
         lib: {
           entry: path.resolve(__dirname, 'src/preload/preload.ts'),
           name: 'preload',
-          fileName: 'preload',
+          fileName: () => 'preload.js',
           formats: ['cjs'],
         },
         rollupOptions: {

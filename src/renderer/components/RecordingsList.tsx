@@ -198,6 +198,17 @@ export const RecordingsList: React.FC<RecordingsListProps> = ({
             </button>
             <button
               type="button"
+              className="px-2 h-8 rounded-sm bg-white/[0.12] border border-white/[0.24] text-white text-sm cursor-pointer transition-all duration-200 flex items-center justify-center whitespace-nowrap flex-shrink-0 min-w-[32px] hover:bg-white/[0.05]"
+              data-testid="open-folder-button"
+              onClick={() => {
+                void window.electronAPI.showTranscriptsFolder();
+              }}
+              title="Open recordings folder"
+            >
+              📁
+            </button>
+            <button
+              type="button"
               className={`px-2 h-8 rounded-sm bg-white/[0.12] border border-white/[0.24] text-white text-sm cursor-pointer transition-all duration-200 flex items-center justify-center whitespace-nowrap flex-shrink-0 min-w-[32px] hover:bg-white/[0.05] ${isRecordingActive ? 'opacity-50 cursor-not-allowed' : ''}`}
               data-testid="settings-button"
               onClick={() => {

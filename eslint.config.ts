@@ -21,6 +21,7 @@ export default tseslint.config(
       'oauth-proxy/**',
       'packages/**',
       'release/**',
+      'src/preload/**',
     ],
   },
 
