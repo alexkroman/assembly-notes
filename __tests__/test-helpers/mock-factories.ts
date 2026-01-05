@@ -61,15 +61,13 @@ export function createMockAssemblyAIFactory(
   };
 }
 
-export interface MockLemurClient {
-  task: jest.Mock;
+export interface MockLLMGatewayService {
+  chat: jest.Mock;
 }
 
-export function createMockLemurClient(): MockLemurClient {
+export function createMockLLMGatewayService(): MockLLMGatewayService {
   return {
-    task: jest.fn().mockResolvedValue({
-      response: 'Mock summary response',
-    }),
+    chat: jest.fn().mockResolvedValue('Mock summary response'),
   };
 }
 

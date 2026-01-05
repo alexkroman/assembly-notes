@@ -110,12 +110,8 @@ const mockMainWindow = {
   webContents: { send: jest.fn() },
 } as unknown as BrowserWindow;
 
-const mockAssemblyAIFactory = {
-  createClient: jest.fn().mockResolvedValue({
-    lemur: {
-      task: jest.fn().mockResolvedValue({ response: 'styled text' }),
-    },
-  }),
+const mockLLMGatewayService = {
+  chat: jest.fn().mockResolvedValue('styled text'),
 } as any;
 
 describe('DictationService', () => {
@@ -145,8 +141,8 @@ describe('DictationService', () => {
     container.register(DI_TOKENS.DictationStatusWindow, {
       useValue: mockDictationStatusWindow,
     });
-    container.register(DI_TOKENS.AssemblyAIFactoryWithLemur, {
-      useValue: mockAssemblyAIFactory,
+    container.register(DI_TOKENS.LLMGatewayService, {
+      useValue: mockLLMGatewayService,
     });
     container.register(DI_TOKENS.StateBroadcaster, {
       useValue: {

@@ -56,15 +56,3 @@ export const settingsStore = {
 if (!settingsStore.get('userId')) {
   settingsStore.set('userId', crypto.randomUUID());
 }
-
-// Migrate encrypted API key back to plain text (one-time migration)
-const rawStore = store.store as unknown as Record<string, unknown>;
-if (
-  rawStore['assemblyaiKeyEncrypted'] &&
-  typeof rawStore['assemblyaiKeyEncrypted'] === 'string'
-) {
-  // The encrypted key can't be decrypted without safeStorage, so just clear it
-  // Users will need to re-enter their API key
-  delete rawStore['assemblyaiKeyEncrypted'];
-  store.store = rawStore as unknown as SettingsStoreSchema;
-}
