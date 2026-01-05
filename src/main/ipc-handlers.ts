@@ -1,16 +1,17 @@
+/**
+ * IPC Handlers
+ *
+ * Registers all IPC handlers for communication between main and renderer processes.
+ * Uses typed registry helpers for compile-time type safety.
+ */
+
 import type { Store } from '@reduxjs/toolkit';
-import {
-  BrowserWindow,
-  IpcMainEvent,
-  IpcMainInvokeEvent,
-  ipcMain,
-  shell,
-} from 'electron';
+import { BrowserWindow, shell } from 'electron';
 
 import type { AutoUpdaterService } from './auto-updater.js';
 import { DI_TOKENS, container } from './container.js';
 import type { DatabaseService } from './database.js';
-import { PromptTemplate, SettingsSchema } from '../types/common.js';
+import { registerHandler, registerEvent } from './ipc-registry.js';
 import type { RecordingDataService } from './services/recordingDataService.js';
 import type { RecordingManager } from './services/recordingManager.js';
 import type { SettingsService } from './services/settingsService.js';
@@ -21,6 +22,7 @@ import {
   updateCurrentRecordingSummary,
 } from './store/slices/recordingsSlice.js';
 import type { AppDispatch, RootState } from './store/store.js';
+import { PromptTemplate } from '../types/common.js';
 
 interface LogLevel {
   info: (message: string) => void;
@@ -33,6 +35,7 @@ function setupIpcHandlers(
   _mainWindow: BrowserWindow,
   _store: Store<RootState> & { dispatch: AppDispatch }
 ): void {
+  // Resolve all services once at setup time
   const recordingManager = container.resolve<RecordingManager>(
     DI_TOKENS.RecordingManager
   );
@@ -54,344 +57,194 @@ function setupIpcHandlers(
   const stateBroadcaster = container.resolve<StateBroadcaster>(
     DI_TOKENS.StateBroadcaster
   );
-
-  ipcMain.on(
-    'log',
-    (_event: IpcMainEvent, level: keyof LogLevel, ...args: unknown[]) => {
-      const message = args
-        .map((arg) => {
-          if (typeof arg === 'object' && arg !== null) {
-            return JSON.stringify(arg);
-          }
-          return String(arg);
-        })
-        .join(' ');
-
-      (logger as LogLevel)[level](`[Renderer] ${message}`);
-    }
+  const databaseService = container.resolve<DatabaseService>(
+    DI_TOKENS.DatabaseService
   );
-
-  ipcMain.on(
-    'microphone-audio-data',
-    (_event: IpcMainEvent, audioData: ArrayBuffer) => {
-      recordingManager.sendMicrophoneAudio(audioData);
-    }
+  const settingsService = container.resolve<SettingsService>(
+    DI_TOKENS.SettingsService
   );
+  const audioRecordingService = container.resolve<
+    import('./services/audioRecordingService.js').AudioRecordingService
+  >(DI_TOKENS.AudioRecordingService);
 
-  ipcMain.on(
-    'system-audio-data',
-    (_event: IpcMainEvent, audioData: ArrayBuffer) => {
-      recordingManager.sendSystemAudio(audioData);
-    }
-  );
+  // ==================== Events (Fire-and-Forget) ====================
 
-  ipcMain.handle('start-recording', async (): Promise<boolean> => {
-    const result = await recordingManager.startTranscription();
-    return result;
-  });
-
-  ipcMain.handle('stop-recording', async (): Promise<boolean> => {
-    return await recordingManager.stopTranscription();
-  });
-
-  ipcMain.handle('new-recording', async (): Promise<string | null> => {
-    return await recordingDataService.newRecording();
-  });
-
-  ipcMain.handle(
-    'load-recording',
-    (_event: IpcMainInvokeEvent, recordingId: string): boolean => {
-      return recordingDataService.loadRecording(recordingId);
-    }
-  );
-
-  ipcMain.handle(
-    'update-recording-title',
-    (
-      _event: IpcMainInvokeEvent,
-      recordingId: string,
-      title: string
-    ): Promise<void> => {
-      // Only allow updates to the current recording
-      const state = store.getState();
-      const currentRecording = state.recordings.currentRecording;
-
-      if (currentRecording?.id !== recordingId) {
-        logger.warn(
-          `Ignoring title update: not the current recording (requested: ${recordingId}, current: ${currentRecording?.id ?? 'none'})`
-        );
-        return Promise.resolve();
-      }
-
-      const databaseService = container.resolve<DatabaseService>(
-        DI_TOKENS.DatabaseService
-      );
-      databaseService.updateRecording(recordingId, { title });
-
-      // Update Redux state to maintain single source of truth
-      store.dispatch(updateCurrentRecordingTitle(title));
-      stateBroadcaster.recordingsTitle(title);
-      return Promise.resolve();
-    }
-  );
-
-  ipcMain.handle(
-    'update-recording-summary',
-    (
-      _event: IpcMainInvokeEvent,
-      recordingId: string,
-      summary: string
-    ): Promise<void> => {
-      // Only allow updates to the current recording
-      const state = store.getState();
-      const currentRecording = state.recordings.currentRecording;
-
-      if (currentRecording?.id !== recordingId) {
-        logger.warn(
-          `Ignoring summary update: not the current recording (requested: ${recordingId}, current: ${currentRecording?.id ?? 'none'})`
-        );
-        return Promise.resolve();
-      }
-
-      const databaseService = container.resolve<DatabaseService>(
-        DI_TOKENS.DatabaseService
-      );
-      databaseService.updateRecording(recordingId, { summary });
-
-      // Update Redux state to maintain single source of truth
-      store.dispatch(updateCurrentRecordingSummary(summary));
-      stateBroadcaster.recordingsSummary(summary);
-      return Promise.resolve();
-    }
-  );
-
-  ipcMain.handle(
-    'summarize-transcript',
-    async (
-      _event: IpcMainInvokeEvent,
-      transcript?: string
-    ): Promise<boolean> => {
-      return await recordingManager.summarizeTranscript(transcript);
-    }
-  );
-
-  ipcMain.handle('get-settings', () => {
-    const settingsService = container.resolve<SettingsService>(
-      DI_TOKENS.SettingsService
-    );
-    return settingsService.getSettings();
-  });
-
-  ipcMain.handle(
-    'save-settings',
-    (
-      _event: IpcMainInvokeEvent,
-      newSettings: Partial<SettingsSchema>
-    ): boolean => {
-      const mappedSettings = { ...newSettings };
-      if (newSettings.prompts) {
-        mappedSettings.prompts = newSettings.prompts.map(
-          (p: PromptTemplate) => ({
-            name: p.name,
-            content: p.content,
-          })
-        );
-      }
-
-      const settingsService = container.resolve<SettingsService>(
-        DI_TOKENS.SettingsService
-      );
-      settingsService.updateSettings(mappedSettings);
-      return true;
-    }
-  );
-
-  ipcMain.handle(
-    'save-prompt',
-    (
-      _event: IpcMainInvokeEvent,
-      promptSettings: Pick<SettingsSchema, 'summaryPrompt'>
-    ): boolean => {
-      const settingsService = container.resolve<SettingsService>(
-        DI_TOKENS.SettingsService
-      );
-      settingsService.updateSettings(promptSettings);
-      return true;
-    }
-  );
-
-  ipcMain.handle(
-    'save-prompts',
-    (_event: IpcMainInvokeEvent, prompts: PromptTemplate[]): boolean => {
-      const settingsService = container.resolve<SettingsService>(
-        DI_TOKENS.SettingsService
-      );
-      settingsService.updateSettings({ prompts });
-      return true;
-    }
-  );
-
-  ipcMain.handle(
-    'post-to-slack',
-    async (
-      _event: IpcMainInvokeEvent,
-      message: string,
-      channelId?: string
-    ): Promise<{ success: boolean; error?: string }> => {
-      return await slackIntegrationService.postMessage(message, channelId);
-    }
-  );
-
-  // Slack OAuth handlers
-  ipcMain.handle(
-    'slack-oauth-initiate',
-    async (_event: IpcMainInvokeEvent): Promise<void> => {
-      await slackIntegrationService.initiateOAuth();
-    }
-  );
-
-  ipcMain.handle(
-    'slack-oauth-remove-installation',
-    (_event: IpcMainInvokeEvent): void => {
-      slackIntegrationService.removeInstallation();
-    }
-  );
-
-  ipcMain.handle('install-update', async (): Promise<void> => {
-    try {
-      logger.info('IPC: install-update requested');
-      const state = store.getState();
-
-      // If already downloading or downloaded, don't start another download
-      if (state.update.downloading) {
-        logger.info('Update already downloading, skipping duplicate download');
-        return;
-      }
-
-      if (state.update.downloaded) {
-        logger.info('Update already downloaded, skipping duplicate download');
-        return;
-      }
-
-      await autoUpdaterService.downloadUpdate();
-    } catch (error) {
-      logger.error('IPC Handler: install-update error:', error);
-      throw error;
-    }
-  });
-
-  ipcMain.handle('quit-and-install', (): void => {
-    try {
-      logger.info('IPC: quit-and-install requested');
-      autoUpdaterService.quitAndInstall();
-    } catch (error) {
-      logger.error('IPC Handler: quit-and-install error:', error);
-      throw error;
-    }
-  });
-
-  ipcMain.handle('check-for-updates', async (): Promise<void> => {
-    try {
-      logger.info('IPC: check-for-updates requested');
-      await autoUpdaterService.checkForUpdates();
-    } catch (error) {
-      logger.error('IPC Handler: check-for-updates error:', error);
-      throw error;
-    }
-  });
-
-  ipcMain.handle('get-update-status', (): unknown => {
-    return autoUpdaterService.getUpdateStatus();
-  });
-
-  ipcMain.handle('get-all-recordings', () => {
-    const databaseService = container.resolve<DatabaseService>(
-      DI_TOKENS.DatabaseService
-    );
-    return databaseService.getAllRecordings();
-  });
-
-  ipcMain.handle(
-    'search-recordings',
-    (_event: IpcMainInvokeEvent, query: string) => {
-      const databaseService = container.resolve<DatabaseService>(
-        DI_TOKENS.DatabaseService
-      );
-      return databaseService.searchRecordings(query);
-    }
-  );
-
-  ipcMain.handle('get-recording', (_event: IpcMainInvokeEvent, id: string) => {
-    const databaseService = container.resolve<DatabaseService>(
-      DI_TOKENS.DatabaseService
-    );
-    return databaseService.getRecording(id);
-  });
-
-  ipcMain.handle(
-    'delete-recording',
-    (_event: IpcMainInvokeEvent, id: string) => {
-      const databaseService = container.resolve<DatabaseService>(
-        DI_TOKENS.DatabaseService
-      );
-      databaseService.deleteRecording(id);
-      return true;
-    }
-  );
-
-  ipcMain.handle('slack-oauth-get-current', () => {
-    return slackIntegrationService.getCurrentInstallation();
-  });
-
-  ipcMain.handle('slack-oauth-validate-channels', (): void => {
-    // No validation needed - we assume all channels exist
-    return;
-  });
-
-  ipcMain.handle(
-    'get-audio-file-path',
-    (_event: IpcMainInvokeEvent, recordingId: string): string | null => {
-      const database = container.resolve<DatabaseService>(
-        DI_TOKENS.DatabaseService
-      );
-      const audioRecordingService = container.resolve<
-        import('./services/audioRecordingService.js').AudioRecordingService
-      >(DI_TOKENS.AudioRecordingService);
-
-      const recording = database.getRecording(recordingId);
-      if (recording?.audio_filename) {
-        const filepath = audioRecordingService.getAudioFilePath(
-          recording.audio_filename
-        );
-        return filepath;
-      }
-      return null;
-    }
-  );
-
-  ipcMain.handle(
-    'show-audio-in-folder',
-    (_event: IpcMainInvokeEvent, recordingId: string): boolean => {
-      const database = container.resolve<DatabaseService>(
-        DI_TOKENS.DatabaseService
-      );
-      const audioRecordingService = container.resolve<
-        import('./services/audioRecordingService.js').AudioRecordingService
-      >(DI_TOKENS.AudioRecordingService);
-
-      const recording = database.getRecording(recordingId);
-      if (recording?.audio_filename) {
-        const filepath = audioRecordingService.getAudioFilePath(
-          recording.audio_filename
-        );
-        if (filepath) {
-          shell.showItemInFolder(filepath);
-          return true;
+  registerEvent('log', (level, ...args) => {
+    const message = args
+      .map((arg) => {
+        if (typeof arg === 'object' && arg !== null) {
+          return JSON.stringify(arg);
         }
-      }
-      return false;
-    }
+        return String(arg);
+      })
+      .join(' ');
+    (logger as LogLevel)[level](`[Renderer] ${message}`);
+  });
+
+  registerEvent('microphone-audio-data', (audioData) => {
+    recordingManager.sendMicrophoneAudio(audioData);
+  });
+
+  registerEvent('system-audio-data', (audioData) => {
+    recordingManager.sendSystemAudio(audioData);
+  });
+
+  // ==================== Recording Control ====================
+
+  registerHandler('start-recording', () =>
+    recordingManager.startTranscription()
   );
+
+  registerHandler('stop-recording', () => recordingManager.stopTranscription());
+
+  registerHandler('new-recording', () => recordingDataService.newRecording());
+
+  registerHandler('load-recording', (recordingId) =>
+    recordingDataService.loadRecording(recordingId)
+  );
+
+  registerHandler('summarize-transcript', (transcript) =>
+    recordingManager.summarizeTranscript(transcript)
+  );
+
+  // ==================== Recording Data ====================
+
+  registerHandler('get-all-recordings', () =>
+    databaseService.getAllRecordings()
+  );
+
+  registerHandler('search-recordings', (query) =>
+    databaseService.searchRecordings(query)
+  );
+
+  registerHandler('get-recording', (id) => databaseService.getRecording(id));
+
+  registerHandler('delete-recording', (id) => {
+    databaseService.deleteRecording(id);
+    return true;
+  });
+
+  registerHandler('update-recording-title', (recordingId, title) => {
+    const state = store.getState();
+    const currentRecording = state.recordings.currentRecording;
+
+    if (currentRecording?.id !== recordingId) {
+      logger.warn(
+        `Ignoring title update: not the current recording (requested: ${recordingId}, current: ${currentRecording?.id ?? 'none'})`
+      );
+      return;
+    }
+
+    databaseService.updateRecording(recordingId, { title });
+    store.dispatch(updateCurrentRecordingTitle(title));
+    stateBroadcaster.recordingsTitle(title);
+  });
+
+  registerHandler('update-recording-summary', (recordingId, summary) => {
+    const state = store.getState();
+    const currentRecording = state.recordings.currentRecording;
+
+    if (currentRecording?.id !== recordingId) {
+      logger.warn(
+        `Ignoring summary update: not the current recording (requested: ${recordingId}, current: ${currentRecording?.id ?? 'none'})`
+      );
+      return;
+    }
+
+    databaseService.updateRecording(recordingId, { summary });
+    store.dispatch(updateCurrentRecordingSummary(summary));
+    stateBroadcaster.recordingsSummary(summary);
+  });
+
+  registerHandler('get-audio-file-path', (recordingId) => {
+    const recording = databaseService.getRecording(recordingId);
+    if (recording?.audio_filename) {
+      return audioRecordingService.getAudioFilePath(recording.audio_filename);
+    }
+    return null;
+  });
+
+  registerHandler('show-audio-in-folder', (recordingId) => {
+    const recording = databaseService.getRecording(recordingId);
+    if (recording?.audio_filename) {
+      const filepath = audioRecordingService.getAudioFilePath(
+        recording.audio_filename
+      );
+      if (filepath) {
+        shell.showItemInFolder(filepath);
+        return true;
+      }
+    }
+    return false;
+  });
+
+  // ==================== Settings ====================
+
+  registerHandler('get-settings', () => settingsService.getSettings());
+
+  registerHandler('save-settings', (newSettings) => {
+    const mappedSettings = { ...newSettings };
+    if (newSettings.prompts) {
+      mappedSettings.prompts = newSettings.prompts.map((p: PromptTemplate) => ({
+        name: p.name,
+        content: p.content,
+      }));
+    }
+    settingsService.updateSettings(mappedSettings);
+    return true;
+  });
+
+  registerHandler('save-prompt', (promptSettings) => {
+    settingsService.updateSettings(promptSettings);
+    return true;
+  });
+
+  registerHandler('save-prompts', (prompts) => {
+    settingsService.updateSettings({ prompts });
+    return true;
+  });
+
+  // ==================== Slack Integration ====================
+
+  registerHandler('post-to-slack', (message, channelId) =>
+    slackIntegrationService.postMessage(message, channelId)
+  );
+
+  registerHandler('slack-oauth-initiate', () =>
+    slackIntegrationService.initiateOAuth()
+  );
+
+  registerHandler('slack-oauth-remove-installation', () => {
+    slackIntegrationService.removeInstallation();
+  });
+
+  registerHandler('slack-oauth-get-current', () =>
+    slackIntegrationService.getCurrentInstallation()
+  );
+
+  // ==================== Auto-Update ====================
+
+  registerHandler('install-update', async () => {
+    logger.info('IPC: install-update requested');
+    const state = store.getState();
+
+    if (state.update.downloading) {
+      logger.info('Update already downloading, skipping duplicate download');
+      return;
+    }
+
+    if (state.update.downloaded) {
+      logger.info('Update already downloaded, skipping duplicate download');
+      return;
+    }
+
+    await autoUpdaterService.downloadUpdate();
+  });
+
+  registerHandler('quit-and-install', () => {
+    logger.info('IPC: quit-and-install requested');
+    autoUpdaterService.quitAndInstall();
+  });
 }
 
 export { setupIpcHandlers };

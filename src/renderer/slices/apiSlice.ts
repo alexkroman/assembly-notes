@@ -97,8 +97,7 @@ export const apiSlice = createApi({
     getAllRecordings: builder.query<Recording[], undefined>({
       queryFn: async () => {
         try {
-          const data =
-            (await window.electronAPI.getAllRecordings()) as Recording[];
+          const data = await window.electronAPI.getAllRecordings();
           return { data };
         } catch (error) {
           return {
@@ -118,9 +117,7 @@ export const apiSlice = createApi({
     searchRecordings: builder.query<Recording[], string>({
       queryFn: async (query) => {
         try {
-          const data = (await window.electronAPI.searchRecordings(
-            query
-          )) as Recording[];
+          const data = await window.electronAPI.searchRecordings(query);
           return { data };
         } catch (error) {
           return {
@@ -140,7 +137,15 @@ export const apiSlice = createApi({
     getRecording: builder.query<Recording, string>({
       queryFn: async (id) => {
         try {
-          const data = (await window.electronAPI.getRecording(id)) as Recording;
+          const data = await window.electronAPI.getRecording(id);
+          if (!data) {
+            return {
+              error: {
+                status: 'CUSTOM_ERROR',
+                error: 'Recording not found',
+              },
+            };
+          }
           return { data };
         } catch (error) {
           return {

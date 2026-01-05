@@ -20,23 +20,17 @@ function DictationStatus() {
     startAudioRef.current.volume = 0.2;
     stopAudioRef.current.volume = 0.2;
 
-    // @ts-expect-error - Using the dictation status update listener
-    // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
-    if (window.electronAPI?.onDictationStatusUpdate) {
-      // @ts-expect-error - Using the dictation status update listener
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-call
-      window.electronAPI.onDictationStatusUpdate((status: boolean) => {
-        // Play appropriate sound
-        if (status) {
-          void startAudioRef.current?.play();
-        } else {
-          void stopAudioRef.current?.play();
-        }
+    window.electronAPI.onDictationStatusUpdate((status: boolean) => {
+      // Play appropriate sound
+      if (status) {
+        void startAudioRef.current?.play();
+      } else {
+        void stopAudioRef.current?.play();
+      }
 
-        setIsDictating(status);
-        setIsAnimating(status);
-      });
-    }
+      setIsDictating(status);
+      setIsAnimating(status);
+    });
   }, []);
 
   const isMac = navigator.userAgent.toUpperCase().includes('MAC');
