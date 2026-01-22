@@ -47,46 +47,61 @@ export async function acquireStreams(isDictationMode = false): Promise<{
     }
 
     // Normal recording mode - capture system audio
-    window.logger.info('Enabling loopback audio...');
-    await window.electronAPI.enableLoopbackAudio();
+    // Try to get system audio via getDisplayMedia, with graceful fallback
+    try {
+      // Enable loopback audio driver - required for getDisplayMedia audio support in Electron
+      window.logger.info('Enabling loopback audio...');
+      await window.electronAPI.enableLoopbackAudio();
 
-    window.logger.info('Acquiring display media stream...');
-    const displayStream = await navigator.mediaDevices.getDisplayMedia({
-      audio: true,
-      video: true,
-    });
-
-    // Remove video tracks that we don't need
-    // Note: You may find bugs if you don't remove video tracks
-    const videoTracks = displayStream.getVideoTracks();
-    videoTracks.forEach((track) => {
-      track.stop();
-      displayStream.removeTrack(track);
-    });
-
-    await window.electronAPI.disableLoopbackAudio();
-
-    // Verify that we actually got audio tracks from the display media
-    const audioTracks = displayStream.getAudioTracks();
-    window.logger.info(
-      `Display media audio tracks: ${String(audioTracks.length)}`
-    );
-
-    if (audioTracks.length === 0) {
-      window.logger.warn(
-        'No audio tracks in display media stream. System audio will not be captured. ' +
-          'On macOS, ensure Screen Recording permission is granted in System Preferences > Privacy & Security > Screen Recording.'
-      );
-      // Continue without system audio - microphone will still work
-      systemAudioStream = null;
-    } else {
-      // Log audio track details for debugging
-      audioTracks.forEach((track, index) => {
-        window.logger.info(
-          `Audio track ${String(index)}: label="${track.label}", enabled=${String(track.enabled)}, muted=${String(track.muted)}`
-        );
+      window.logger.info('Acquiring display media stream for system audio...');
+      const displayStream = await navigator.mediaDevices.getDisplayMedia({
+        audio: true,
+        video: true,
       });
-      systemAudioStream = displayStream;
+
+      // Remove video tracks that we don't need
+      const videoTracks = displayStream.getVideoTracks();
+      videoTracks.forEach((track) => {
+        track.stop();
+        displayStream.removeTrack(track);
+      });
+
+      // Disable loopback audio after acquiring stream
+      await window.electronAPI.disableLoopbackAudio();
+
+      // Verify that we actually got audio tracks from the display media
+      const audioTracks = displayStream.getAudioTracks();
+      window.logger.info(
+        `Display media audio tracks: ${String(audioTracks.length)}`
+      );
+
+      if (audioTracks.length === 0) {
+        window.logger.warn(
+          'No audio tracks in display media stream. System audio will not be captured. ' +
+            'On macOS, ensure Screen Recording permission is granted in System Preferences > Privacy & Security > Screen Recording.'
+        );
+        systemAudioStream = null;
+      } else {
+        audioTracks.forEach((track, index) => {
+          window.logger.info(
+            `Audio track ${String(index)}: label="${track.label}", enabled=${String(track.enabled)}, muted=${String(track.muted)}`
+          );
+        });
+        systemAudioStream = displayStream;
+      }
+    } catch (displayError) {
+      // System audio capture failed - continue with microphone only
+      window.logger.warn(
+        'Failed to capture system audio, continuing with microphone only:',
+        displayError instanceof Error
+          ? displayError.message
+          : String(displayError)
+      );
+      // Make sure to disable loopback audio even on error
+      await window.electronAPI.disableLoopbackAudio().catch(() => {
+        // Ignore errors when disabling loopback audio
+      });
+      systemAudioStream = null;
     }
 
     // Audio will be mixed in the audio processing stage
