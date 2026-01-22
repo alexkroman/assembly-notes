@@ -66,12 +66,35 @@ export async function acquireStreams(isDictationMode = false): Promise<{
 
     await window.electronAPI.disableLoopbackAudio();
 
-    systemAudioStream = displayStream;
+    // Verify that we actually got audio tracks from the display media
+    const audioTracks = displayStream.getAudioTracks();
+    window.logger.info(
+      `Display media audio tracks: ${String(audioTracks.length)}`
+    );
+
+    if (audioTracks.length === 0) {
+      window.logger.warn(
+        'No audio tracks in display media stream. System audio will not be captured. ' +
+          'On macOS, ensure Screen Recording permission is granted in System Preferences > Privacy & Security > Screen Recording.'
+      );
+      // Continue without system audio - microphone will still work
+      systemAudioStream = null;
+    } else {
+      // Log audio track details for debugging
+      audioTracks.forEach((track, index) => {
+        window.logger.info(
+          `Audio track ${String(index)}: label="${track.label}", enabled=${String(track.enabled)}, muted=${String(track.muted)}`
+        );
+      });
+      systemAudioStream = displayStream;
+    }
 
     // Audio will be mixed in the audio processing stage
     // Chrome's echo cancellation on the microphone will remove the system audio echo
     window.logger.info(
-      'Streams acquired, will be mixed with echo cancellation in audio processor'
+      systemAudioStream
+        ? 'Streams acquired, will be mixed with echo cancellation in audio processor'
+        : 'Only microphone stream acquired (no system audio)'
     );
 
     return {
