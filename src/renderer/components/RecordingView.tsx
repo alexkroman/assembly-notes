@@ -44,7 +44,7 @@ export const RecordingView: React.FC<RecordingViewProps> = ({
 
   const summaryRef = useRef<HTMLTextAreaElement>(null);
   const hasAutoStarted = useRef(false);
-  const transcriptRef = useRef<HTMLPreElement>(null);
+  const transcriptRef = useRef<HTMLTextAreaElement>(null);
   const isUserScrolled = useRef(false);
   const lastTranscriptLength = useRef(0);
   const audioRef = useRef<HTMLAudioElement>(null);
@@ -316,37 +316,28 @@ export const RecordingView: React.FC<RecordingViewProps> = ({
       <div className="flex flex-1 gap-1.5 px-1.5 py-1 pb-0.5 min-h-0 overflow-hidden bg-[#1a1a1a]">
         <div className="content-panel">
           <h3 className="panel-header">Transcript</h3>
-          <pre
+          <textarea
             ref={transcriptRef}
-            className="panel-content"
+            className="panel-content placeholder:text-white/[0.35]"
             data-testid="transcript-area"
             onScroll={handleTranscriptScroll}
-          >
-            {isNewRecording ? (
-              <>
-                {(transcript || '').trim() || (
-                  <span className="text-white/[0.35] italic text-[11px]">
-                    {recordingId
-                      ? ''
-                      : 'Click "Record" to begin transcribing audio from your microphone and system'}
-                  </span>
-                )}
-                {partialTranscript && (
-                  <span className="inline text-partial">
-                    {(transcript || '').trim()
-                      ? ` ${partialTranscript}`
-                      : partialTranscript}
-                  </span>
-                )}
-              </>
-            ) : (
-              (currentRecording?.transcript ?? (
-                <span className="text-white/[0.35] italic text-[11px]">
-                  No transcript available for this recording
-                </span>
-              ))
-            )}
-          </pre>
+            readOnly
+            value={
+              isNewRecording
+                ? (transcript || '').trim() +
+                  (partialTranscript
+                    ? ((transcript || '').trim() ? ' ' : '') + partialTranscript
+                    : '')
+                : (currentRecording?.transcript ?? '')
+            }
+            placeholder={
+              isNewRecording
+                ? recordingId
+                  ? ''
+                  : 'Click "Record" to begin transcribing audio from your microphone and system'
+                : 'No transcript available for this recording'
+            }
+          />
         </div>
 
         <div className="content-panel">
