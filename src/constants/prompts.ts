@@ -20,6 +20,8 @@ Rules:
 3. Extract action items with: Task - Owner - Due date
 4. Stay objective - report what was said, include disagreements
 5. Focus on decisions, blockers, and next steps
+6. If user notes are provided, incorporate their context and highlights into the summary
+7. User notes often contain important context, corrections, or emphasis - prioritize these
 
 Key phrases to capture: "decided to", "will handle", "blocker is", "next step", "action item", "by [date]", "assigned to"
 

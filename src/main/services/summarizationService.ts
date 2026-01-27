@@ -14,10 +14,17 @@ export class SummarizationService {
   async summarizeTranscript(
     transcript: string,
     summaryPrompt: string,
-    apiKey: string
+    apiKey: string,
+    notes?: string
   ): Promise<string> {
     if (!apiKey) {
       throw new Error('AssemblyAI API key not available');
+    }
+
+    let userContent = `${summaryPrompt}\n\nTranscript:\n${transcript}`;
+
+    if (notes?.trim()) {
+      userContent += `\n\nUser Notes:\n${notes}`;
     }
 
     return this.llmGateway.chat(
@@ -28,7 +35,7 @@ export class SummarizationService {
         },
         {
           role: 'user',
-          content: `${summaryPrompt}\n\nTranscript:\n${transcript}`,
+          content: userContent,
         },
       ],
       apiKey

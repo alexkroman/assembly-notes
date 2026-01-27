@@ -33,16 +33,19 @@ export const RecordingView: React.FC<RecordingViewProps> = ({
     transcript,
     partialTranscript,
     summary,
+    notes,
     recordingTitle,
     setRecordingTitle,
     handleToggleRecording,
     handleSummarize,
     setSummary,
+    setNotes,
   } = useRecording(recordingId);
 
   const { prompts, selectedPromptIndex, handlePromptChange } = usePrompts();
 
   const summaryRef = useRef<HTMLTextAreaElement>(null);
+  const notesRef = useRef<HTMLTextAreaElement>(null);
   const hasAutoStarted = useRef(false);
   const transcriptRef = useRef<HTMLTextAreaElement>(null);
   const isUserScrolled = useRef(false);
@@ -60,6 +63,12 @@ export const RecordingView: React.FC<RecordingViewProps> = ({
       summaryRef.current.value = summary;
     }
   }, [summary]);
+
+  useEffect(() => {
+    if (notesRef.current) {
+      notesRef.current.value = notes;
+    }
+  }, [notes]);
 
   // Track recording duration
   useEffect(() => {
@@ -158,6 +167,10 @@ export const RecordingView: React.FC<RecordingViewProps> = ({
 
   const handleSummaryChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     setSummary(e.target.value);
+  };
+
+  const handleNotesChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    setNotes(e.target.value);
   };
 
   const handlePlayPause = () => {
@@ -337,6 +350,17 @@ export const RecordingView: React.FC<RecordingViewProps> = ({
                   : 'Click "Record" to begin transcribing audio from your microphone and system'
                 : 'No transcript available for this recording'
             }
+          />
+        </div>
+
+        <div className="content-panel">
+          <h3 className="panel-header">Notes</h3>
+          <textarea
+            ref={notesRef}
+            className="panel-content placeholder:text-white/[0.35]"
+            data-testid="notes-textarea"
+            placeholder="Add notes during or after the recording. Notes are included when generating summaries."
+            onChange={handleNotesChange}
           />
         </div>
 

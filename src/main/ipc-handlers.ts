@@ -17,6 +17,7 @@ import type { StateBroadcaster } from './state-broadcaster.js';
 import {
   updateCurrentRecordingTitle,
   updateCurrentRecordingSummary,
+  updateCurrentRecordingNotes,
 } from './store/slices/recordingsSlice.js';
 import type { AppDispatch, RootState } from './store/store.js';
 import { PromptTemplate } from '../types/common.js';
@@ -155,6 +156,25 @@ function setupIpcHandlers(
       await transcriptFileService.updateTranscript(recordingId, { summary });
       store.dispatch(updateCurrentRecordingSummary(summary));
       stateBroadcaster.recordingsSummary(summary);
+    }
+  );
+
+  ipcMain.handle(
+    'update-recording-notes',
+    async (_event, recordingId: string, notes: string) => {
+      const state = store.getState();
+      const currentRecording = state.recordings.currentRecording;
+
+      if (currentRecording?.id !== recordingId) {
+        logger.warn(
+          `Ignoring notes update: not the current recording (requested: ${recordingId}, current: ${currentRecording?.id ?? 'none'})`
+        );
+        return;
+      }
+
+      await transcriptFileService.updateTranscript(recordingId, { notes });
+      store.dispatch(updateCurrentRecordingNotes(notes));
+      stateBroadcaster.recordingsNotes(notes);
     }
   );
 

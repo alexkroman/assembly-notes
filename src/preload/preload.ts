@@ -38,6 +38,7 @@ const electronAPI = {
   deleteRecording: createInvoker('delete-recording'),
   updateRecordingTitle: createInvoker('update-recording-title'),
   updateRecordingSummary: createInvoker('update-recording-summary'),
+  updateRecordingNotes: createInvoker('update-recording-notes'),
   getAudioFilePath: createInvoker('get-audio-file-path'),
   showAudioInFolder: createInvoker('show-audio-in-folder'),
   showTranscriptsFolder: createInvoker('show-transcripts-folder'),
@@ -272,6 +273,10 @@ const stateAPI = {
     }),
   onRecordingsSummary: (callback: (payload: { summary: string }) => void) =>
     ipcRenderer.on(IPC_STATE_CHANNELS.RECORDINGS_SUMMARY, (_event, data) => {
+      callback(data as Parameters<typeof callback>[0]);
+    }),
+  onRecordingsNotes: (callback: (payload: { notes: string }) => void) =>
+    ipcRenderer.on(IPC_STATE_CHANNELS.RECORDINGS_NOTES, (_event, data) => {
       callback(data as Parameters<typeof callback>[0]);
     }),
 

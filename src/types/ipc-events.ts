@@ -48,6 +48,7 @@ export const IPC_STATE_CHANNELS = {
   RECORDINGS_TITLE: 'state:recordings:title',
   RECORDINGS_SUMMARY: 'state:recordings:summary',
   RECORDINGS_TRANSCRIPT: 'state:recordings:transcript',
+  RECORDINGS_NOTES: 'state:recordings:notes',
 } as const;
 
 export type IPCStateChannel =
@@ -124,6 +125,9 @@ export interface IPCStatePayloads {
   };
   [IPC_STATE_CHANNELS.RECORDINGS_TRANSCRIPT]: {
     transcript: string;
+  };
+  [IPC_STATE_CHANNELS.RECORDINGS_NOTES]: {
+    notes: string;
   };
 }
 
@@ -236,6 +240,11 @@ export interface StateAPI {
   onRecordingsTranscript: (
     callback: (
       payload: IPCStatePayloads[typeof IPC_STATE_CHANNELS.RECORDINGS_TRANSCRIPT]
+    ) => void
+  ) => void;
+  onRecordingsNotes: (
+    callback: (
+      payload: IPCStatePayloads[typeof IPC_STATE_CHANNELS.RECORDINGS_NOTES]
     ) => void
   ) => void;
 

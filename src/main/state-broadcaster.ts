@@ -166,4 +166,8 @@ export class StateBroadcaster {
   recordingsTranscript(transcript: string): void {
     this.broadcast(IPC_STATE_CHANNELS.RECORDINGS_TRANSCRIPT, { transcript });
   }
+
+  recordingsNotes(notes: string): void {
+    this.broadcast(IPC_STATE_CHANNELS.RECORDINGS_NOTES, { notes });
+  }
 }

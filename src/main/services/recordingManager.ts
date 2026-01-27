@@ -538,6 +538,7 @@ export class RecordingManager {
       transcript ?? state.transcription.currentTranscript;
     // Single source of truth: currentRecording.id from state
     const currentRecordingId = state.recordings.currentRecording?.id;
+    const currentNotes = state.recordings.currentRecording?.notes;
 
     // Debug logging
     this.logger.info(
@@ -563,7 +564,8 @@ export class RecordingManager {
       const summary = await this.summarizationService.summarizeTranscript(
         currentTranscript,
         summaryPrompt,
-        apiKey
+        apiKey,
+        currentNotes
       );
 
       if (summary) {

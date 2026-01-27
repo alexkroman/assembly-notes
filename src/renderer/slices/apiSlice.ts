@@ -135,6 +135,21 @@ export const apiSlice = createApi({
       ],
     }),
 
+    updateRecordingNotes: builder.mutation<
+      boolean,
+      { id: string; notes: string }
+    >({
+      queryFn: ({ id, notes }) =>
+        ipcQuery(async () => {
+          await window.electronAPI.updateRecordingNotes(id, notes);
+          return true;
+        }, 'Failed to update recording notes'),
+      invalidatesTags: (_, __, { id }) => [
+        { type: 'Recording', id },
+        'RecordingsList',
+      ],
+    }),
+
     deleteRecording: builder.mutation<boolean, string>({
       queryFn: (id) =>
         ipcQuery(
@@ -159,5 +174,6 @@ export const {
   useGetRecordingQuery,
   useUpdateRecordingTitleMutation,
   useUpdateRecordingSummaryMutation,
+  useUpdateRecordingNotesMutation,
   useDeleteRecordingMutation,
 } = apiSlice;

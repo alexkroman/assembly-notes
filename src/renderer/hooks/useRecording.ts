@@ -7,10 +7,12 @@ import type { Recording } from '../../types/common.js';
 import {
   useUpdateRecordingTitleMutation,
   useUpdateRecordingSummaryMutation,
+  useUpdateRecordingNotesMutation,
 } from '../slices/apiSlice.js';
 import {
   updateCurrentRecordingTitle,
   updateCurrentRecordingSummary,
+  updateCurrentRecordingNotes,
 } from '../slices/recordingsSlice.js';
 import { setStatus } from '../store';
 
@@ -58,9 +60,11 @@ export const useRecording = (recordingId: string | null) => {
 
   const [updateTitle] = useUpdateRecordingTitleMutation();
   const [updateSummary] = useUpdateRecordingSummaryMutation();
+  const [updateNotes] = useUpdateRecordingNotesMutation();
 
   // Use Redux state directly
   const summary = currentRecording?.summary ?? '';
+  const notes = currentRecording?.notes ?? '';
   const recordingTitle = currentRecording?.title ?? '';
 
   const [isStopping, setIsStopping] = useState(false);
@@ -86,6 +90,17 @@ export const useRecording = (recordingId: string | null) => {
           void updateSummary({ id, summary: summaryText });
         },
         [updateSummary]
+      ),
+      300
+    );
+
+  const [debouncedNotesUpdate, cancelNotesUpdate] =
+    useDebouncedCallbackWithCancel(
+      useCallback(
+        (id: string, notesText: string) => {
+          void updateNotes({ id, notes: notesText });
+        },
+        [updateNotes]
       ),
       300
     );
@@ -116,11 +131,21 @@ export const useRecording = (recordingId: string | null) => {
     [recordingId, dispatch, debouncedSummaryUpdate]
   );
 
+  const handleNotesChange = useCallback(
+    (notesText: string) => {
+      if (!recordingId) return;
+      dispatch(updateCurrentRecordingNotes(notesText));
+      debouncedNotesUpdate(recordingId, notesText);
+    },
+    [recordingId, dispatch, debouncedNotesUpdate]
+  );
+
   // Clear pending debounced updates when recording changes
   useEffect(() => {
     cancelTitleUpdate();
     cancelSummaryUpdate();
-  }, [recordingId, cancelTitleUpdate, cancelSummaryUpdate]);
+    cancelNotesUpdate();
+  }, [recordingId, cancelTitleUpdate, cancelSummaryUpdate, cancelNotesUpdate]);
 
   useEffect(() => {
     const handleSummary = (data: { text: string; recordingId: string }) => {
@@ -249,10 +274,12 @@ export const useRecording = (recordingId: string | null) => {
     transcript: currentTranscript,
     partialTranscript,
     summary,
+    notes,
     recordingTitle,
     setRecordingTitle: handleTitleChange,
     handleToggleRecording,
     handleSummarize,
     setSummary: handleSummaryChange,
+    setNotes: handleNotesChange,
   };
 };
