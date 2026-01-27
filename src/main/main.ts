@@ -3,7 +3,6 @@ import { fileURLToPath } from 'url';
 
 import dotenv from 'dotenv';
 import { app, BrowserWindow, Menu } from 'electron';
-import { initMain as initAudioLoopback } from 'electron-audio-loopback';
 
 // Load environment variables from .env file
 dotenv.config();
@@ -17,6 +16,7 @@ if (!app.isPackaged && process.env['USE_PROD_DATA'] !== 'true') {
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
+import { initAudioLoopback } from './audio-loopback.js';
 import type { AutoUpdaterService } from './auto-updater.js';
 import { setupContainer, container, DI_TOKENS } from './container.js';
 import type { DictationStatusWindow } from './dictationStatusWindow.js';

@@ -346,7 +346,9 @@ export const RecordingView: React.FC<RecordingViewProps> = ({
             placeholder={
               isNewRecording
                 ? recordingId
-                  ? ''
+                  ? isRecording
+                    ? 'Listening for speech...'
+                    : 'Click "Record" to begin transcribing'
                   : 'Click "Record" to begin transcribing audio from your microphone and system'
                 : 'No transcript available for this recording'
             }
@@ -359,7 +361,7 @@ export const RecordingView: React.FC<RecordingViewProps> = ({
             ref={notesRef}
             className="panel-content placeholder:text-white/[0.35]"
             data-testid="notes-textarea"
-            placeholder="Add notes during or after the recording. Notes are included when generating summaries."
+            placeholder="Add notes during or after the recording..."
             onChange={handleNotesChange}
           />
         </div>
@@ -370,7 +372,7 @@ export const RecordingView: React.FC<RecordingViewProps> = ({
             ref={summaryRef}
             className="panel-content placeholder:text-white/[0.35]"
             data-testid="summary-textarea"
-            placeholder="Click 'Summarize' at any time to generate or regenerate a summary"
+            placeholder="Click 'Summarize' to generate a summary. Any notes you add will be included."
             onChange={handleSummaryChange}
           />
         </div>
