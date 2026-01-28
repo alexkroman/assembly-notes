@@ -43,8 +43,6 @@ export class SettingsService {
         settingsStore.get('dictationStylingPrompt') ||
         DEFAULT_DICTATION_STYLING_PROMPT,
       userId: settingsStore.get('userId'),
-      microphoneGain: settingsStore.get('microphoneGain'),
-      systemAudioGain: settingsStore.get('systemAudioGain'),
     };
   }
 

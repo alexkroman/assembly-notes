@@ -150,8 +150,6 @@ export function createMockStore(
       error: null,
       hasAssemblyAIKey: true,
       dictationStylingPrompt: '',
-      microphoneGain: 1.0,
-      systemAudioGain: 0.7,
     },
     recordings: {
       ids: [],

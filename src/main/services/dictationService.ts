@@ -354,7 +354,12 @@ export class DictationService {
         throw new Error('AbortError');
       }
 
-      const chatOptions: { maxTokens: number; signal?: AbortSignal } = {
+      const chatOptions: {
+        model: string;
+        maxTokens: number;
+        signal?: AbortSignal;
+      } = {
+        model: 'claude-sonnet-4-5-20250929',
         maxTokens: 1000,
       };
       if (signal) {

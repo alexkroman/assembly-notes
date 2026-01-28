@@ -23,7 +23,10 @@ const IPC_EVENTS = {
 const FEATURE_FLAGS = {
   pulseaudioLoopbackForScreenShare: 'PulseaudioLoopbackForScreenShare',
   macLoopbackAudioForScreenShare: 'MacLoopbackAudioForScreenShare',
+  // ScreenCaptureKit (macOS 13+) - may not capture some apps like Zoom
   macScreenCaptureKitOverride: 'MacSckSystemAudioLoopbackOverride',
+  // CoreAudio Tap - lower level, better compatibility with Zoom/Teams/etc
+  macCoreAudioTap: 'MacCatapSystemAudioLoopbackCapture',
 } as const;
 
 // Loopback audio types
@@ -71,11 +74,12 @@ export function initAudioLoopback(): void {
   }
 
   // Add our feature flags
+  // Using CoreAudio Tap instead of ScreenCaptureKit for better Zoom/Teams compatibility
   const featureFlags = [
     ...existingFeatures.filter(Boolean),
     FEATURE_FLAGS.pulseaudioLoopbackForScreenShare,
     FEATURE_FLAGS.macLoopbackAudioForScreenShare,
-    FEATURE_FLAGS.macScreenCaptureKitOverride,
+    FEATURE_FLAGS.macCoreAudioTap,
   ].join(',');
 
   app.commandLine.appendSwitch('enable-features', featureFlags);

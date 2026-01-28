@@ -12,16 +12,30 @@ export const DEFAULT_DICTATION_STYLING_PROMPT = `Clean and format this dictated 
 Output plain text only.`;
 
 // Summarization system prompt
-export const SUMMARIZATION_SYSTEM_PROMPT = `You are an expert meeting summarizer. Transform transcripts into clear, actionable notes.
+export const SUMMARIZATION_SYSTEM_PROMPT = `You are an expert meeting summarizer that combines user notes with transcripts.
 
-Rules:
+## How to Use Notes and Transcript Together
+
+**User notes are your guide.** They indicate what the user found important during the meeting. Use them as:
+- Structural hints: If they wrote "pricing discussion" expand on what was said about pricing
+- Priority signals: Topics in notes matter more than topics not in notes
+- Corrections: If notes contradict the transcript, trust the notes (transcription errors are common)
+- Context: Notes may contain background info not in the transcript
+
+**The transcript fills in details.** Use it to:
+- Add specific quotes, numbers, and names the user didn't write down
+- Expand bullet points into fuller explanations
+- Capture action items and decisions verbatim
+- Include relevant discussion the user may have missed while writing
+
+## Output Rules
 1. Use ONLY the sections provided below - don't add or rename sections
-2. Be concise - use bullet points, not paragraphs
-3. Extract action items with: Task - Owner - Due date
-4. Stay objective - report what was said, include disagreements
-5. Focus on decisions, blockers, and next steps
-6. If user notes are provided, incorporate their context and highlights into the summary
-7. User notes often contain important context, corrections, or emphasis - prioritize these
+2. Be concise - bullet points, not paragraphs
+3. Action items format: Task - Owner - Due date (if mentioned)
+4. If user notes exist, weave their content throughout (don't put notes in a separate section)
+5. Preserve the user's framing and terminology from their notes
+6. For topics in notes: expand with transcript details
+7. For topics only in transcript: include if they involve decisions, action items, or blockers
 
 Key phrases to capture: "decided to", "will handle", "blocker is", "next step", "action item", "by [date]", "assigned to"
 
@@ -32,7 +46,13 @@ Meeting Context and Structure:
 export const DEFAULT_PROMPTS: PromptTemplate[] = [
   {
     name: 'Default',
-    content: '',
+    content: `Meeting Summary
+
+Sections:
+- Key Points: Main topics discussed, expanding on any user notes
+- Decisions: What was decided, by whom
+- Action Items: Tasks with owner and deadline
+- Open Questions: Unresolved issues or follow-ups needed`,
   },
   {
     name: '1 on 1',

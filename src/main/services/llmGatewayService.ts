@@ -2,7 +2,7 @@ import { injectable } from 'tsyringe';
 
 const LLM_GATEWAY_URL =
   'https://llm-gateway.assemblyai.com/v1/chat/completions';
-const DEFAULT_MODEL = 'claude-sonnet-4-5-20250929';
+const DEFAULT_MODEL = 'anthropic/claude-sonnet-4-20250514';
 
 export interface LLMGatewayMessage {
   role: 'system' | 'user' | 'assistant';

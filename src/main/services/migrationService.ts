@@ -111,11 +111,7 @@ export class MigrationService {
           const existingValue = settingsStore.get(
             row.key as keyof SettingsStoreSchema
           );
-          if (
-            existingValue !== '' &&
-            existingValue !== false &&
-            existingValue !== 0
-          ) {
+          if (existingValue !== '' && existingValue !== false) {
             this.logger.debug(`Skipping ${row.key} - already has value`);
             continue;
           }
