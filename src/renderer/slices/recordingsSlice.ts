@@ -55,6 +55,11 @@ const recordingsSlice = createSlice({
         state.currentRecording.summary = action.payload;
       }
     },
+    updateCurrentRecordingNotes(state, action: PayloadAction<string>) {
+      if (state.currentRecording) {
+        state.currentRecording.notes = action.payload;
+      }
+    },
   },
 });
 
@@ -62,5 +67,6 @@ export const {
   setCurrentRecording,
   updateCurrentRecordingTitle,
   updateCurrentRecordingSummary,
+  updateCurrentRecordingNotes,
 } = recordingsSlice.actions;
 export default recordingsSlice.reducer;

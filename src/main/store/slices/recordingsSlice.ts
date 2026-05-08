@@ -74,6 +74,12 @@ const recordingsSlice = createSlice({
         state.currentRecording.updated_at = Date.now();
       }
     },
+    updateCurrentRecordingNotes: (state, action: PayloadAction<string>) => {
+      if (state.currentRecording) {
+        state.currentRecording.notes = action.payload;
+        state.currentRecording.updated_at = Date.now();
+      }
+    },
   },
 });
 
@@ -84,6 +90,7 @@ export const {
   updateCurrentRecordingTitle,
   updateCurrentRecordingSummary,
   updateCurrentRecordingTranscript,
+  updateCurrentRecordingNotes,
 } = recordingsSlice.actions;
 
 export const {

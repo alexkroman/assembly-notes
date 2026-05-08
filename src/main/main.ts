@@ -3,7 +3,6 @@ import { fileURLToPath } from 'url';
 
 import dotenv from 'dotenv';
 import { app, BrowserWindow, Menu } from 'electron';
-import { initMain as initAudioLoopback } from 'electron-audio-loopback';
 
 // Load environment variables from .env file
 dotenv.config();
@@ -17,13 +16,13 @@ if (!app.isPackaged && process.env['USE_PROD_DATA'] !== 'true') {
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
+import { initAudioLoopback } from './audio-loopback.js';
 import type { AutoUpdaterService } from './auto-updater.js';
 import { setupContainer, container, DI_TOKENS } from './container.js';
 import type { DictationStatusWindow } from './dictationStatusWindow.js';
 import { setupIpcHandlers } from './ipc-handlers.js';
 import log from './logger.js';
 import type { DictationService } from './services/dictationService.js';
-import type { MigrationService } from './services/migrationService.js';
 import type { PostHogService } from './services/posthogService.js';
 import type { SettingsService } from './services/settingsService.js';
 import { store } from './store/store.js';
@@ -173,16 +172,6 @@ void app.whenReady().then(async () => {
   }
 
   createWindow();
-
-  // Run migration after container is set up (inside createWindow)
-  log.info('Running migration if needed...');
-  const migrationService = container.resolve<MigrationService>(
-    DI_TOKENS.MigrationService
-  );
-  const migrationSuccess = await migrationService.runMigrationIfNeeded();
-  if (!migrationSuccess) {
-    log.error('Migration failed - some data may not have been exported');
-  }
 
   const template: Electron.MenuItemConstructorOptions[] = [
     {

@@ -14,10 +14,30 @@ export class SummarizationService {
   async summarizeTranscript(
     transcript: string,
     summaryPrompt: string,
-    apiKey: string
+    apiKey: string,
+    notes?: string
   ): Promise<string> {
     if (!apiKey) {
       throw new Error('AssemblyAI API key not available');
+    }
+
+    let userContent: string;
+
+    if (notes?.trim()) {
+      // When notes exist, present them first as the priority content
+      userContent = `${summaryPrompt}
+
+## My Notes (what I found important)
+${notes}
+
+## Full Transcript (use to fill in details)
+${transcript}`;
+    } else {
+      // No notes - just use transcript
+      userContent = `${summaryPrompt}
+
+## Transcript
+${transcript}`;
     }
 
     return this.llmGateway.chat(
@@ -28,7 +48,7 @@ export class SummarizationService {
         },
         {
           role: 'user',
-          content: `${summaryPrompt}\n\nTranscript:\n${transcript}`,
+          content: userContent,
         },
       ],
       apiKey

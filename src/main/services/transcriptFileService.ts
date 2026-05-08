@@ -170,6 +170,7 @@ export class TranscriptFileService {
     const title = record.title ?? 'Untitled';
     const transcript = record.transcript ?? '';
     const summary = record.summary ?? '';
+    const notes = record.notes ?? '';
 
     const sections = [
       frontmatter,
@@ -180,6 +181,10 @@ export class TranscriptFileService {
       '',
       transcript,
     ];
+
+    if (notes) {
+      sections.push('', '## Notes', '', notes);
+    }
 
     if (summary) {
       sections.push('', '## Summary', '', summary);
@@ -204,18 +209,23 @@ export class TranscriptFileService {
         return null;
       }
 
-      // Extract transcript and summary from body
+      // Extract transcript, notes, and summary from body
       let transcript = '';
+      let notes = '';
       let summary = '';
 
-      // Look for ## Transcript and ## Summary sections
+      // Look for ## Transcript, ## Notes, and ## Summary sections
       const transcriptMatch = /## Transcript\n\n([\s\S]*?)(?=\n## |$)/.exec(
         body
       );
+      const notesMatch = /## Notes\n\n([\s\S]*?)(?=\n## |$)/.exec(body);
       const summaryMatch = /## Summary\n\n([\s\S]*?)$/.exec(body);
 
       if (transcriptMatch?.[1]) {
         transcript = transcriptMatch[1].trim();
+      }
+      if (notesMatch?.[1]) {
+        notes = notesMatch[1].trim();
       }
       if (summaryMatch?.[1]) {
         summary = summaryMatch[1].trim();
@@ -230,6 +240,7 @@ export class TranscriptFileService {
         id,
         title: typeof title === 'string' ? title : 'Untitled',
         transcript,
+        notes,
         summary,
         created_at: typeof createdAt === 'number' ? createdAt : Date.now(),
         updated_at: typeof updatedAt === 'number' ? updatedAt : Date.now(),
@@ -435,11 +446,13 @@ export class TranscriptFileService {
     return allTranscripts.filter((t) => {
       const title = (t.title ?? '').toLowerCase();
       const transcript = (t.transcript ?? '').toLowerCase();
+      const notes = (t.notes ?? '').toLowerCase();
       const summary = (t.summary ?? '').toLowerCase();
 
       return (
         title.includes(lowerQuery) ||
         transcript.includes(lowerQuery) ||
+        notes.includes(lowerQuery) ||
         summary.includes(lowerQuery)
       );
     });

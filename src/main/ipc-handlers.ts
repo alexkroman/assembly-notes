@@ -17,6 +17,7 @@ import type { StateBroadcaster } from './state-broadcaster.js';
 import {
   updateCurrentRecordingTitle,
   updateCurrentRecordingSummary,
+  updateCurrentRecordingNotes,
 } from './store/slices/recordingsSlice.js';
 import type { AppDispatch, RootState } from './store/store.js';
 import { PromptTemplate } from '../types/common.js';
@@ -158,6 +159,25 @@ function setupIpcHandlers(
     }
   );
 
+  ipcMain.handle(
+    'update-recording-notes',
+    async (_event, recordingId: string, notes: string) => {
+      const state = store.getState();
+      const currentRecording = state.recordings.currentRecording;
+
+      if (currentRecording?.id !== recordingId) {
+        logger.warn(
+          `Ignoring notes update: not the current recording (requested: ${recordingId}, current: ${currentRecording?.id ?? 'none'})`
+        );
+        return;
+      }
+
+      await transcriptFileService.updateTranscript(recordingId, { notes });
+      store.dispatch(updateCurrentRecordingNotes(notes));
+      stateBroadcaster.recordingsNotes(notes);
+    }
+  );
+
   ipcMain.handle('get-audio-file-path', async (_event, recordingId: string) => {
     const recording =
       await transcriptFileService.getTranscriptById(recordingId);
@@ -190,6 +210,21 @@ function setupIpcHandlers(
     await shell.openPath(transcriptsDir);
     return true;
   });
+
+  ipcMain.handle(
+    'show-transcript-in-folder',
+    async (_event, recordingId: string) => {
+      const recording =
+        await transcriptFileService.getTranscriptById(recordingId);
+      if (recording?.filename) {
+        const transcriptsDir = transcriptFileService.getTranscriptsDir();
+        const filepath = `${transcriptsDir}/${recording.filename}`;
+        shell.showItemInFolder(filepath);
+        return true;
+      }
+      return false;
+    }
+  );
 
   // ==================== Settings ====================
 

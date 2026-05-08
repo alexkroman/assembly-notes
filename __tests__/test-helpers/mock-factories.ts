@@ -150,8 +150,6 @@ export function createMockStore(
       error: null,
       hasAssemblyAIKey: true,
       dictationStylingPrompt: '',
-      microphoneGain: 1.0,
-      systemAudioGain: 0.7,
     },
     recordings: {
       ids: [],
@@ -194,8 +192,7 @@ export function createMockStore(
     [Symbol.observable]: jest.fn(),
   };
 
-  return store as unknown as MockStore &
-    Store<RootState> & { dispatch: AppDispatch };
+  return store;
 }
 
 // ============================================================================

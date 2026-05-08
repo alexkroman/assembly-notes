@@ -33,18 +33,21 @@ export const RecordingView: React.FC<RecordingViewProps> = ({
     transcript,
     partialTranscript,
     summary,
+    notes,
     recordingTitle,
     setRecordingTitle,
     handleToggleRecording,
     handleSummarize,
     setSummary,
+    setNotes,
   } = useRecording(recordingId);
 
   const { prompts, selectedPromptIndex, handlePromptChange } = usePrompts();
 
   const summaryRef = useRef<HTMLTextAreaElement>(null);
+  const notesRef = useRef<HTMLTextAreaElement>(null);
   const hasAutoStarted = useRef(false);
-  const transcriptRef = useRef<HTMLPreElement>(null);
+  const transcriptRef = useRef<HTMLTextAreaElement>(null);
   const isUserScrolled = useRef(false);
   const lastTranscriptLength = useRef(0);
   const audioRef = useRef<HTMLAudioElement>(null);
@@ -60,6 +63,12 @@ export const RecordingView: React.FC<RecordingViewProps> = ({
       summaryRef.current.value = summary;
     }
   }, [summary]);
+
+  useEffect(() => {
+    if (notesRef.current) {
+      notesRef.current.value = notes;
+    }
+  }, [notes]);
 
   // Track recording duration
   useEffect(() => {
@@ -158,6 +167,10 @@ export const RecordingView: React.FC<RecordingViewProps> = ({
 
   const handleSummaryChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     setSummary(e.target.value);
+  };
+
+  const handleNotesChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    setNotes(e.target.value);
   };
 
   const handlePlayPause = () => {
@@ -316,37 +329,41 @@ export const RecordingView: React.FC<RecordingViewProps> = ({
       <div className="flex flex-1 gap-1.5 px-1.5 py-1 pb-0.5 min-h-0 overflow-hidden bg-[#1a1a1a]">
         <div className="content-panel">
           <h3 className="panel-header">Transcript</h3>
-          <pre
+          <textarea
             ref={transcriptRef}
-            className="panel-content"
+            className="panel-content placeholder:text-white/[0.35]"
             data-testid="transcript-area"
             onScroll={handleTranscriptScroll}
-          >
-            {isNewRecording ? (
-              <>
-                {(transcript || '').trim() || (
-                  <span className="text-white/[0.35] italic text-[11px]">
-                    {recordingId
-                      ? ''
-                      : 'Click "Record" to begin transcribing audio from your microphone and system'}
-                  </span>
-                )}
-                {partialTranscript && (
-                  <span className="inline text-partial">
-                    {(transcript || '').trim()
-                      ? ` ${partialTranscript}`
-                      : partialTranscript}
-                  </span>
-                )}
-              </>
-            ) : (
-              (currentRecording?.transcript ?? (
-                <span className="text-white/[0.35] italic text-[11px]">
-                  No transcript available for this recording
-                </span>
-              ))
-            )}
-          </pre>
+            readOnly
+            value={
+              isNewRecording
+                ? (transcript || '').trim() +
+                  (partialTranscript
+                    ? ((transcript || '').trim() ? ' ' : '') + partialTranscript
+                    : '')
+                : (currentRecording?.transcript ?? '')
+            }
+            placeholder={
+              isNewRecording
+                ? recordingId
+                  ? isRecording
+                    ? 'Listening for speech...'
+                    : 'Click "Record" to begin transcribing'
+                  : 'Click "Record" to begin transcribing audio from your microphone and system'
+                : 'No transcript available for this recording'
+            }
+          />
+        </div>
+
+        <div className="content-panel">
+          <h3 className="panel-header">Notes</h3>
+          <textarea
+            ref={notesRef}
+            className="panel-content placeholder:text-white/[0.35]"
+            data-testid="notes-textarea"
+            placeholder="Add notes during or after the recording..."
+            onChange={handleNotesChange}
+          />
         </div>
 
         <div className="content-panel">
@@ -355,7 +372,7 @@ export const RecordingView: React.FC<RecordingViewProps> = ({
             ref={summaryRef}
             className="panel-content placeholder:text-white/[0.35]"
             data-testid="summary-textarea"
-            placeholder="Click 'Summarize' at any time to generate or regenerate a summary"
+            placeholder="Click 'Summarize' to generate a summary. Any notes you add will be included."
             onChange={handleSummaryChange}
           />
         </div>
@@ -430,10 +447,22 @@ export const RecordingView: React.FC<RecordingViewProps> = ({
         >
           {formatTime(duration)}
         </span>
+        {!isRecording && recordingId && (
+          <button
+            type="button"
+            className="text-base text-white/[0.5] hover:text-white/[0.8] transition-colors duration-200 cursor-pointer ml-1 px-1"
+            title="Show transcript file in Finder"
+            onClick={() => {
+              void window.electronAPI.showTranscriptInFolder(recordingId);
+            }}
+          >
+            📄
+          </button>
+        )}
         {audioUrl && !isRecording && (
           <button
             type="button"
-            className="text-[10px] text-white/[0.5] hover:text-white/[0.8] transition-colors duration-200 cursor-pointer ml-1 px-1"
+            className="text-base text-white/[0.5] hover:text-white/[0.8] transition-colors duration-200 cursor-pointer ml-1 px-1"
             title="Show audio file in Finder"
             onClick={() => {
               if (recordingId) {
@@ -441,7 +470,7 @@ export const RecordingView: React.FC<RecordingViewProps> = ({
               }
             }}
           >
-            📁
+            🔊
           </button>
         )}
         {audioUrl && (

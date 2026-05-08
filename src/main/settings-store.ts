@@ -15,7 +15,6 @@ export interface SettingsStoreSchema {
   dictationStylingPrompt: string;
   microphoneGain: number;
   systemAudioGain: number;
-  migrationCompleted: boolean;
 }
 
 // Create the store instance with defaults
@@ -30,7 +29,6 @@ const store = new Store<SettingsStoreSchema>({
     dictationStylingPrompt: DEFAULT_DICTATION_STYLING_PROMPT,
     microphoneGain: 1.0,
     systemAudioGain: 0.7,
-    migrationCompleted: false,
   },
 });
 

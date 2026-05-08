@@ -16,5 +16,4 @@ export const DI_TOKENS = {
   DictationStatusWindow: Symbol('DictationStatusWindow'),
   PostHogService: Symbol('PostHogService'),
   TranscriptFileService: Symbol('TranscriptFileService'),
-  MigrationService: Symbol('MigrationService'),
 } as const;

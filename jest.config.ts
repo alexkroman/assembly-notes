@@ -32,6 +32,9 @@ export default {
         useESM: false,
         tsconfig: {
           jsx: 'react-jsx',
+          module: 'ESNext',
+          moduleResolution: 'Bundler',
+          ignoreDeprecations: '6.0',
         },
       },
     ],

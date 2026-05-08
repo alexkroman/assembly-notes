@@ -8,9 +8,7 @@ let combinedAudioContext: AudioContext | null = null;
 export async function startAudioProcessing(
   micStream: MediaStream,
   systemStream: MediaStream | null,
-  useCombinedMode = false,
-  microphoneGainValue = 1.0,
-  systemAudioGainValue = 0.7
+  useCombinedMode = false
 ): Promise<void> {
   // If we want to use combined mode and have both streams, mix them properly
   if (useCombinedMode && systemStream) {
@@ -52,7 +50,7 @@ export async function startAudioProcessing(
     // Create source for microphone (with echo cancellation)
     const micSource = combinedAudioContext.createMediaStreamSource(micStream);
     const micGain = combinedAudioContext.createGain();
-    micGain.gain.value = microphoneGainValue; // Use configurable microphone volume
+    micGain.gain.value = 1.0;
     micSource.connect(micGain);
     micGain.connect(mixerNode);
 
@@ -60,7 +58,7 @@ export async function startAudioProcessing(
     const systemSource =
       combinedAudioContext.createMediaStreamSource(systemStream);
     const systemGain = combinedAudioContext.createGain();
-    systemGain.gain.value = systemAudioGainValue; // Use configurable system audio volume
+    systemGain.gain.value = 1.0;
 
     // Add a limiter to prevent Zoom audio from being too loud
     const systemLimiter = combinedAudioContext.createDynamicsCompressor();
@@ -80,7 +78,7 @@ export async function startAudioProcessing(
     compressor.connect(combinedWorkletNode);
 
     window.logger.info(
-      `Using meeting-optimized audio: mic=${String(microphoneGainValue)}, system=${String(systemAudioGainValue)}, with echo cancellation, compression, and filtering`
+      'Using meeting-optimized audio with echo cancellation, compression, and filtering'
     );
     return;
   }
@@ -201,9 +199,7 @@ declare global {
       startAudioProcessing: (
         micStream: MediaStream,
         systemStream: MediaStream | null,
-        useCombinedMode?: boolean,
-        microphoneGain?: number,
-        systemAudioGain?: number
+        useCombinedMode?: boolean
       ) => Promise<void>;
       stopAudioProcessing: () => void;
       setRecordingState: (recording: boolean) => void;
