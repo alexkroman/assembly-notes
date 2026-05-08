@@ -192,8 +192,7 @@ export function createMockStore(
     [Symbol.observable]: jest.fn(),
   };
 
-  return store as unknown as MockStore &
-    Store<RootState> & { dispatch: AppDispatch };
+  return store;
 }
 
 // ============================================================================

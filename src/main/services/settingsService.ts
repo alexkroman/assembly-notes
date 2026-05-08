@@ -104,7 +104,7 @@ export class SettingsService {
 
   // Helper method to safely check if a setting has a non-empty trimmed value
   hasNonEmptySetting(key: keyof SettingsSchema): boolean {
-    const value = settingsStore.get(key as keyof SettingsStoreSchema);
+    const value = settingsStore.get(key);
     return isNonEmptyString(value);
   }
 }

@@ -1,6 +1,5 @@
 import 'reflect-metadata';
 import robotjs from '@jitsi/robotjs';
-import { Store } from '@reduxjs/toolkit';
 import { BrowserWindow, globalShortcut } from 'electron';
 import { container } from 'tsyringe';
 
@@ -130,7 +129,7 @@ describe('DictationService', () => {
     ]);
 
     container.register(DI_TOKENS.Store, {
-      useValue: mockStore as unknown as Store,
+      useValue: mockStore,
     });
     container.register(DI_TOKENS.TranscriptionService, {
       useValue: mockTranscriptionService,

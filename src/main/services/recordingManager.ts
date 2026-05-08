@@ -256,7 +256,7 @@ export class RecordingManager {
 
       return true;
     } catch (error) {
-      this.errorLogger.logError(error as Error, {
+      this.errorLogger.logError(error, {
         operation: 'startTranscriptionForDictation',
         component: 'RecordingManager',
       });

@@ -104,7 +104,7 @@ describe('RecordingManager', () => {
 
     // Create mocks using factories
     defaultState = createDefaultTestState();
-    mockStore = createMockStore() as unknown as MockStore;
+    mockStore = createMockStore();
     mockStore.getState.mockReturnValue(defaultState);
     mockStore.dispatch.mockImplementation(() => ({
       unwrap: () => Promise.resolve({ recordingId: 'test-recording-id' }),
