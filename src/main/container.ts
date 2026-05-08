@@ -10,7 +10,6 @@ import logger from './logger.js';
 import { AudioRecordingService } from './services/audioRecordingService.js';
 import { DictationService } from './services/dictationService.js';
 import { LLMGatewayService } from './services/llmGatewayService.js';
-import { MigrationService } from './services/migrationService.js';
 import { PostHogService } from './services/posthogService.js';
 import { RecordingDataService } from './services/recordingDataService.js';
 import { RecordingManager } from './services/recordingManager.js';
@@ -58,7 +57,6 @@ export function setupContainer(mainWindow: BrowserWindow): void {
     DI_TOKENS.TranscriptFileService,
     TranscriptFileService
   );
-  container.registerSingleton(DI_TOKENS.MigrationService, MigrationService);
   container.registerSingleton(DI_TOKENS.SettingsService, SettingsService);
   container.registerSingleton(
     DI_TOKENS.TranscriptionService,

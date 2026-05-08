@@ -22,7 +22,6 @@
   },
   "files": ["dist/**/*", "!dist/**/*.map"],
   "asarUnpack": [
-    "node_modules/better-sqlite3/**/*",
     "node_modules/@jitsi/robotjs/**/*",
     "node_modules/**/*.node",
     "**/*.node"

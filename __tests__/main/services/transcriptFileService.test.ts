@@ -468,9 +468,7 @@ Original content
     });
 
     it('should return false if transcript not found', async () => {
-      mockFs.readdir.mockResolvedValue(
-        []
-      );
+      mockFs.readdir.mockResolvedValue([]);
 
       const result = await service.updateTranscript('nonexistent', {
         summary: 'New',
@@ -544,9 +542,7 @@ Content
     });
 
     it('should return false if transcript not found', async () => {
-      mockFs.readdir.mockResolvedValue(
-        []
-      );
+      mockFs.readdir.mockResolvedValue([]);
 
       const result = await service.deleteTranscript('nonexistent');
 
@@ -746,9 +742,7 @@ Content
     });
 
     it('should return false if transcript does not exist', async () => {
-      mockFs.readdir.mockResolvedValue(
-        []
-      );
+      mockFs.readdir.mockResolvedValue([]);
 
       const result = await service.transcriptExists('nonexistent');
 
