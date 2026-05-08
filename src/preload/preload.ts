@@ -41,6 +41,7 @@ const electronAPI = {
   updateRecordingNotes: createInvoker('update-recording-notes'),
   getAudioFilePath: createInvoker('get-audio-file-path'),
   showAudioInFolder: createInvoker('show-audio-in-folder'),
+  showTranscriptInFolder: createInvoker('show-transcript-in-folder'),
   showTranscriptsFolder: createInvoker('show-transcripts-folder'),
 
   // Settings

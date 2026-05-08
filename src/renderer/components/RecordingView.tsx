@@ -447,10 +447,22 @@ export const RecordingView: React.FC<RecordingViewProps> = ({
         >
           {formatTime(duration)}
         </span>
+        {!isRecording && recordingId && (
+          <button
+            type="button"
+            className="text-base text-white/[0.5] hover:text-white/[0.8] transition-colors duration-200 cursor-pointer ml-1 px-1"
+            title="Show transcript file in Finder"
+            onClick={() => {
+              void window.electronAPI.showTranscriptInFolder(recordingId);
+            }}
+          >
+            📄
+          </button>
+        )}
         {audioUrl && !isRecording && (
           <button
             type="button"
-            className="text-[10px] text-white/[0.5] hover:text-white/[0.8] transition-colors duration-200 cursor-pointer ml-1 px-1"
+            className="text-base text-white/[0.5] hover:text-white/[0.8] transition-colors duration-200 cursor-pointer ml-1 px-1"
             title="Show audio file in Finder"
             onClick={() => {
               if (recordingId) {
@@ -458,7 +470,7 @@ export const RecordingView: React.FC<RecordingViewProps> = ({
               }
             }}
           >
-            📁
+            🔊
           </button>
         )}
         {audioUrl && (

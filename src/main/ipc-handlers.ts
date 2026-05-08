@@ -211,6 +211,21 @@ function setupIpcHandlers(
     return true;
   });
 
+  ipcMain.handle(
+    'show-transcript-in-folder',
+    async (_event, recordingId: string) => {
+      const recording =
+        await transcriptFileService.getTranscriptById(recordingId);
+      if (recording?.filename) {
+        const transcriptsDir = transcriptFileService.getTranscriptsDir();
+        const filepath = `${transcriptsDir}/${recording.filename}`;
+        shell.showItemInFolder(filepath);
+        return true;
+      }
+      return false;
+    }
+  );
+
   // ==================== Settings ====================
 
   ipcMain.handle('get-settings', () => settingsService.getSettings());

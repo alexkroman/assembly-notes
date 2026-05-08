@@ -38,6 +38,7 @@ declare global {
       updateRecordingNotes: (id: string, notes: string) => Promise<void>;
       getAudioFilePath: (recordingId: string) => Promise<string | null>;
       showAudioInFolder: (recordingId: string) => Promise<boolean>;
+      showTranscriptInFolder: (recordingId: string) => Promise<boolean>;
       showTranscriptsFolder: () => Promise<boolean>;
 
       // Settings
