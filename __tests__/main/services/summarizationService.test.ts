@@ -120,7 +120,7 @@ describe('SummarizationService', () => {
       const userMessage = mockLLMGatewayService.chat.mock.calls[0][0].find(
         (m: { role: string }) => m.role === 'user'
       );
-      expect(userMessage.content).toContain('Transcript:\n');
+      expect(userMessage.content).toContain('## Transcript\n');
     });
 
     it('should handle empty summary prompt', async () => {
